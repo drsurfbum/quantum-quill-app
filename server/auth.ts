@@ -41,12 +41,14 @@ export function setupAuth(app: Express) {
   // Set up session
   const sessionSettings: session.SessionOptions = {
     secret: process.env.SESSION_SECRET || "quantum-quill-development-secret",
-    resave: false,
-    saveUninitialized: false,
+    resave: true,
+    saveUninitialized: true,
     store: storage.sessionStore,
     cookie: {
       secure: process.env.NODE_ENV === "production",
       maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
+      httpOnly: true,
+      sameSite: 'lax'
     }
   };
 

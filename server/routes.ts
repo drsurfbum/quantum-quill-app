@@ -8,10 +8,10 @@ import { setupAuth } from "./auth";
 
 // Middleware to check if user is authenticated
 const isAuthenticated = (req: Request, res: Response, next: Function) => {
-  if (req.isAuthenticated()) {
+  if (req.isAuthenticated() && req.user) {
     return next();
   }
-  res.status(401).json({ message: "Unauthorized" });
+  return res.status(401).json({ message: "Unauthorized" });
 };
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -128,13 +128,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Chapters routes
-  app.get("/api/projects/:projectId/chapters", async (req: Request, res: Response) => {
+  app.get("/api/projects/:projectId/chapters", isAuthenticated, async (req: Request, res: Response) => {
     const projectId = parseInt(req.params.projectId);
     const chapters = await storage.getProjectChapters(projectId);
     res.json(chapters);
   });
 
-  app.get("/api/chapters/:id", async (req: Request, res: Response) => {
+  app.get("/api/chapters/:id", isAuthenticated, async (req: Request, res: Response) => {
     const id = parseInt(req.params.id);
     const chapter = await storage.getChapter(id);
     
@@ -145,7 +145,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(chapter);
   });
 
-  app.post("/api/chapters", async (req: Request, res: Response) => {
+  app.post("/api/chapters", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const validatedData = insertChapterSchema.parse(req.body);
       const chapter = await storage.createChapter(validatedData);
@@ -158,7 +158,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/chapters/:id", async (req: Request, res: Response) => {
+  app.put("/api/chapters/:id", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
       const updatedChapter = await storage.updateChapter(id, req.body);
@@ -173,7 +173,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/chapters/:id", async (req: Request, res: Response) => {
+  app.delete("/api/chapters/:id", isAuthenticated, async (req: Request, res: Response) => {
     const id = parseInt(req.params.id);
     const success = await storage.deleteChapter(id);
     
@@ -185,13 +185,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Whiteboard routes
-  app.get("/api/projects/:projectId/whiteboards", async (req: Request, res: Response) => {
+  app.get("/api/projects/:projectId/whiteboards", isAuthenticated, async (req: Request, res: Response) => {
     const projectId = parseInt(req.params.projectId);
     const whiteboards = await storage.getProjectWhiteboards(projectId);
     res.json(whiteboards);
   });
 
-  app.get("/api/whiteboards/:id", async (req: Request, res: Response) => {
+  app.get("/api/whiteboards/:id", isAuthenticated, async (req: Request, res: Response) => {
     const id = parseInt(req.params.id);
     const whiteboard = await storage.getWhiteboard(id);
     
@@ -202,7 +202,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(whiteboard);
   });
 
-  app.post("/api/whiteboards", async (req: Request, res: Response) => {
+  app.post("/api/whiteboards", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const validatedData = insertWhiteboardSchema.parse(req.body);
       const whiteboard = await storage.createWhiteboard(validatedData);
@@ -215,7 +215,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/whiteboards/:id", async (req: Request, res: Response) => {
+  app.put("/api/whiteboards/:id", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
       const updatedWhiteboard = await storage.updateWhiteboard(id, req.body);
@@ -230,7 +230,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/whiteboards/:id", async (req: Request, res: Response) => {
+  app.delete("/api/whiteboards/:id", isAuthenticated, async (req: Request, res: Response) => {
     const id = parseInt(req.params.id);
     const success = await storage.deleteWhiteboard(id);
     
@@ -242,13 +242,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Outline routes
-  app.get("/api/projects/:projectId/outline", async (req: Request, res: Response) => {
+  app.get("/api/projects/:projectId/outline", isAuthenticated, async (req: Request, res: Response) => {
     const projectId = parseInt(req.params.projectId);
     const outlineItems = await storage.getProjectOutline(projectId);
     res.json(outlineItems);
   });
 
-  app.get("/api/outline/:id", async (req: Request, res: Response) => {
+  app.get("/api/outline/:id", isAuthenticated, async (req: Request, res: Response) => {
     const id = parseInt(req.params.id);
     const outlineItem = await storage.getOutlineItem(id);
     
@@ -259,7 +259,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(outlineItem);
   });
 
-  app.post("/api/outline", async (req: Request, res: Response) => {
+  app.post("/api/outline", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const validatedData = insertOutlineItemSchema.parse(req.body);
       const outlineItem = await storage.createOutlineItem(validatedData);
@@ -272,7 +272,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/outline/:id", async (req: Request, res: Response) => {
+  app.put("/api/outline/:id", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
       const updatedOutlineItem = await storage.updateOutlineItem(id, req.body);
@@ -287,7 +287,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/outline/:id", async (req: Request, res: Response) => {
+  app.delete("/api/outline/:id", isAuthenticated, async (req: Request, res: Response) => {
     const id = parseInt(req.params.id);
     const success = await storage.deleteOutlineItem(id);
     
@@ -299,13 +299,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Story Bible routes
-  app.get("/api/projects/:projectId/story-bible", async (req: Request, res: Response) => {
+  app.get("/api/projects/:projectId/story-bible", isAuthenticated, async (req: Request, res: Response) => {
     const projectId = parseInt(req.params.projectId);
     const storyBibleEntries = await storage.getProjectStoryBible(projectId);
     res.json(storyBibleEntries);
   });
 
-  app.get("/api/story-bible/:id", async (req: Request, res: Response) => {
+  app.get("/api/story-bible/:id", isAuthenticated, async (req: Request, res: Response) => {
     const id = parseInt(req.params.id);
     const storyBibleEntry = await storage.getStoryBibleEntry(id);
     
@@ -316,7 +316,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(storyBibleEntry);
   });
 
-  app.post("/api/story-bible", async (req: Request, res: Response) => {
+  app.post("/api/story-bible", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const validatedData = insertStoryBibleEntrySchema.parse(req.body);
       const storyBibleEntry = await storage.createStoryBibleEntry(validatedData);
@@ -329,7 +329,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/story-bible/:id", async (req: Request, res: Response) => {
+  app.put("/api/story-bible/:id", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
       const updatedStoryBibleEntry = await storage.updateStoryBibleEntry(id, req.body);
@@ -344,7 +344,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/story-bible/:id", async (req: Request, res: Response) => {
+  app.delete("/api/story-bible/:id", isAuthenticated, async (req: Request, res: Response) => {
     const id = parseInt(req.params.id);
     const success = await storage.deleteStoryBibleEntry(id);
     
