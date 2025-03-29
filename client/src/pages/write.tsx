@@ -101,43 +101,45 @@ export default function Write() {
         </header>
 
         <div className="border-b border-neutral-200 dark:border-neutral-800">
-          <TabsList className="mx-4 h-10 w-auto">
-            <Link href={`/project/${id}/write`}>
-              <TabsTrigger value="write" className={cn(
-                "data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none",
-                location.startsWith(`/project/${id}/write`) ? "border-b-2 border-primary" : ""
-              )}>
-                <Edit3 className="mr-1 h-4 w-4" /> Write
-              </TabsTrigger>
-            </Link>
-            
-            <Link href={`/project/${id}/storyboard`}>
-              <TabsTrigger value="storyboard" className={cn(
-                "data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none",
-                location.startsWith(`/project/${id}/storyboard`) ? "border-b-2 border-primary" : ""
-              )}>
-                <Grid className="mr-1 h-4 w-4" /> Storyboard
-              </TabsTrigger>
-            </Link>
-            
-            <Link href={`/project/${id}/outline`}>
-              <TabsTrigger value="outline" className={cn(
-                "data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none",
-                location.startsWith(`/project/${id}/outline`) ? "border-b-2 border-primary" : ""
-              )}>
-                <ListTree className="mr-1 h-4 w-4" /> Outline
-              </TabsTrigger>
-            </Link>
-            
-            <Link href={`/project/${id}/story-bible`}>
-              <TabsTrigger value="story-bible" className={cn(
-                "data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none",
-                location.startsWith(`/project/${id}/story-bible`) ? "border-b-2 border-primary" : ""
-              )}>
-                <BookOpen className="mr-1 h-4 w-4" /> Story Bible
-              </TabsTrigger>
-            </Link>
-          </TabsList>
+          <Tabs defaultValue="write">
+            <TabsList className="mx-4 h-10 w-auto">
+              <Link href={`/project/${id}/write`}>
+                <TabsTrigger value="write" className={cn(
+                  "data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none",
+                  location.startsWith(`/project/${id}/write`) ? "border-b-2 border-primary" : ""
+                )}>
+                  <Edit3 className="mr-1 h-4 w-4" /> Write
+                </TabsTrigger>
+              </Link>
+              
+              <Link href={`/project/${id}/storyboard`}>
+                <TabsTrigger value="storyboard" className={cn(
+                  "data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none",
+                  location.startsWith(`/project/${id}/storyboard`) ? "border-b-2 border-primary" : ""
+                )}>
+                  <Grid className="mr-1 h-4 w-4" /> Storyboard
+                </TabsTrigger>
+              </Link>
+              
+              <Link href={`/project/${id}/outline`}>
+                <TabsTrigger value="outline" className={cn(
+                  "data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none",
+                  location.startsWith(`/project/${id}/outline`) ? "border-b-2 border-primary" : ""
+                )}>
+                  <ListTree className="mr-1 h-4 w-4" /> Outline
+                </TabsTrigger>
+              </Link>
+              
+              <Link href={`/project/${id}/story-bible`}>
+                <TabsTrigger value="story-bible" className={cn(
+                  "data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none",
+                  location.startsWith(`/project/${id}/story-bible`) ? "border-b-2 border-primary" : ""
+                )}>
+                  <BookOpen className="mr-1 h-4 w-4" /> Story Bible
+                </TabsTrigger>
+              </Link>
+            </TabsList>
+          </Tabs>
         </div>
 
         <div className="flex-grow flex overflow-hidden">
