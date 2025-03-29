@@ -4,17 +4,27 @@ import { storage } from "./storage";
 import { insertProjectSchema, insertChapterSchema, insertWhiteboardSchema, insertOutlineItemSchema, insertStoryBibleEntrySchema } from "@shared/schema";
 import { z } from "zod";
 import { ZodError } from "zod-validation-error";
+import { setupAuth } from "./auth";
+
+// Middleware to check if user is authenticated
+const isAuthenticated = (req: Request, res: Response, next: Function) => {
+  if (req.isAuthenticated()) {
+    return next();
+  }
+  res.status(401).json({ message: "Unauthorized" });
+};
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Set up authentication routes and middleware
+  setupAuth(app);
   // Projects routes
-  app.get("/api/projects", async (req: Request, res: Response) => {
-    // For demo purposes, we'll use a fixed user ID
-    const userId = 1;
+  app.get("/api/projects", isAuthenticated, async (req: Request, res: Response) => {
+    const userId = req.user!.id;
     const projects = await storage.getUserProjects(userId);
     res.json(projects);
   });
 
-  app.get("/api/projects/:id", async (req: Request, res: Response) => {
+  app.get("/api/projects/:id", isAuthenticated, async (req: Request, res: Response) => {
     const id = parseInt(req.params.id);
     const project = await storage.getProject(id);
     
@@ -22,13 +32,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(404).json({ message: "Project not found" });
     }
     
+    // Check if project belongs to the user
+    if (project.userId !== req.user!.id) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+    
     res.json(project);
   });
 
-  app.post("/api/projects", async (req: Request, res: Response) => {
+  app.post("/api/projects", isAuthenticated, async (req: Request, res: Response) => {
     try {
-      // For demo purposes, use fixed user ID
-      const userId = 1;
+      const userId = req.user!.id;
       const projectData = { ...req.body, userId };
       const validatedData = insertProjectSchema.parse(projectData);
       const project = await storage.createProject(validatedData);
@@ -41,52 +55,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/projects/:id", async (req: Request, res: Response) => {
+  app.put("/api/projects/:id", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
-      const updatedProject = await storage.updateProject(id, req.body);
+      const project = await storage.getProject(id);
       
-      if (!updatedProject) {
+      if (!project) {
         return res.status(404).json({ message: "Project not found" });
       }
       
+      // Check if project belongs to the user
+      if (project.userId !== req.user!.id) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+      
+      const updatedProject = await storage.updateProject(id, req.body);
       res.json(updatedProject);
     } catch (error) {
       res.status(500).json({ message: "Failed to update project" });
     }
   });
 
-  app.delete("/api/projects/:id", async (req: Request, res: Response) => {
+  app.delete("/api/projects/:id", isAuthenticated, async (req: Request, res: Response) => {
     const id = parseInt(req.params.id);
-    const success = await storage.deleteProject(id);
+    const project = await storage.getProject(id);
     
-    if (!success) {
+    if (!project) {
       return res.status(404).json({ message: "Project not found" });
     }
     
+    // Check if project belongs to the user
+    if (project.userId !== req.user!.id) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+    
+    const success = await storage.deleteProject(id);
     res.status(204).send();
   });
 
-  app.put("/api/projects/:id/trash", async (req: Request, res: Response) => {
+  app.put("/api/projects/:id/trash", isAuthenticated, async (req: Request, res: Response) => {
     const id = parseInt(req.params.id);
-    const project = await storage.trashProject(id);
+    const project = await storage.getProject(id);
     
     if (!project) {
       return res.status(404).json({ message: "Project not found" });
     }
     
-    res.json(project);
+    // Check if project belongs to the user
+    if (project.userId !== req.user!.id) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+    
+    const trashedProject = await storage.trashProject(id);
+    res.json(trashedProject);
   });
 
-  app.put("/api/projects/:id/restore", async (req: Request, res: Response) => {
+  app.put("/api/projects/:id/restore", isAuthenticated, async (req: Request, res: Response) => {
     const id = parseInt(req.params.id);
-    const project = await storage.restoreProject(id);
+    const project = await storage.getProject(id);
     
     if (!project) {
       return res.status(404).json({ message: "Project not found" });
     }
     
-    res.json(project);
+    // Check if project belongs to the user
+    if (project.userId !== req.user!.id) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+    
+    const restoredProject = await storage.restoreProject(id);
+    res.json(restoredProject);
   });
 
   // Chapters routes
