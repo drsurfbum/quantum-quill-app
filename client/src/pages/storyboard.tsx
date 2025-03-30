@@ -15,12 +15,22 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { type Whiteboard as WhiteboardType } from "@shared/schema";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export default function Storyboard() {
   const { id } = useParams();
   const [location] = useLocation();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
+  const [isCollapsed, setIsCollapsed] = useState(isMobile);
   const [currentWhiteboardId, setCurrentWhiteboardId] = useState<number | null>(null);
+  
+  // Auto-collapse on mobile
+  useEffect(() => {
+    if (isMobile) {
+      setIsCollapsed(true);
+    }
+  }, [isMobile]);
   
   const { data: project, isLoading: isLoadingProject } = useProject(id);
   
@@ -91,9 +101,9 @@ export default function Storyboard() {
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-background">
       <div className="flex flex-row flex-1 w-full h-full overflow-hidden">
-        <SidebarNavigation />
+        <SidebarNavigation onCollapsedChange={setIsCollapsed} />
         
-        <main className="flex-grow overflow-hidden flex flex-col w-full ml-0 sm:ml-14 md:ml-0">
+        <main className="flex-grow overflow-hidden flex flex-col w-full pl-0 md:pl-0" style={{marginLeft: isCollapsed ? '56px' : '0'}}>
         <header className="h-16 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between px-4 sm:px-6">
           <div className="flex items-center">
             {isLoadingProject ? (

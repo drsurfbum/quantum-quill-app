@@ -10,10 +10,11 @@ import { cn } from "@/lib/utils";
 import { Edit3, Grid, ListTree, BookOpen } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useStoryBibleEntries, useCreateStoryBibleEntry } from "@/hooks/use-story-bible";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import BibleEntry from "@/components/story-bible/bible-entry";
 import BibleEditor from "@/components/story-bible/bible-editor";
 import { useToast } from "@/hooks/use-toast";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 // Entry types with their icons
 const entryTypes = [
@@ -28,9 +29,18 @@ export default function StoryBible() {
   const { id } = useParams();
   const [location] = useLocation();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
+  const [isCollapsed, setIsCollapsed] = useState(isMobile);
   const [selectedEntryId, setSelectedEntryId] = useState<number | null>(null);
   const [selectedType, setSelectedType] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState("");
+  
+  // Auto-collapse on mobile
+  useEffect(() => {
+    if (isMobile) {
+      setIsCollapsed(true);
+    }
+  }, [isMobile]);
   
   const { data: project, isLoading: isLoadingProject } = useProject(id);
   const { data: entries = [], isLoading: isLoadingEntries } = useStoryBibleEntries(id);
@@ -79,9 +89,9 @@ export default function StoryBible() {
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-background">
       <div className="flex flex-row flex-1 w-full h-full overflow-hidden">
-        <SidebarNavigation />
+        <SidebarNavigation onCollapsedChange={setIsCollapsed} />
         
-        <main className="flex-grow overflow-hidden flex flex-col w-full ml-0 sm:ml-14 md:ml-0">
+        <main className="flex-grow overflow-hidden flex flex-col w-full pl-0 md:pl-0" style={{marginLeft: isCollapsed ? '56px' : '0'}}>
         <header className="h-16 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between px-4 sm:px-6">
           <div className="flex items-center">
             {isLoadingProject ? (

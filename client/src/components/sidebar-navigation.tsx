@@ -103,7 +103,7 @@ function ProjectNav({ projectId, location, compact = false }: ProjectNavProps) {
   );
 }
 
-export default function SidebarNavigation() {
+export default function SidebarNavigation({ onCollapsedChange }: { onCollapsedChange?: (collapsed: boolean) => void } = {}) {
   const [location] = useLocation();
   const isMobile = useIsMobile();
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -112,8 +112,11 @@ export default function SidebarNavigation() {
   useEffect(() => {
     if (isMobile) {
       setIsCollapsed(true);
+      if (onCollapsedChange) {
+        onCollapsedChange(true);
+      }
     }
-  }, [isMobile]);
+  }, [isMobile, onCollapsedChange]);
   
   // Extract project ID from URL if present
   const projectIdMatch = location.match(/\/project\/([^\/]+)/);
@@ -132,16 +135,22 @@ export default function SidebarNavigation() {
         "fixed top-4 z-50 flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md transition-all",
         isCollapsed ? "left-4" : "left-[210px]"
       )}
-      onClick={() => setIsCollapsed(!isCollapsed)}
+      onClick={() => {
+        const newCollapsedState = !isCollapsed;
+        setIsCollapsed(newCollapsedState);
+        if (onCollapsedChange) {
+          onCollapsedChange(newCollapsedState);
+        }
+      }}
       aria-label={isCollapsed ? "Open menu" : "Close menu"}
     >
       {isCollapsed ? <Menu size={18} /> : <ChevronLeft size={18} />}
     </button>
   );
 
-  // When the sidebar is collapsed on mobile, show a compact mini-sidebar
+  // When the sidebar is collapsed, show a compact mini-sidebar
   const MiniSidebar = () => {
-    if (!isCollapsed || !isMobile) return null;
+    if (!isCollapsed) return null;
     
     // Determine if we're currently on a project page
     const isInProject = location.includes('/project/');
@@ -212,7 +221,7 @@ export default function SidebarNavigation() {
   return (
     <>
       {isMobile && <SidebarToggle />}
-      {isMobile && <MiniSidebar />}
+      <MiniSidebar />
       
       <div 
         className={cn(
