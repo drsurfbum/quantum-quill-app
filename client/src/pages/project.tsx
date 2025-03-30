@@ -49,22 +49,23 @@ export default function Project() {
     'Unknown date';
 
   return (
-    <div className="h-screen flex flex-col md:flex-row overflow-hidden">
+    <div className="h-screen flex flex-col md:flex-row overflow-hidden bg-background">
       <SidebarNavigation />
       
       <main className="flex-grow overflow-auto flex flex-col">
-        <header className="h-16 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between px-4 sm:px-6 sticky top-0 bg-background z-10">
-          <div className="flex items-center">
+        <header className="min-h-16 border-b border-neutral-200 dark:border-neutral-800 flex flex-wrap items-center justify-between px-4 sm:px-6 py-3 sticky top-0 bg-background z-10">
+          <div className="flex items-center mr-4">
             {isLoading ? (
               <Skeleton className="h-6 w-48" />
             ) : (
-              <h1 className="text-xl font-semibold">{project?.title}</h1>
+              <h1 className="text-lg sm:text-xl font-semibold truncate max-w-[200px] sm:max-w-xs">{project?.title}</h1>
             )}
           </div>
           <div className="flex items-center space-x-2 sm:space-x-4">
             <Button 
               variant="ghost" 
-              className="flex items-center gap-1"
+              className="flex items-center gap-1 px-2 sm:px-4"
+              size="sm"
               onClick={() => {
                 toast({
                   title: "Coming Soon",
@@ -78,7 +79,8 @@ export default function Project() {
             
             <Button 
               variant="outline"
-              className="flex items-center gap-1"
+              className="flex items-center gap-1 px-2 sm:px-4"
+              size="sm"
               onClick={() => {
                 toast({
                   title: "Coming Soon",
@@ -117,7 +119,7 @@ export default function Project() {
                   </CardHeader>
                   <CardContent>
                     <p className="mb-4">{project?.description || "No description provided."}</p>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mt-6">
                       <Button onClick={() => setLocation(`/project/${id}/write`)}>
                         <Edit3 className="mr-2 h-4 w-4" /> Start Writing
                       </Button>
@@ -182,7 +184,7 @@ export default function Project() {
                     <CardDescription>Insights about your writing progress</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                       <div className="border rounded-md p-4">
                         <h4 className="text-sm font-medium text-muted-foreground mb-1">Chapters</h4>
                         <p className="text-2xl font-bold">{chapters?.length || 0}</p>
@@ -203,44 +205,44 @@ export default function Project() {
           </div>
         ) : (
           // Show navigation tabs for project feature pages
-          <div className="border-b border-neutral-200 dark:border-neutral-800">
-            <TabsList className="mx-4 h-10 w-auto">
+          <div className="border-b border-neutral-200 dark:border-neutral-800 overflow-x-auto">
+            <div className="flex min-w-max mx-2 md:mx-4 h-10 w-auto">
               <Link href={`/project/${id}/write`}>
                 <div className={cn(
-                  "flex items-center gap-1 px-3 py-2 rounded-none cursor-pointer",
+                  "flex items-center gap-1 px-2 sm:px-3 py-2 rounded-none cursor-pointer whitespace-nowrap",
                   location === `/project/${id}/write` ? "border-b-2 border-primary" : ""
                 )}>
-                  <Edit3 className="mr-1 h-4 w-4" /> Write
+                  <Edit3 className="h-4 w-4 sm:mr-1" /> <span className="hidden xs:inline">Write</span>
                 </div>
               </Link>
               
               <Link href={`/project/${id}/storyboard`}>
                 <div className={cn(
-                  "flex items-center gap-1 px-3 py-2 rounded-none cursor-pointer",
+                  "flex items-center gap-1 px-2 sm:px-3 py-2 rounded-none cursor-pointer whitespace-nowrap",
                   location === `/project/${id}/storyboard` ? "border-b-2 border-primary" : ""
                 )}>
-                  <Grid className="mr-1 h-4 w-4" /> Storyboard
+                  <Grid className="h-4 w-4 sm:mr-1" /> <span className="hidden xs:inline">Storyboard</span>
                 </div>
               </Link>
               
               <Link href={`/project/${id}/outline`}>
                 <div className={cn(
-                  "flex items-center gap-1 px-3 py-2 rounded-none cursor-pointer",
+                  "flex items-center gap-1 px-2 sm:px-3 py-2 rounded-none cursor-pointer whitespace-nowrap",
                   location === `/project/${id}/outline` ? "border-b-2 border-primary" : ""
                 )}>
-                  <ListTree className="mr-1 h-4 w-4" /> Outline
+                  <ListTree className="h-4 w-4 sm:mr-1" /> <span className="hidden xs:inline">Outline</span>
                 </div>
               </Link>
               
               <Link href={`/project/${id}/story-bible`}>
                 <div className={cn(
-                  "flex items-center gap-1 px-3 py-2 rounded-none cursor-pointer",
+                  "flex items-center gap-1 px-2 sm:px-3 py-2 rounded-none cursor-pointer whitespace-nowrap",
                   location === `/project/${id}/story-bible` ? "border-b-2 border-primary" : ""
                 )}>
-                  <BookOpen className="mr-1 h-4 w-4" /> Story Bible
+                  <BookOpen className="h-4 w-4 sm:mr-1" /> <span className="hidden xs:inline">Story Bible</span>
                 </div>
               </Link>
-            </TabsList>
+            </div>
           </div>
         )}
       </main>

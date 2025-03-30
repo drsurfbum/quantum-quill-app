@@ -7,7 +7,9 @@ import {
   PenTool, 
   Sparkles,
   Menu,
-  ChevronLeft
+  ChevronLeft,
+  ListTree,
+  Grid
 } from "lucide-react";
 import UserProfile from "./user-profile";
 import { cn } from "@/lib/utils";
@@ -53,41 +55,48 @@ interface ProjectNavProps {
 function ProjectNav({ projectId, location, compact = false }: ProjectNavProps) {
   if (!projectId) return null;
   
+  const isInProject = location.includes(`/project/${projectId}`);
+  if (!isInProject && compact) return null;
+  
   return (
-    <div className="mt-4">
+    <div className={cn("mt-4", compact && "mt-0")}>
       {!compact && (
         <h3 className="text-xs text-muted-foreground px-2 py-1 uppercase tracking-wider font-semibold">
           Project Tools
         </h3>
       )}
-      <div className={cn("mt-1", compact && "flex justify-center space-x-1")}>
+      <div className={cn("mt-1 space-y-1", compact && "space-y-2")}>
         <NavItem 
           href={`/project/${projectId}/write`} 
-          icon={<PenTool className="h-4 w-4" />} 
+          icon={<PenTool className={compact ? "h-5 w-5" : "h-4 w-4"} />} 
           label="Write" 
           isActive={location.includes(`/project/${projectId}/write`)}
           compact={compact}
+          className={compact ? "hover:bg-primary/10 hover:text-primary" : ""}
         />
         <NavItem 
           href={`/project/${projectId}/storyboard`} 
-          icon={<Layers className="h-4 w-4" />} 
+          icon={<Layers className={compact ? "h-5 w-5" : "h-4 w-4"} />} 
           label="Storyboard" 
           isActive={location.includes(`/project/${projectId}/storyboard`)}
           compact={compact}
+          className={compact ? "hover:bg-primary/10 hover:text-primary" : ""}
         />
         <NavItem 
           href={`/project/${projectId}/outline`} 
-          icon={<BookOpen className="h-4 w-4" />} 
+          icon={<BookOpen className={compact ? "h-5 w-5" : "h-4 w-4"} />} 
           label="Outline" 
           isActive={location.includes(`/project/${projectId}/outline`)}
           compact={compact}
+          className={compact ? "hover:bg-primary/10 hover:text-primary" : ""}
         />
         <NavItem 
           href={`/project/${projectId}/story-bible`} 
-          icon={<Sparkles className="h-4 w-4" />} 
+          icon={<Sparkles className={compact ? "h-5 w-5" : "h-4 w-4"} />} 
           label="Story Bible" 
           isActive={location.includes(`/project/${projectId}/story-bible`)}
           compact={compact}
+          className={compact ? "hover:bg-primary/10 hover:text-primary" : ""}
         />
       </div>
     </div>
@@ -138,15 +147,18 @@ export default function SidebarNavigation() {
     const isInProject = location.includes('/project/');
     
     return (
-      <div className="fixed top-16 left-0 z-40 flex flex-col items-center p-2 space-y-4 shadow-md bg-background rounded-r-md border-r border-t border-b w-12">
+      <div className="fixed top-16 left-0 z-40 flex flex-col items-center p-2 pt-3 space-y-4 shadow-md bg-background rounded-r-lg border-r border-t border-b w-14 bg-opacity-90 backdrop-blur-sm">
+        {/* Dashboard icon */}
         <NavItem 
           href="/" 
           icon={<Home className="h-5 w-5" />} 
           label="Dashboard" 
           isActive={location === "/"} 
           compact={true}
+          className="hover:bg-primary/10 hover:text-primary"
         />
         
+        {/* Project icon */}
         {currentProjectId && (
           <>
             <NavItem 
@@ -155,18 +167,41 @@ export default function SidebarNavigation() {
               label="Project"
               isActive={location === `/project/${currentProjectId}`}
               compact={true}
+              className="hover:bg-primary/10 hover:text-primary"
             />
             
             {isInProject && (
-              <div className="border-t w-8 my-2"></div>
+              <div className="border-t w-8 my-1 opacity-50"></div>
             )}
             
+            {/* Project tools in compact mode */}
             {isInProject && (
-              <ProjectNav 
-                projectId={currentProjectId} 
-                location={location} 
-                compact={true} 
-              />
+              <div className="flex flex-col items-center gap-2">
+                <NavItem 
+                  href={`/project/${currentProjectId}/write`}
+                  icon={<PenTool className="h-5 w-5" />}
+                  label="Write"
+                  isActive={location.includes(`/project/${currentProjectId}/write`)}
+                  compact={true}
+                  className="hover:bg-primary/10 hover:text-primary"
+                />
+                <NavItem 
+                  href={`/project/${currentProjectId}/outline`}
+                  icon={<BookOpen className="h-5 w-5" />}
+                  label="Outline"
+                  isActive={location.includes(`/project/${currentProjectId}/outline`)}
+                  compact={true} 
+                  className="hover:bg-primary/10 hover:text-primary"
+                />
+                <NavItem 
+                  href={`/project/${currentProjectId}/story-bible`}
+                  icon={<Sparkles className="h-5 w-5" />}
+                  label="Story Bible"
+                  isActive={location.includes(`/project/${currentProjectId}/story-bible`)}
+                  compact={true}
+                  className="hover:bg-primary/10 hover:text-primary"
+                />
+              </div>
             )}
           </>
         )}

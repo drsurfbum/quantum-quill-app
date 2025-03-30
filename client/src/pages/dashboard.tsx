@@ -46,17 +46,18 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="flex h-screen">
+    <div className="flex h-screen bg-background">
       <SidebarNavigation />
       <div className="flex-1 p-4 md:p-8 overflow-y-auto">
-        <div className="flex justify-between items-center mb-8">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 sm:mb-8">
           <div>
-            <h1 className="text-3xl font-bold mb-1">Welcome, {user?.username}</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold mb-1">Welcome, {user?.username}</h1>
             <p className="text-muted-foreground">Manage your writing projects</p>
           </div>
           <Button 
             onClick={handleCreateProject} 
             disabled={createProjectMutation.isPending}
+            className="w-full sm:w-auto"
           >
             {createProjectMutation.isPending ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
