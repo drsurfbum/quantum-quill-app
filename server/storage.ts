@@ -357,8 +357,12 @@ export class DatabaseStorage implements IStorage {
     const PostgresSessionStore = connectPg(session);
     this.sessionStore = new PostgresSessionStore({ 
       pool,
-      createTableIfMissing: true
+      createTableIfMissing: true,
+      tableName: 'session',
+      ttl: 60 * 60 * 24 * 7, // 7 days expiration, matches cookie in auth.ts
+      pruneSessionInterval: 60 // Prune every minute for development
     });
+    console.log("DatabaseStorage: Using PostgreSQL session store");
   }
 
   // User methods

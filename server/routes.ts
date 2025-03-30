@@ -8,9 +8,22 @@ import { setupAuth } from "./auth";
 
 // Middleware to check if user is authenticated
 const isAuthenticated = (req: Request, res: Response, next: Function) => {
+  console.log(`
+===== Auth Check =====
+Path: ${req.path}
+Method: ${req.method}
+Session ID: ${req.sessionID}
+Is Authenticated: ${req.isAuthenticated()}
+User: ${req.user ? JSON.stringify({ id: req.user.id, username: req.user.username }) : "null"}
+====================
+  `);
+  
   if (req.isAuthenticated() && req.user) {
+    console.log(`User authorized: ${req.user.username}. Proceeding to route handler.`);
     return next();
   }
+  
+  console.log("User unauthorized. Returning 401.");
   return res.status(401).json({ message: "Unauthorized" });
 };
 

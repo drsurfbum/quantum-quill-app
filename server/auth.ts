@@ -38,19 +38,33 @@ async function comparePasswords(supplied: string, stored: string) {
 }
 
 export function setupAuth(app: Express) {
+  // Set up proxy for cookies to work correctly in Replit environment
+  app.set('trust proxy', 1);
+  
   // Set up session
   const sessionSettings: session.SessionOptions = {
     secret: process.env.SESSION_SECRET || "quantum-quill-development-secret",
-    resave: true,
-    saveUninitialized: true,
+    resave: true, // Changed to true to ensure session is saved
+    saveUninitialized: true, // Changed to true to create session for all visitors
     store: storage.sessionStore,
+    name: 'quantum.sid', // Set explicit cookie name
     cookie: {
-      secure: process.env.NODE_ENV === "production",
+      secure: false, // setting to false for development
       maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
       httpOnly: true,
-      sameSite: 'lax'
+      sameSite: 'lax',
+      path: '/'
     }
   };
+  
+  console.log("Session configuration:", {
+    secret: process.env.SESSION_SECRET ? "From environment" : "Using default",
+    resave: true,
+    saveUninitialized: true,
+    cookieSecure: false,
+    cookieMaxAge: "7 days",
+    trustProxy: true
+  });
 
   app.use(session(sessionSettings));
   app.use(passport.initialize());
@@ -73,15 +87,22 @@ export function setupAuth(app: Express) {
 
   // Serialize/deserialize user
   passport.serializeUser((user, done) => {
+    console.log("Serializing user:", user.id);
     done(null, user.id);
   });
 
   passport.deserializeUser(async (id: number, done) => {
+    console.log("Deserializing user with ID:", id);
     try {
       const user = await storage.getUser(id);
-      if (!user) return done(null, false);
+      if (!user) {
+        console.log("User not found during deserialization");
+        return done(null, false);
+      }
+      console.log("User deserialized successfully:", user.username);
       done(null, user);
     } catch (error) {
+      console.error("Error deserializing user:", error);
       done(error);
     }
   });
@@ -114,12 +135,50 @@ export function setupAuth(app: Express) {
   });
 
   app.post("/api/login", (req, res, next) => {
+    console.log(`
+===== Login Attempt =====
+Username: ${req.body.username}
+Session ID: ${req.sessionID}
+Headers: ${JSON.stringify({
+  "content-type": req.headers["content-type"],
+  "cookie": req.headers["cookie"] ? "Present" : "None"
+})}
+========================
+    `);
+    
     passport.authenticate("local", (err: any, user: UserType | false, info: { message?: string }) => {
-      if (err) return next(err);
-      if (!user) return res.status(401).json({ message: info?.message || "Authentication failed" });
+      if (err) {
+        console.log("Login error:", err);
+        return next(err);
+      }
+      
+      if (!user) {
+        console.log("Login failed - invalid credentials");
+        return res.status(401).json({ message: info?.message || "Authentication failed" });
+      }
       
       req.login(user, (loginErr) => {
-        if (loginErr) return next(loginErr);
+        if (loginErr) {
+          console.log("Login error after auth:", loginErr);
+          return next(loginErr);
+        }
+        
+        console.log(`
+===== Login Success =====
+User: ${user.username} (ID: ${user.id})
+Session ID: ${req.sessionID}
+Session: ${req.session ? "Exists" : "Missing"}
+=======================
+        `);
+        
+        // Add session cookie directly for clarity
+        res.cookie('quantum.sid', req.sessionID, {
+          httpOnly: true,
+          secure: false,
+          maxAge: 1000 * 60 * 60 * 24 * 7
+        });
+        
+        // Return the user info
         return res.json({ id: user.id, username: user.username, email: user.email });
       });
     })(req, res, next);
@@ -133,10 +192,15 @@ export function setupAuth(app: Express) {
   });
 
   app.get("/api/user", (req, res) => {
+    console.log("GET /api/user - Session ID:", req.sessionID, "Is authenticated:", req.isAuthenticated());
+    
     if (!req.isAuthenticated()) {
+      console.log("User not authenticated");
       return res.status(401).json({ message: "Not authenticated" });
     }
+    
     const user = req.user;
+    console.log("User authenticated:", user.username);
     res.json({ id: user.id, username: user.username, email: user.email });
   });
 }

@@ -11,6 +11,20 @@ app.use((req, res, next) => {
   const path = req.path;
   let capturedJsonResponse: Record<string, any> | undefined = undefined;
 
+  // Debug request basic info
+  console.log(`
+==== Request ====
+Path: ${path}
+Method: ${req.method}
+Session ID: ${req.sessionID || "none"}
+Headers: ${JSON.stringify({
+  "user-agent": req.headers["user-agent"],
+  "content-type": req.headers["content-type"],
+  "cookie": req.headers["cookie"] ? "Present" : "None"
+})}
+================
+  `);
+
   const originalResJson = res.json;
   res.json = function (bodyJson, ...args) {
     capturedJsonResponse = bodyJson;
@@ -25,8 +39,8 @@ app.use((req, res, next) => {
         logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
       }
 
-      if (logLine.length > 80) {
-        logLine = logLine.slice(0, 79) + "…";
+      if (logLine.length > 300) {
+        logLine = logLine.slice(0, 299) + "…";
       }
 
       log(logLine);

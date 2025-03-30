@@ -17,8 +17,8 @@ import { useState } from "react";
 export default function Project() {
   const { id } = useParams();
   const [location, setLocation] = useLocation();
-  const { data: project, isLoading, error } = useProject(id);
-  const { data: chapters, isLoading: chaptersLoading } = useProjectChapters(id);
+  const { data: project, isLoading, error } = useProject(id || '');
+  const { data: chapters, isLoading: chaptersLoading } = useProjectChapters(id || '');
   const { toast } = useToast();
   const [selectedTab, setSelectedTab] = useState("overview");
 
