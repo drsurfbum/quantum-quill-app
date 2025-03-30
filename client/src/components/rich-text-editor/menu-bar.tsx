@@ -2,7 +2,7 @@ import { type Editor } from '@tiptap/react';
 import { 
   Bold, Italic, Underline, Strikethrough, 
   AlignLeft, AlignCenter, AlignRight, List, ListOrdered, 
-  Link, Image, Table, Maximize 
+  Link, Image as ImageIcon, Table, Maximize, Minimize 
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -18,20 +18,29 @@ interface EditorMenuBarProps {
   editor: Editor;
   wordCount: number;
   saveStatus: 'saved' | 'saving';
+  isFullscreen?: boolean;
+  onToggleFullscreen?: () => void;
 }
 
-export default function EditorMenuBar({ editor, wordCount, saveStatus }: EditorMenuBarProps) {
-  const setHeading = (level: number) => {
-    if (level === 0) {
+export default function EditorMenuBar({ 
+  editor, 
+  wordCount, 
+  saveStatus, 
+  isFullscreen = false,
+  onToggleFullscreen 
+}: EditorMenuBarProps) {
+  const setHeading = (level: string) => {
+    const levelNum = parseInt(level, 10);
+    if (levelNum === 0) {
       editor.chain().focus().setParagraph().run();
     } else {
-      editor.chain().focus().toggleHeading({ level }).run();
+      editor.chain().focus().toggleHeading({ level: levelNum as 1 | 2 | 3 }).run();
     }
   };
 
   return (
     <div className="p-2 border-b border-neutral-200 dark:border-neutral-800 flex flex-wrap justify-start items-center gap-1 bg-white dark:bg-neutral-900">
-      <Select onValueChange={(value) => setHeading(Number(value))}>
+      <Select onValueChange={(value) => setHeading(value)}>
         <SelectTrigger className="w-[130px] h-8">
           <SelectValue placeholder="Paragraph" />
         </SelectTrigger>
@@ -141,7 +150,7 @@ export default function EditorMenuBar({ editor, wordCount, saveStatus }: EditorM
           }
         }}
       >
-        <Image className="h-4 w-4" />
+        <ImageIcon className="h-4 w-4" />
       </Button>
       
       <Button
@@ -161,8 +170,16 @@ export default function EditorMenuBar({ editor, wordCount, saveStatus }: EditorM
           {saveStatus === 'saved' ? 'Saved' : 'Saving...'}
         </span>
         
-        <Button variant="ghost" size="icon">
-          <Maximize className="h-4 w-4" />
+        <Button 
+          variant="ghost" 
+          size="icon"
+          onClick={onToggleFullscreen}
+        >
+          {isFullscreen ? (
+            <Minimize className="h-4 w-4" />
+          ) : (
+            <Maximize className="h-4 w-4" />
+          )}
         </Button>
       </div>
     </div>

@@ -8,12 +8,13 @@ import Table from '@tiptap/extension-table';
 import TableCell from '@tiptap/extension-table-cell';
 import TableHeader from '@tiptap/extension-table-header';
 import TableRow from '@tiptap/extension-table-row';
-import { useCallback, useEffect, useState } from 'react';
+import Image from '@tiptap/extension-image';
+import { useCallback, useEffect, useState, useRef } from 'react';
 import EditorMenuBar from './menu-bar';
 import './editor-content';
 import { useUpdateChapter } from '@/hooks/use-project';
 import { useToast } from '@/hooks/use-toast';
-import { debounce } from '@/lib/utils';
+import { debounce, cn } from '@/lib/utils';
 
 interface RichTextEditorProps {
   content: string;
@@ -29,6 +30,8 @@ export default function RichTextEditor({
   const { toast } = useToast();
   const [wordCount, setWordCount] = useState(0);
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving'>('saved');
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const editorContainerRef = useRef<HTMLDivElement>(null);
   const { mutate: updateChapter } = useUpdateChapter();
 
   const editor = useEditor({
@@ -50,6 +53,7 @@ export default function RichTextEditor({
       TableRow,
       TableHeader,
       TableCell,
+      Image,
     ],
     content: content,
     onUpdate: ({ editor }) => {
@@ -75,7 +79,7 @@ export default function RichTextEditor({
       
       setSaveStatus('saving');
       updateChapter(
-        { id: chapterId, content: html },
+        { id: Number(chapterId), content: html },
         {
           onSuccess: () => {
             setSaveStatus('saved');
@@ -107,19 +111,55 @@ export default function RichTextEditor({
     }
   }, [editor, content]);
 
+  // Handle fullscreen toggle
+  const toggleFullscreen = () => {
+    setIsFullscreen((prev) => !prev);
+    // Focus the editor after toggling fullscreen
+    setTimeout(() => {
+      if (editor) {
+        editor.commands.focus();
+      }
+    }, 0);
+  };
+
+  useEffect(() => {
+    const handleEscapeKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isFullscreen) {
+        setIsFullscreen(false);
+      }
+    };
+    
+    window.addEventListener('keydown', handleEscapeKey);
+    return () => window.removeEventListener('keydown', handleEscapeKey);
+  }, [isFullscreen]);
+
   if (!editor) {
     return null;
   }
 
   return (
-    <div className="flex-grow flex flex-col overflow-hidden">
+    <div 
+      ref={editorContainerRef}
+      className={cn(
+        "flex-grow flex flex-col overflow-hidden",
+        isFullscreen ? "fixed inset-0 z-50 bg-white dark:bg-neutral-900" : ""
+      )}
+    >
       <EditorMenuBar 
         editor={editor} 
         wordCount={wordCount} 
-        saveStatus={saveStatus} 
+        saveStatus={saveStatus}
+        isFullscreen={isFullscreen}
+        onToggleFullscreen={toggleFullscreen}
       />
-      <div className="flex-grow overflow-y-auto p-4 md:p-8 lg:p-12 bg-white dark:bg-neutral-900">
-        <div className="max-w-prose mx-auto focus:outline-none">
+      <div className={cn(
+        "flex-grow overflow-y-auto p-4 md:p-8 lg:p-12 bg-white dark:bg-neutral-900",
+        isFullscreen ? "max-h-[calc(100vh-48px)]" : ""
+      )}>
+        <div className={cn(
+          "mx-auto focus:outline-none",
+          isFullscreen ? "max-w-3xl" : "max-w-prose"
+        )}>
           <EditorContent editor={editor} className="editor-content" />
         </div>
       </div>
