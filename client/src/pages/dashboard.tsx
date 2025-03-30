@@ -46,90 +46,92 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="flex h-screen bg-background">
-      <SidebarNavigation />
-      <div className="flex-1 p-4 md:p-8 overflow-y-auto ml-0 sm:ml-14 md:ml-0">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 sm:mb-8">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold mb-1">Welcome, {user?.username}</h1>
-            <p className="text-muted-foreground">Manage your writing projects</p>
+    <div className="h-screen flex flex-col overflow-hidden bg-background">
+      <div className="flex flex-row flex-1 w-full h-full overflow-hidden">
+        <SidebarNavigation />
+        <div className="flex-1 p-4 md:p-8 overflow-y-auto w-full">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 sm:mb-8">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold mb-1">Welcome, {user?.username}</h1>
+              <p className="text-muted-foreground">Manage your writing projects</p>
+            </div>
+            <Button 
+              onClick={handleCreateProject} 
+              disabled={createProjectMutation.isPending}
+              className="w-full sm:w-auto"
+            >
+              {createProjectMutation.isPending ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Plus className="h-4 w-4 mr-2" />
+              )}
+              New Project
+            </Button>
           </div>
-          <Button 
-            onClick={handleCreateProject} 
-            disabled={createProjectMutation.isPending}
-            className="w-full sm:w-auto"
-          >
-            {createProjectMutation.isPending ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <Plus className="h-4 w-4 mr-2" />
-            )}
-            New Project
-          </Button>
-        </div>
 
-        <div className="grid gap-6">
-          <div className="border rounded-lg p-6 bg-card">
-            <h2 className="text-xl font-semibold mb-4">Your Projects</h2>
-            {isLoading ? (
-              <div className="flex justify-center py-10">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
-            ) : error ? (
-              <div className="text-center py-8 text-red-500">
-                <p>Failed to load projects</p>
-                <p className="text-sm">{error.message}</p>
-              </div>
-            ) : projects && projects.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {projects.map((project) => (
-                  <Link 
-                    key={project.id} 
-                    href={`/project/${project.id}`}
-                  >
-                    <a className="border rounded-lg p-4 bg-card shadow-sm hover:shadow transition-shadow">
-                      <h3 className="font-medium mb-1 truncate">{project.title}</h3>
-                      <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
-                        {project.description || "No description"}
-                      </p>
-                      <div className="text-xs text-muted-foreground">
-                        Created: {new Date(project.createdAt || "").toLocaleDateString()}
-                      </div>
-                    </a>
-                  </Link>
-                ))}
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div className="border rounded-lg p-4 bg-card shadow-sm hover:shadow transition-shadow">
-                  <h3 className="font-medium mb-1">Create your first project</h3>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Start your writing journey by creating a new project
-                  </p>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="w-full"
-                    onClick={handleCreateProject}
-                    disabled={createProjectMutation.isPending}
-                  >
-                    {createProjectMutation.isPending ? (
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    ) : (
-                      <Plus className="h-4 w-4 mr-2" />
-                    )}
-                    Create Project
-                  </Button>
+          <div className="grid gap-6">
+            <div className="border rounded-lg p-6 bg-card">
+              <h2 className="text-xl font-semibold mb-4">Your Projects</h2>
+              {isLoading ? (
+                <div className="flex justify-center py-10">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 </div>
+              ) : error ? (
+                <div className="text-center py-8 text-red-500">
+                  <p>Failed to load projects</p>
+                  <p className="text-sm">{error.message}</p>
+                </div>
+              ) : projects && projects.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {projects.map((project) => (
+                    <Link 
+                      key={project.id} 
+                      href={`/project/${project.id}`}
+                    >
+                      <a className="border rounded-lg p-4 bg-card shadow-sm hover:shadow transition-shadow">
+                        <h3 className="font-medium mb-1 truncate">{project.title}</h3>
+                        <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
+                          {project.description || "No description"}
+                        </p>
+                        <div className="text-xs text-muted-foreground">
+                          Created: {new Date(project.createdAt || "").toLocaleDateString()}
+                        </div>
+                      </a>
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="border rounded-lg p-4 bg-card shadow-sm hover:shadow transition-shadow">
+                    <h3 className="font-medium mb-1">Create your first project</h3>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Start your writing journey by creating a new project
+                    </p>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="w-full"
+                      onClick={handleCreateProject}
+                      disabled={createProjectMutation.isPending}
+                    >
+                      {createProjectMutation.isPending ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <Plus className="h-4 w-4 mr-2" />
+                      )}
+                      Create Project
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            <div className="border rounded-lg p-6 bg-card">
+              <h2 className="text-xl font-semibold mb-4">Recent Activity</h2>
+              <div className="text-center py-8 text-muted-foreground">
+                <p>No recent activity to show</p>
+                <p className="text-sm">Your recent actions will appear here</p>
               </div>
-            )}
-          </div>
-          
-          <div className="border rounded-lg p-6 bg-card">
-            <h2 className="text-xl font-semibold mb-4">Recent Activity</h2>
-            <div className="text-center py-8 text-muted-foreground">
-              <p>No recent activity to show</p>
-              <p className="text-sm">Your recent actions will appear here</p>
             </div>
           </div>
         </div>

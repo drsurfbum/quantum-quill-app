@@ -147,7 +147,7 @@ export default function SidebarNavigation() {
     const isInProject = location.includes('/project/');
     
     return (
-      <div className="fixed top-0 left-0 h-full z-40 flex flex-col items-center p-2 pt-20 space-y-4 shadow-md bg-background border-r w-14 bg-opacity-95 backdrop-blur-sm">
+      <div className="fixed top-0 left-0 h-full z-40 flex flex-col items-center p-2 pt-20 space-y-4 shadow-md bg-background border-r w-14 bg-opacity-95 backdrop-blur-sm max-h-screen overflow-y-auto">
         {/* Dashboard icon */}
         <NavItem 
           href="/" 

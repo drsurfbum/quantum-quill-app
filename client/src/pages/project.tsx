@@ -49,203 +49,205 @@ export default function Project() {
     'Unknown date';
 
   return (
-    <div className="h-screen flex flex-col md:flex-row overflow-hidden bg-background">
-      <SidebarNavigation />
-      
-      <main className="flex-grow overflow-auto flex flex-col pl-0 md:pl-0 ml-0 sm:ml-14 md:ml-0">
-        <header className="min-h-16 border-b border-neutral-200 dark:border-neutral-800 flex flex-wrap items-center justify-between px-4 sm:px-6 py-3 sticky top-0 bg-background z-10">
-          <div className="flex items-center mr-4">
-            {isLoading ? (
-              <Skeleton className="h-6 w-48" />
-            ) : (
-              <h1 className="text-lg sm:text-xl font-semibold truncate max-w-[200px] sm:max-w-xs">{project?.title}</h1>
-            )}
-          </div>
-          <div className="flex items-center space-x-2 sm:space-x-4">
-            <Button 
-              variant="ghost" 
-              className="flex items-center gap-1 px-2 sm:px-4"
-              size="sm"
-              onClick={() => {
-                toast({
-                  title: "Coming Soon",
-                  description: "Sharing functionality will be available in a future update.",
-                });
-              }}
-            >
-              <Share2 className="h-4 w-4" />
-              <span className="hidden sm:inline">Share</span>
-            </Button>
-            
-            <Button 
-              variant="outline"
-              className="flex items-center gap-1 px-2 sm:px-4"
-              size="sm"
-              onClick={() => {
-                toast({
-                  title: "Coming Soon",
-                  description: "Export functionality will be available in a future update.",
-                });
-              }}
-            >
-              <ExternalLink className="h-4 w-4" />
-              <span className="hidden sm:inline">Export</span>
-            </Button>
-          </div>
-        </header>
-
-        {/* Show project overview on base route */}
-        {location === `/project/${id}` ? (
-          <div className="p-6 max-w-5xl mx-auto w-full">
-            <div className="mb-8">
-              <h1 className="text-3xl font-bold mb-2">{project?.title}</h1>
-              <p className="text-muted-foreground">
-                Created on {formattedDate}
-              </p>
+    <div className="h-screen flex flex-col overflow-hidden bg-background">
+      <div className="flex flex-row flex-1 w-full h-full overflow-hidden">
+        <SidebarNavigation />
+        
+        <main className="flex-grow overflow-auto flex flex-col w-full">
+          <header className="min-h-16 border-b border-neutral-200 dark:border-neutral-800 flex flex-wrap items-center justify-between px-4 sm:px-6 py-3 sticky top-0 bg-background z-10">
+            <div className="flex items-center mr-4">
+              {isLoading ? (
+                <Skeleton className="h-6 w-48" />
+              ) : (
+                <h1 className="text-lg sm:text-xl font-semibold truncate max-w-[200px] sm:max-w-xs">{project?.title}</h1>
+              )}
             </div>
+            <div className="flex items-center space-x-2 sm:space-x-4">
+              <Button 
+                variant="ghost" 
+                className="flex items-center gap-1 px-2 sm:px-4"
+                size="sm"
+                onClick={() => {
+                  toast({
+                    title: "Coming Soon",
+                    description: "Sharing functionality will be available in a future update.",
+                  });
+                }}
+              >
+                <Share2 className="h-4 w-4" />
+                <span className="hidden sm:inline">Share</span>
+              </Button>
+              
+              <Button 
+                variant="outline"
+                className="flex items-center gap-1 px-2 sm:px-4"
+                size="sm"
+                onClick={() => {
+                  toast({
+                    title: "Coming Soon",
+                    description: "Export functionality will be available in a future update.",
+                  });
+                }}
+              >
+                <ExternalLink className="h-4 w-4" />
+                <span className="hidden sm:inline">Export</span>
+              </Button>
+            </div>
+          </header>
 
-            <Tabs value={selectedTab} onValueChange={setSelectedTab}>
-              <TabsList>
-                <TabsTrigger value="overview">Overview</TabsTrigger>
-                <TabsTrigger value="chapters">Chapters</TabsTrigger>
-                <TabsTrigger value="statistics">Statistics</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="overview" className="mt-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Project Description</CardTitle>
-                    <CardDescription>Details about your project</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="mb-4">{project?.description || "No description provided."}</p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mt-6">
-                      <Button onClick={() => setLocation(`/project/${id}/write`)}>
-                        <Edit3 className="mr-2 h-4 w-4" /> Start Writing
-                      </Button>
-                      <Button variant="outline" onClick={() => setLocation(`/project/${id}/outline`)}>
-                        <ListTree className="mr-2 h-4 w-4" /> View Outline
-                      </Button>
-                      <Button variant="outline" onClick={() => setLocation(`/project/${id}/story-bible`)}>
-                        <BookOpen className="mr-2 h-4 w-4" /> Story Bible
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-              
-              <TabsContent value="chapters" className="mt-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Chapters</CardTitle>
-                    <CardDescription>Manage your project chapters</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    {chaptersLoading ? (
-                      <div className="flex justify-center py-10">
-                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                      </div>
-                    ) : chapters && chapters.length > 0 ? (
-                      <div className="space-y-3">
-                        {chapters.map((chapter) => (
-                          <div key={chapter.id} className="border rounded-md p-3 flex justify-between items-center">
-                            <div>
-                              <h4 className="font-medium">{chapter.title}</h4>
-                              <p className="text-sm text-muted-foreground">
-                                {chapter.isDraft ? "Draft" : "Published"}
-                              </p>
-                            </div>
-                            <Button 
-                              variant="ghost" 
-                              size="sm"
-                              onClick={() => setLocation(`/project/${id}/write?chapter=${chapter.id}`)}
-                            >
-                              Edit
-                            </Button>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-center py-8">
-                        <p className="mb-4">No chapters yet.</p>
+          {/* Show project overview on base route */}
+          {location === `/project/${id}` ? (
+            <div className="p-6 max-w-5xl mx-auto w-full">
+              <div className="mb-8">
+                <h1 className="text-3xl font-bold mb-2">{project?.title}</h1>
+                <p className="text-muted-foreground">
+                  Created on {formattedDate}
+                </p>
+              </div>
+
+              <Tabs value={selectedTab} onValueChange={setSelectedTab}>
+                <TabsList>
+                  <TabsTrigger value="overview">Overview</TabsTrigger>
+                  <TabsTrigger value="chapters">Chapters</TabsTrigger>
+                  <TabsTrigger value="statistics">Statistics</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="overview" className="mt-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Project Description</CardTitle>
+                      <CardDescription>Details about your project</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="mb-4">{project?.description || "No description provided."}</p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mt-6">
                         <Button onClick={() => setLocation(`/project/${id}/write`)}>
-                          Create First Chapter
+                          <Edit3 className="mr-2 h-4 w-4" /> Start Writing
+                        </Button>
+                        <Button variant="outline" onClick={() => setLocation(`/project/${id}/outline`)}>
+                          <ListTree className="mr-2 h-4 w-4" /> View Outline
+                        </Button>
+                        <Button variant="outline" onClick={() => setLocation(`/project/${id}/story-bible`)}>
+                          <BookOpen className="mr-2 h-4 w-4" /> Story Bible
                         </Button>
                       </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </TabsContent>
-              
-              <TabsContent value="statistics" className="mt-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Project Statistics</CardTitle>
-                    <CardDescription>Insights about your writing progress</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-                      <div className="border rounded-md p-4">
-                        <h4 className="text-sm font-medium text-muted-foreground mb-1">Chapters</h4>
-                        <p className="text-2xl font-bold">{chapters?.length || 0}</p>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+                
+                <TabsContent value="chapters" className="mt-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Chapters</CardTitle>
+                      <CardDescription>Manage your project chapters</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      {chaptersLoading ? (
+                        <div className="flex justify-center py-10">
+                          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                        </div>
+                      ) : chapters && chapters.length > 0 ? (
+                        <div className="space-y-3">
+                          {chapters.map((chapter) => (
+                            <div key={chapter.id} className="border rounded-md p-3 flex justify-between items-center">
+                              <div>
+                                <h4 className="font-medium">{chapter.title}</h4>
+                                <p className="text-sm text-muted-foreground">
+                                  {chapter.isDraft ? "Draft" : "Published"}
+                                </p>
+                              </div>
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                onClick={() => setLocation(`/project/${id}/write?chapter=${chapter.id}`)}
+                              >
+                                Edit
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8">
+                          <p className="mb-4">No chapters yet.</p>
+                          <Button onClick={() => setLocation(`/project/${id}/write`)}>
+                            Create First Chapter
+                          </Button>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+                
+                <TabsContent value="statistics" className="mt-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Project Statistics</CardTitle>
+                      <CardDescription>Insights about your writing progress</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                        <div className="border rounded-md p-4">
+                          <h4 className="text-sm font-medium text-muted-foreground mb-1">Chapters</h4>
+                          <p className="text-2xl font-bold">{chapters?.length || 0}</p>
+                        </div>
+                        <div className="border rounded-md p-4">
+                          <h4 className="text-sm font-medium text-muted-foreground mb-1">Words</h4>
+                          <p className="text-2xl font-bold">Coming soon</p>
+                        </div>
+                        <div className="border rounded-md p-4">
+                          <h4 className="text-sm font-medium text-muted-foreground mb-1">Estimated Pages</h4>
+                          <p className="text-2xl font-bold">Coming soon</p>
+                        </div>
                       </div>
-                      <div className="border rounded-md p-4">
-                        <h4 className="text-sm font-medium text-muted-foreground mb-1">Words</h4>
-                        <p className="text-2xl font-bold">Coming soon</p>
-                      </div>
-                      <div className="border rounded-md p-4">
-                        <h4 className="text-sm font-medium text-muted-foreground mb-1">Estimated Pages</h4>
-                        <p className="text-2xl font-bold">Coming soon</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-            </Tabs>
-          </div>
-        ) : (
-          // Show navigation tabs for project feature pages
-          <div className="border-b border-neutral-200 dark:border-neutral-800 overflow-x-auto">
-            <div className="flex min-w-max mx-2 md:mx-4 h-10 w-auto">
-              <Link href={`/project/${id}/write`}>
-                <div className={cn(
-                  "flex items-center gap-1 px-2 sm:px-3 py-2 rounded-none cursor-pointer whitespace-nowrap",
-                  location === `/project/${id}/write` ? "border-b-2 border-primary" : ""
-                )}>
-                  <Edit3 className="h-4 w-4 sm:mr-1" /> <span className="hidden xs:inline">Write</span>
-                </div>
-              </Link>
-              
-              <Link href={`/project/${id}/storyboard`}>
-                <div className={cn(
-                  "flex items-center gap-1 px-2 sm:px-3 py-2 rounded-none cursor-pointer whitespace-nowrap",
-                  location === `/project/${id}/storyboard` ? "border-b-2 border-primary" : ""
-                )}>
-                  <Grid className="h-4 w-4 sm:mr-1" /> <span className="hidden xs:inline">Storyboard</span>
-                </div>
-              </Link>
-              
-              <Link href={`/project/${id}/outline`}>
-                <div className={cn(
-                  "flex items-center gap-1 px-2 sm:px-3 py-2 rounded-none cursor-pointer whitespace-nowrap",
-                  location === `/project/${id}/outline` ? "border-b-2 border-primary" : ""
-                )}>
-                  <ListTree className="h-4 w-4 sm:mr-1" /> <span className="hidden xs:inline">Outline</span>
-                </div>
-              </Link>
-              
-              <Link href={`/project/${id}/story-bible`}>
-                <div className={cn(
-                  "flex items-center gap-1 px-2 sm:px-3 py-2 rounded-none cursor-pointer whitespace-nowrap",
-                  location === `/project/${id}/story-bible` ? "border-b-2 border-primary" : ""
-                )}>
-                  <BookOpen className="h-4 w-4 sm:mr-1" /> <span className="hidden xs:inline">Story Bible</span>
-                </div>
-              </Link>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+              </Tabs>
             </div>
-          </div>
-        )}
-      </main>
+          ) : (
+            // Show navigation tabs for project feature pages
+            <div className="border-b border-neutral-200 dark:border-neutral-800 overflow-x-auto">
+              <div className="flex min-w-max mx-2 md:mx-4 h-10 w-auto">
+                <Link href={`/project/${id}/write`}>
+                  <div className={cn(
+                    "flex items-center gap-1 px-2 sm:px-3 py-2 rounded-none cursor-pointer whitespace-nowrap",
+                    location === `/project/${id}/write` ? "border-b-2 border-primary" : ""
+                  )}>
+                    <Edit3 className="h-4 w-4 sm:mr-1" /> <span className="hidden xs:inline">Write</span>
+                  </div>
+                </Link>
+                
+                <Link href={`/project/${id}/storyboard`}>
+                  <div className={cn(
+                    "flex items-center gap-1 px-2 sm:px-3 py-2 rounded-none cursor-pointer whitespace-nowrap",
+                    location === `/project/${id}/storyboard` ? "border-b-2 border-primary" : ""
+                  )}>
+                    <Grid className="h-4 w-4 sm:mr-1" /> <span className="hidden xs:inline">Storyboard</span>
+                  </div>
+                </Link>
+                
+                <Link href={`/project/${id}/outline`}>
+                  <div className={cn(
+                    "flex items-center gap-1 px-2 sm:px-3 py-2 rounded-none cursor-pointer whitespace-nowrap",
+                    location === `/project/${id}/outline` ? "border-b-2 border-primary" : ""
+                  )}>
+                    <ListTree className="h-4 w-4 sm:mr-1" /> <span className="hidden xs:inline">Outline</span>
+                  </div>
+                </Link>
+                
+                <Link href={`/project/${id}/story-bible`}>
+                  <div className={cn(
+                    "flex items-center gap-1 px-2 sm:px-3 py-2 rounded-none cursor-pointer whitespace-nowrap",
+                    location === `/project/${id}/story-bible` ? "border-b-2 border-primary" : ""
+                  )}>
+                    <BookOpen className="h-4 w-4 sm:mr-1" /> <span className="hidden xs:inline">Story Bible</span>
+                  </div>
+                </Link>
+              </div>
+            </div>
+          )}
+        </main>
+      </div>
     </div>
   );
 }
