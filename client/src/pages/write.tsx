@@ -8,7 +8,7 @@ import ExportModal from "@/components/export-modal";
 import { useProject, useProjectChapters, useCreateChapter } from "@/hooks/use-project";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { Share2, ExternalLink } from "lucide-react";
+import { Share2, ExternalLink, PanelLeft, PanelRightClose } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { Link } from "wouter";
@@ -23,12 +23,16 @@ export default function Write() {
   const chapterId = searchParams.get("chapter");
   const { toast } = useToast();
   const isMobile = useIsMobile();
-  const [isCollapsed, setIsCollapsed] = useState(isMobile);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(isMobile);
+  const [isChapterSidebarVisible, setIsChapterSidebarVisible] = useState(!isMobile);
   
-  // Auto-collapse on mobile
+  // Auto-collapse navigation sidebar on mobile
   useEffect(() => {
     if (isMobile) {
-      setIsCollapsed(true);
+      setIsSidebarCollapsed(true);
+      setIsChapterSidebarVisible(false);
+    } else {
+      setIsChapterSidebarVisible(true);
     }
   }, [isMobile]);
   
@@ -81,11 +85,24 @@ export default function Write() {
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-background">
       <div className="flex flex-row flex-1 w-full h-full overflow-hidden">
-        <SidebarNavigation onCollapsedChange={setIsCollapsed} />
+        <SidebarNavigation onCollapsedChange={setIsSidebarCollapsed} />
         
-        <main className="flex-grow overflow-hidden flex flex-col w-full pl-0 md:pl-0" style={{marginLeft: isCollapsed ? '56px' : '0'}}>
+        <main className="flex-grow overflow-hidden flex flex-col w-full pl-0 md:pl-0" style={{marginLeft: isSidebarCollapsed ? '56px' : '0'}}>
         <header className="h-16 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between px-4 sm:px-6">
           <div className="flex items-center">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="mr-2"
+              onClick={() => setIsChapterSidebarVisible(!isChapterSidebarVisible)}
+              aria-label={isChapterSidebarVisible ? "Hide chapter list" : "Show chapter list"}
+            >
+              {isChapterSidebarVisible ? (
+                <PanelRightClose className="h-4 w-4" />
+              ) : (
+                <PanelLeft className="h-4 w-4" />
+              )}
+            </Button>
             {isLoadingProject ? (
               <Skeleton className="h-6 w-48" />
             ) : (
@@ -154,22 +171,31 @@ export default function Write() {
         </div>
 
         <div className="flex-grow flex overflow-hidden">
-          <ChapterSidebar projectId={id} selectedChapterId={selectedChapterId || undefined} />
+          <ChapterSidebar 
+            projectId={id || ''} 
+            selectedChapterId={selectedChapterId ? Number(selectedChapterId) : undefined} 
+            isVisible={isChapterSidebarVisible}
+          />
           
-          {isLoadingChapters || !selectedChapter ? (
-            <div className="flex-grow flex items-center justify-center bg-white dark:bg-neutral-900">
-              <div className="text-center p-6">
-                <Skeleton className="h-8 w-52 mx-auto mb-4" />
-                <Skeleton className="h-4 w-64 mx-auto mb-2" />
-                <Skeleton className="h-4 w-48 mx-auto" />
+          <div className={cn(
+            "flex-grow transition-all duration-300",
+            isChapterSidebarVisible ? "md:ml-0" : "ml-0"
+          )}>
+            {isLoadingChapters || !selectedChapter ? (
+              <div className="flex-grow flex items-center justify-center bg-white dark:bg-neutral-900 h-full">
+                <div className="text-center p-6">
+                  <Skeleton className="h-8 w-52 mx-auto mb-4" />
+                  <Skeleton className="h-4 w-64 mx-auto mb-2" />
+                  <Skeleton className="h-4 w-48 mx-auto" />
+                </div>
               </div>
-            </div>
-          ) : (
-            <RichTextEditor 
-              content={selectedChapter.content}
-              chapterId={selectedChapter.id}
-            />
-          )}
+            ) : (
+              <RichTextEditor 
+                content={selectedChapter.content}
+                chapterId={selectedChapter.id}
+              />
+            )}
+          </div>
         </div>
       </main>
       </div>

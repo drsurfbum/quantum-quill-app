@@ -11,7 +11,7 @@ export const useProject = (id: string | number) => {
 };
 
 // Get project chapters
-export const useProjectChapters = (projectId: string | number) => {
+export const useProjectChapters = (projectId: string | number | undefined) => {
   return useQuery<Chapter[]>({
     queryKey: [`/api/projects/${projectId}/chapters`],
     enabled: !!projectId

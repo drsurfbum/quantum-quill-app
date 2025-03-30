@@ -17,7 +17,7 @@ import { useToast } from '@/hooks/use-toast';
 import { debounce, cn } from '@/lib/utils';
 
 interface RichTextEditorProps {
-  content: string;
+  content: string | null;
   chapterId: number | string;
   onChange?: (content: string) => void;
 }

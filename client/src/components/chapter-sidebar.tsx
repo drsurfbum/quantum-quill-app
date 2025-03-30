@@ -13,11 +13,12 @@ import {
 import { Link, useLocation } from "wouter";
 
 interface ChapterSidebarProps {
-  projectId: string | number;
-  selectedChapterId?: string | number;
+  projectId: string | number | undefined;
+  selectedChapterId?: number;
+  isVisible?: boolean;
 }
 
-export default function ChapterSidebar({ projectId, selectedChapterId }: ChapterSidebarProps) {
+export default function ChapterSidebar({ projectId, selectedChapterId, isVisible = true }: ChapterSidebarProps) {
   const [location] = useLocation();
   const { toast } = useToast();
   const { data: chapters = [], isLoading } = useProjectChapters(projectId);
@@ -52,7 +53,11 @@ export default function ChapterSidebar({ projectId, selectedChapterId }: Chapter
   };
 
   return (
-    <div className="w-64 border-r border-neutral-200 dark:border-neutral-800 flex flex-col overflow-hidden bg-neutral-50 dark:bg-neutral-900">
+    <div className={cn(
+      "border-r border-neutral-200 dark:border-neutral-800 flex flex-col overflow-hidden bg-neutral-50 dark:bg-neutral-900",
+      "absolute md:static transition-all duration-300 z-10",
+      isVisible ? "w-64 translate-x-0" : "w-0 -translate-x-full md:hidden"
+    )}>
       <div className="p-3 border-b border-neutral-200 dark:border-neutral-800 flex justify-between items-center">
         <h3 className="font-medium">Chapters</h3>
         <Button variant="ghost" size="icon" onClick={handleCreateChapter} disabled={isCreating}>
