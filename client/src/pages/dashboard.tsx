@@ -7,10 +7,21 @@ import { useCreateProject } from "@/hooks/use-project";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
 import { type Project } from "@shared/schema";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { useState, useEffect } from "react";
 
 export default function Dashboard() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
+  const [isCollapsed, setIsCollapsed] = useState(isMobile);
+  
+  // Auto-collapse on mobile
+  useEffect(() => {
+    if (isMobile) {
+      setIsCollapsed(true);
+    }
+  }, [isMobile]);
   
   // Create project mutation
   const createProjectMutation = useCreateProject();
@@ -48,8 +59,8 @@ export default function Dashboard() {
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-background">
       <div className="flex flex-row flex-1 w-full h-full overflow-hidden">
-        <SidebarNavigation />
-        <div className="flex-1 p-4 md:p-8 overflow-y-auto w-full">
+        <SidebarNavigation onCollapsedChange={setIsCollapsed} />
+        <div className="flex-1 p-4 md:p-8 overflow-y-auto w-full" style={{marginLeft: isCollapsed ? '56px' : '0'}}>
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 sm:mb-8">
             <div>
               <h1 className="text-2xl sm:text-3xl font-bold mb-1">Welcome, {user?.username}</h1>

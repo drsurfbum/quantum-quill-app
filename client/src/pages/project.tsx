@@ -12,7 +12,8 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export default function Project() {
   const { id } = useParams();
@@ -21,6 +22,8 @@ export default function Project() {
   const { data: chapters, isLoading: chaptersLoading } = useProjectChapters(id || '');
   const { toast } = useToast();
   const [selectedTab, setSelectedTab] = useState("overview");
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const isMobile = useIsMobile();
 
   // Handle errors
   if (error) {
@@ -51,9 +54,9 @@ export default function Project() {
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-background">
       <div className="flex flex-row flex-1 w-full h-full overflow-hidden">
-        <SidebarNavigation />
+        <SidebarNavigation onCollapsedChange={setIsCollapsed} />
         
-        <main className="flex-grow overflow-auto flex flex-col w-full">
+        <main className="flex-grow overflow-auto flex flex-col w-full" style={{ marginLeft: isMobile && isCollapsed ? '56px' : '0' }}>
           <header className="min-h-16 border-b border-neutral-200 dark:border-neutral-800 flex flex-wrap items-center justify-between px-4 sm:px-6 py-3 sticky top-0 bg-background z-10">
             <div className="flex items-center mr-4">
               {isLoading ? (
