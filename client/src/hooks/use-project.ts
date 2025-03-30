@@ -71,3 +71,16 @@ export const useUpdateChapter = () => {
     }
   });
 };
+
+// Delete chapter
+export const useDeleteChapter = () => {
+  return useMutation({
+    mutationFn: async ({ id, projectId }: { id: number | string, projectId: number | string }) => {
+      const res = await apiRequest('DELETE', `/api/chapters/${id}`, {});
+      return { success: res.ok, projectId };
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: [`/api/projects/${result.projectId}/chapters`] });
+    }
+  });
+};
