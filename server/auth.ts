@@ -44,15 +44,16 @@ export function setupAuth(app: Express) {
   // Set up session
   const sessionSettings: session.SessionOptions = {
     secret: process.env.SESSION_SECRET || "quantum-quill-development-secret",
-    resave: true, // Changed to true to ensure session is saved
-    saveUninitialized: true, // Changed to true to create session for all visitors
+    resave: true, 
+    saveUninitialized: true,
     store: storage.sessionStore,
-    name: 'quantum.sid', // Set explicit cookie name
+    name: 'quantum_sid', // Renamed to avoid issues with dots
     cookie: {
-      secure: false, // setting to false for development
+      // In Replit environment, secure must be false
+      secure: false,
       maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
       httpOnly: true,
-      sameSite: 'none', // Changed to 'none' to work in iframe and cross-site contexts
+      // No sameSite setting to use default
       path: '/'
     }
   };
@@ -172,10 +173,9 @@ Session: ${req.session ? "Exists" : "Missing"}
         `);
         
         // Add session cookie directly for clarity
-        res.cookie('quantum.sid', req.sessionID, {
+        res.cookie('quantum_sid', req.sessionID, {
           httpOnly: true,
           secure: false,
-          sameSite: 'none',
           maxAge: 1000 * 60 * 60 * 24 * 7,
           path: '/'
         });
