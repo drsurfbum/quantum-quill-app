@@ -31,7 +31,7 @@ export default function UserProfile() {
     <div className="flex items-center gap-2 p-4 border-t">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+          <Button variant="ghost" className="relative h-8 w-8 rounded-full p-0">
             <Avatar className="h-8 w-8">
               <AvatarFallback className="bg-primary text-primary-foreground">
                 {initials}
@@ -55,8 +55,8 @@ export default function UserProfile() {
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-      <div className="flex flex-col">
-        <span className="text-sm font-medium">{user.username}</span>
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <span className="text-sm font-medium truncate">{user.username}</span>
         <span className="text-xs text-muted-foreground">Logged in</span>
       </div>
     </div>

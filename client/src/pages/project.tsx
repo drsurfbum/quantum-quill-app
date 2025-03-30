@@ -50,9 +50,7 @@ export default function Project() {
 
   return (
     <div className="h-screen flex flex-col md:flex-row overflow-hidden">
-      <div className="w-64 h-full">
-        <SidebarNavigation />
-      </div>
+      <SidebarNavigation />
       
       <main className="flex-grow overflow-auto flex flex-col">
         <header className="h-16 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between px-4 sm:px-6 sticky top-0 bg-background z-10">
