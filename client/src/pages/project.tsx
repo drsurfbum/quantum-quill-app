@@ -52,7 +52,7 @@ export default function Project() {
     <div className="h-screen flex flex-col md:flex-row overflow-hidden bg-background">
       <SidebarNavigation />
       
-      <main className="flex-grow overflow-auto flex flex-col">
+      <main className="flex-grow overflow-auto flex flex-col pl-0 md:pl-0 ml-0 sm:ml-14 md:ml-0">
         <header className="min-h-16 border-b border-neutral-200 dark:border-neutral-800 flex flex-wrap items-center justify-between px-4 sm:px-6 py-3 sticky top-0 bg-background z-10">
           <div className="flex items-center mr-4">
             {isLoading ? (

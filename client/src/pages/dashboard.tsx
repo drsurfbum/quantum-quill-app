@@ -48,7 +48,7 @@ export default function Dashboard() {
   return (
     <div className="flex h-screen bg-background">
       <SidebarNavigation />
-      <div className="flex-1 p-4 md:p-8 overflow-y-auto">
+      <div className="flex-1 p-4 md:p-8 overflow-y-auto ml-0 sm:ml-14 md:ml-0">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 sm:mb-8">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold mb-1">Welcome, {user?.username}</h1>

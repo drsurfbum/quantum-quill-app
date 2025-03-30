@@ -130,7 +130,7 @@ export default function SidebarNavigation() {
     <button 
       className={cn(
         "fixed top-4 z-50 flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md transition-all",
-        isCollapsed ? "left-4" : "left-[250px]"
+        isCollapsed ? "left-4" : "left-[210px]"
       )}
       onClick={() => setIsCollapsed(!isCollapsed)}
       aria-label={isCollapsed ? "Open menu" : "Close menu"}
@@ -147,7 +147,7 @@ export default function SidebarNavigation() {
     const isInProject = location.includes('/project/');
     
     return (
-      <div className="fixed top-16 left-0 z-40 flex flex-col items-center p-2 pt-3 space-y-4 shadow-md bg-background rounded-r-lg border-r border-t border-b w-14 bg-opacity-90 backdrop-blur-sm">
+      <div className="fixed top-0 left-0 h-full z-40 flex flex-col items-center p-2 pt-20 space-y-4 shadow-md bg-background border-r w-14 bg-opacity-95 backdrop-blur-sm">
         {/* Dashboard icon */}
         <NavItem 
           href="/" 
