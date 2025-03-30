@@ -52,7 +52,7 @@ export function setupAuth(app: Express) {
       secure: false, // setting to false for development
       maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
       httpOnly: true,
-      sameSite: 'lax',
+      sameSite: 'none', // Changed to 'none' to work in iframe and cross-site contexts
       path: '/'
     }
   };
@@ -175,7 +175,9 @@ Session: ${req.session ? "Exists" : "Missing"}
         res.cookie('quantum.sid', req.sessionID, {
           httpOnly: true,
           secure: false,
-          maxAge: 1000 * 60 * 60 * 24 * 7
+          sameSite: 'none',
+          maxAge: 1000 * 60 * 60 * 24 * 7,
+          path: '/'
         });
         
         // Return the user info
