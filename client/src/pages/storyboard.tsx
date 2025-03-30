@@ -89,10 +89,11 @@ export default function Storyboard() {
   };
 
   return (
-    <div className="h-screen flex flex-col md:flex-row overflow-hidden">
-      <SidebarNavigation />
-      
-      <main className="flex-grow overflow-hidden flex flex-col">
+    <div className="h-screen flex flex-col overflow-hidden bg-background">
+      <div className="flex flex-row flex-1 w-full h-full overflow-hidden">
+        <SidebarNavigation />
+        
+        <main className="flex-grow overflow-hidden flex flex-col w-full ml-0 sm:ml-14 md:ml-0">
         <header className="h-16 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between px-4 sm:px-6">
           <div className="flex items-center">
             {isLoadingProject ? (
@@ -178,6 +179,7 @@ export default function Storyboard() {
           )}
         </div>
       </main>
+      </div>
     </div>
   );
 }
