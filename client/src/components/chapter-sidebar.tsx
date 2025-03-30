@@ -50,6 +50,33 @@ export default function ChapterSidebar({ projectId, selectedChapterId, isVisible
   const { toast } = useToast();
   const { data: chapters = [], isLoading } = useProjectChapters(projectId);
   const { mutate: createChapter, isPending: isCreating } = useCreateChapter();
+  const { mutate: deleteChapter } = useDeleteChapter();
+  const [chapterToDelete, setChapterToDelete] = useState<number | null>(null);
+
+  const handleDeleteChapter = (id: number) => {
+    setChapterToDelete(id);
+  };
+
+  const confirmDelete = () => {
+    if (chapterToDelete) {
+      deleteChapter(chapterToDelete, {
+        onSuccess: () => {
+          toast({
+            title: "Chapter deleted",
+            description: "Your chapter has been deleted."
+          });
+          setChapterToDelete(null);
+        },
+        onError: () => {
+          toast({
+            title: "Error deleting chapter",
+            description: "There was an error deleting your chapter. Please try again.",
+            variant: "destructive"
+          });
+        }
+      });
+    }
+  };
 
   const handleCreateChapter = () => {
     const nextOrder = chapters.length ? Math.max(...chapters.map(c => c.order)) + 1 : 0;
@@ -122,6 +149,22 @@ export default function ChapterSidebar({ projectId, selectedChapterId, isVisible
                             ? "text-primary" 
                             : "text-neutral-500 dark:text-neutral-400"
                         )} />
+
+      <AlertDialog open={!!chapterToDelete} onOpenChange={() => setChapterToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the chapter.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
                       )}
                       <span className={cn(
                         "text-sm font-medium",
