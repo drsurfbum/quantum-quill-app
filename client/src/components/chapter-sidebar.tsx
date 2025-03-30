@@ -1,16 +1,43 @@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
-import { useProjectChapters, useCreateChapter } from "@/hooks/use-project";
+import { 
+  useProjectChapters, 
+  useCreateChapter, 
+  useUpdateChapter, 
+  useDeleteChapter 
+} from "@/hooks/use-project";
 import { PlusCircle, FileText, MoreVertical, File } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
 import { 
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogFooter,
+  DialogDescription
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Link, useLocation } from "wouter";
+import { type Chapter } from "@shared/schema";
 
 interface ChapterSidebarProps {
   projectId: string | number | undefined;
@@ -115,9 +142,16 @@ export default function ChapterSidebar({ projectId, selectedChapterId, isVisible
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem>Rename</DropdownMenuItem>
-                          <DropdownMenuItem>Mark as {chapter.isDraft ? 'Complete' : 'Draft'}</DropdownMenuItem>
-                          <DropdownMenuItem className="text-red-500">Delete</DropdownMenuItem>
+                          <DropdownMenuItem onSelect={() => handleRenameChapter(chapter)}>Rename</DropdownMenuItem>
+                          <DropdownMenuItem onSelect={() => handleToggleChapterStatus(chapter)}>
+                            Mark as {chapter.isDraft ? 'Complete' : 'Draft'}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            className="text-red-500" 
+                            onSelect={() => handleDeleteChapter(chapter.id)}
+                          >
+                            Delete
+                          </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </a>

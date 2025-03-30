@@ -1,0 +1,74 @@
+Dashboard
+	1.	Project Card Artifacting
+	•	Issue: Visual artifacting on the “Your Projects” section. The frame around each project card appears split or misaligned.
+	2.	Recent Activity Feed Non-functional
+	•	Issue: The recent activity section shows no data, even after performing project-related actions.
+
+⸻
+
+Project View
+	3.	Project Naming Missing
+	•	Issue: No option to name a project once it’s created. All projects default to “New Project.”
+	4.	Project Description Missing
+	•	Issue: No functionality to set or edit a project description.
+
+⸻
+
+Write Tab
+	5.	Chapter Renaming Fails
+	•	Issue: Rename function for chapters does not work.
+	6.	Mark Chapter as Complete Fails
+	•	Issue: The “Mark as Complete” button does not trigger any action.
+	7.	Chapter Deletion Fails
+	•	Issue: The “Delete Chapter” button is non-functional.
+	8.	Chapter Switching Broken
+	•	Issue: Chapter selector is stuck; cannot switch between existing chapters.
+	9.	New Chapter Inaccessible
+	•	Issue: Clicking the “+” button creates a new chapter at the bottom, but you cannot access/edit it after it’s created.
+
+⸻
+
+Outline Tab
+	10.	No Responsive Layout on Smaller Screens
+
+	•	Issue: Outline tab does not reflow to full-page layout with navigation like the Write tab does on smaller screen sizes.
+
+	11.	Section Switching Functional
+
+	•	Note: Switching between outline sections works as expected.
+
+	12.	Rename Function Working
+
+	•	Note: Rename function for sections is working here and could be used as a model for fixing the Write tab.
+
+⸻
+
+Storyboard Tab
+	13.	Storyboard Not Matching Expectations
+
+	•	Issue: Current implementation of the storyboard does not reflect intended functionality.
+	•	Note: Will define intended behavior in a future update.
+
+⸻
+
+Story Bible
+	14.	Search Entries Bar Non-functional
+
+	•	Issue: The search bar under “Search Entries” appears visually but does not perform any search action.
+
+	15.	Entry Type Switching Works
+
+	•	Note: Switching between Character, Location, Item, and Event types functions correctly.
+
+	16.	Naming New Entries Works
+
+	•	Note: Naming functionality when creating new entries is working.
+
+	17.	Filter Bar UI Confusing & Incomplete
+
+	•	Issue: Filter bar (e.g. All, Characters, etc.) is not fully visible on most screen sizes and is not clearly understood as filters.
+	•	Issue: Filters do not appear to perform any filtering action.
+
+	18.	Responsive Layout Needed
+
+	•	Issue: Story Bible sections need size rules to improve usability on smaller screens.
