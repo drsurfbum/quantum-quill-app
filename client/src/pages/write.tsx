@@ -24,8 +24,8 @@ export default function Write() {
   
   const [selectedChapterId, setSelectedChapterId] = useState<string | null>(chapterId);
   
-  const { data: project, isLoading: isLoadingProject } = useProject(id);
-  const { data: chapters = [], isLoading: isLoadingChapters } = useProjectChapters(id);
+  const { data: project, isLoading: isLoadingProject } = useProject(id || '');
+  const { data: chapters = [], isLoading: isLoadingChapters } = useProjectChapters(id || '');
   const { mutate: createChapter, isPending: isCreatingChapter } = useCreateChapter();
   
   // If no chapter is selected, select the first one
@@ -37,7 +37,7 @@ export default function Write() {
   
   // If no chapters exist, create one
   useEffect(() => {
-    if (chapters.length === 0 && !isLoadingChapters && !isCreatingChapter) {
+    if (chapters.length === 0 && !isLoadingChapters && !isCreatingChapter && id) {
       createChapter(
         {
           title: "Chapter 1",
@@ -66,13 +66,14 @@ export default function Write() {
   }, [chapters, isLoadingChapters, id, createChapter, isCreatingChapter, toast]);
   
   // Find selected chapter
-  const selectedChapter = chapters.find(c => c.id === Number(selectedChapterId));
+  const selectedChapter = chapters.find(c => c.id === Number(selectedChapterId || '0'));
 
   return (
-    <div className="h-screen flex flex-col md:flex-row overflow-hidden">
-      <SidebarNavigation />
-      
-      <main className="flex-grow overflow-hidden flex flex-col">
+    <div className="h-screen flex flex-col overflow-hidden bg-background">
+      <div className="flex flex-row flex-1 w-full h-full overflow-hidden">
+        <SidebarNavigation />
+        
+        <main className="flex-grow overflow-hidden flex flex-col w-full ml-0 sm:ml-14 md:ml-0">
         <header className="h-16 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between px-4 sm:px-6">
           <div className="flex items-center">
             {isLoadingProject ? (
@@ -161,6 +162,7 @@ export default function Write() {
           )}
         </div>
       </main>
+      </div>
     </div>
   );
 }
