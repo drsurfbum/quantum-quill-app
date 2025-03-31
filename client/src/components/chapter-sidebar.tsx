@@ -43,9 +43,10 @@ interface ChapterSidebarProps {
   projectId: string | number | undefined;
   selectedChapterId?: number;
   isVisible?: boolean;
+  onChapterSelect?: (chapterId: string) => void;
 }
 
-export default function ChapterSidebar({ projectId, selectedChapterId, isVisible = true }: ChapterSidebarProps) {
+export default function ChapterSidebar({ projectId, selectedChapterId, isVisible = true, onChapterSelect }: ChapterSidebarProps) {
   const [location, setLocation] = useLocation();
   const { toast } = useToast();
   const { data: chapters = [], isLoading } = useProjectChapters(projectId);
@@ -217,14 +218,33 @@ export default function ChapterSidebar({ projectId, selectedChapterId, isVisible
               {chapters.map((chapter) => (
                 <li key={chapter.id} className="mb-1">
                   <div className="flex flex-col">
-                    <Link href={`/project/${projectId}/write?chapter=${chapter.id}`} className={cn(
-                      "p-2 rounded-md flex items-center group",
-                      Number(selectedChapterId) === chapter.id 
-                        ? "bg-neutral-100 dark:bg-neutral-800" 
-                        : "hover:bg-neutral-100 dark:hover:bg-neutral-800"
-                    )}>
+                    <Link 
+                      href={`/project/${projectId}/write?chapter=${chapter.id}`} 
+                      onClick={(e) => {
+                        // If onChapterSelect is provided, call it with the chapter id
+                        if (onChapterSelect) {
+                          e.preventDefault();
+                          onChapterSelect(String(chapter.id));
+                        }
+                      }}
+                      className={cn(
+                        "p-2 rounded-md flex items-center group relative",
+                        Number(selectedChapterId) === chapter.id 
+                          ? "bg-primary/10 border border-primary/30 dark:bg-primary/20" 
+                          : "hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                      )}>
+                      {/* Left indicator for selected chapter */}
+                      {Number(selectedChapterId) === chapter.id && (
+                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-l-md"></div>
+                      )}
+                      
                       {chapter.isDraft ? (
-                        <File className="h-4 w-4 mr-2 text-neutral-500 dark:text-neutral-400" />
+                        <File className={cn(
+                          "h-4 w-4 mr-2",
+                          Number(selectedChapterId) === chapter.id 
+                            ? "text-primary" 
+                            : "text-neutral-500 dark:text-neutral-400"
+                        )} />
                       ) : (
                         <FileText className={cn(
                           "h-4 w-4 mr-2",
@@ -235,6 +255,9 @@ export default function ChapterSidebar({ projectId, selectedChapterId, isVisible
                       )}
                       <span className={cn(
                         "text-sm font-medium",
+                        Number(selectedChapterId) === chapter.id 
+                          ? "text-primary" 
+                          : "",
                         chapter.isDraft && "italic"
                       )}>
                         {chapter.title}

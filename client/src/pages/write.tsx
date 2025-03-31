@@ -79,6 +79,14 @@ export default function Write() {
     }
   }, [chapters, isLoadingChapters, id, createChapter, isCreatingChapter, toast]);
   
+  // Handle chapter selection
+  const handleChapterSelect = (chapterId: string) => {
+    setSelectedChapterId(chapterId);
+    // Update URL with the new chapter ID
+    const newUrl = `/project/${id}/write?chapter=${chapterId}`;
+    window.history.pushState({}, '', newUrl);
+  };
+  
   // Find selected chapter
   const selectedChapter = chapters.find(c => c.id === Number(selectedChapterId || '0'));
 
@@ -175,6 +183,7 @@ export default function Write() {
             projectId={id || ''} 
             selectedChapterId={selectedChapterId ? Number(selectedChapterId) : undefined} 
             isVisible={isChapterSidebarVisible}
+            onChapterSelect={handleChapterSelect}
           />
           
           <div className={cn(
@@ -190,10 +199,18 @@ export default function Write() {
                 </div>
               </div>
             ) : (
-              <RichTextEditor 
-                content={selectedChapter.content}
-                chapterId={selectedChapter.id}
-              />
+              <div className="flex flex-col h-full w-full">
+                {/* Chapter header */}
+                <div className="bg-muted/30 border-b py-2 px-4">
+                  <h2 className="text-lg font-medium">
+                    {selectedChapter.title} {selectedChapter.isDraft ? "(Draft)" : "(Completed)"}
+                  </h2>
+                </div>
+                <RichTextEditor 
+                  content={selectedChapter.content}
+                  chapterId={selectedChapter.id}
+                />
+              </div>
             )}
           </div>
         </div>
