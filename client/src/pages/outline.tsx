@@ -4,7 +4,7 @@ import ThemeToggle from "@/components/ui/theme-toggle";
 import ExportModal from "@/components/export-modal";
 import { useProject } from "@/hooks/use-project";
 import { Button } from "@/components/ui/button";
-import { Share2, ExternalLink, Plus } from "lucide-react";
+import { Share2, ExternalLink, Plus, PanelLeft, PanelRightClose } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { Edit3, Grid, ListTree, BookOpen } from "lucide-react";
@@ -23,16 +23,20 @@ export default function Outline() {
   const isMobile = useIsMobile();
   const [isCollapsed, setIsCollapsed] = useState(isMobile);
   const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
+  const [isOutlineSidebarVisible, setIsOutlineSidebarVisible] = useState(!isMobile);
   
   // Auto-collapse on mobile
   useEffect(() => {
     if (isMobile) {
       setIsCollapsed(true);
+      setIsOutlineSidebarVisible(false);
+    } else {
+      setIsOutlineSidebarVisible(true);
     }
   }, [isMobile]);
   
-  const { data: project, isLoading: isLoadingProject } = useProject(id);
-  const { data: outlineItems = [], isLoading: isLoadingOutline } = useOutlineItems(id);
+  const { data: project, isLoading: isLoadingProject } = useProject(id || '');
+  const { data: outlineItems = [], isLoading: isLoadingOutline } = useOutlineItems(id || '');
   const { mutate: createOutlineItem, isPending: isCreating } = useCreateOutlineItem();
   
   // Find root-level items (parentId is null)
@@ -82,6 +86,19 @@ export default function Outline() {
         <main className="flex-grow overflow-hidden flex flex-col w-full pl-0 md:pl-0" style={{marginLeft: isCollapsed ? '56px' : '0'}}>
         <header className="h-16 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between px-4 sm:px-6">
           <div className="flex items-center">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="mr-2"
+              onClick={() => setIsOutlineSidebarVisible(!isOutlineSidebarVisible)}
+              aria-label={isOutlineSidebarVisible ? "Hide outline list" : "Show outline list"}
+            >
+              {isOutlineSidebarVisible ? (
+                <PanelRightClose className="h-4 w-4" />
+              ) : (
+                <PanelLeft className="h-4 w-4" />
+              )}
+            </Button>
             {isLoadingProject ? (
               <Skeleton className="h-6 w-48" />
             ) : (
@@ -149,7 +166,11 @@ export default function Outline() {
 
         <div className="flex-grow flex overflow-hidden">
           {/* Outline Structure Sidebar */}
-          <div className="w-64 border-r border-neutral-200 dark:border-neutral-800 flex flex-col overflow-hidden bg-neutral-50 dark:bg-neutral-900">
+          <div className={cn(
+            "border-r border-neutral-200 dark:border-neutral-800 flex flex-col overflow-hidden bg-neutral-50 dark:bg-neutral-900",
+            "absolute md:static transition-all duration-300 z-10",
+            isOutlineSidebarVisible ? "w-64 translate-x-0" : "w-0 -translate-x-full md:hidden"
+          )}>
             <div className="p-3 border-b border-neutral-200 dark:border-neutral-800 flex justify-between items-center">
               <h3 className="font-medium">Outline</h3>
               <Button 
@@ -200,7 +221,10 @@ export default function Outline() {
           </div>
           
           {/* Outline Content Editor */}
-          <div className="flex-grow flex flex-col overflow-hidden">
+          <div className={cn(
+            "flex-grow flex flex-col overflow-hidden transition-all duration-300",
+            isOutlineSidebarVisible ? "md:ml-0" : "ml-0"
+          )}>
             {isLoadingOutline ? (
               <div className="flex-grow flex items-center justify-center p-6">
                 <Skeleton className="h-40 w-full max-w-2xl" />
@@ -222,10 +246,18 @@ export default function Outline() {
                 </div>
               </div>
             ) : (
-              <OutlineEditor 
-                item={selectedItem}
-                projectId={Number(id)}
-              />
+              <div className="flex flex-col h-full w-full">
+                {/* Section header */}
+                <div className="bg-muted/30 border-b py-2 px-4">
+                  <h2 className="text-lg font-medium">
+                    {selectedItem.title}
+                  </h2>
+                </div>
+                <OutlineEditor 
+                  item={selectedItem}
+                  projectId={Number(id)}
+                />
+              </div>
             )}
           </div>
         </div>
