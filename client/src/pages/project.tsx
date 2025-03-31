@@ -2,11 +2,11 @@ import { useParams, useLocation, Link, Route, Switch } from "wouter";
 import SidebarNavigation from "@/components/sidebar-navigation";
 import { 
   Edit3, Grid, ListTree, BookOpen, 
-  ExternalLink, Share2, Loader2
+  ExternalLink, Share2, Loader2, Pencil
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useProject, useProjectChapters } from "@/hooks/use-project";
+import { useProject, useProjectChapters, useUpdateProject } from "@/hooks/use-project";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -14,16 +14,26 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 
 export default function Project() {
   const { id } = useParams();
   const [location, setLocation] = useLocation();
   const { data: project, isLoading, error } = useProject(id || '');
   const { data: chapters, isLoading: chaptersLoading } = useProjectChapters(id || '');
+  const { mutate: updateProject, isPending: isUpdating } = useUpdateProject();
   const { toast } = useToast();
   const [selectedTab, setSelectedTab] = useState("overview");
   const [isCollapsed, setIsCollapsed] = useState(false);
   const isMobile = useIsMobile();
+  
+  // State for edit project dialog
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editTitle, setEditTitle] = useState("");
+  const [editDescription, setEditDescription] = useState("");
 
   // Handle errors
   if (error) {
@@ -50,13 +60,52 @@ export default function Project() {
   const formattedDate = project?.createdAt ? 
     format(new Date(project.createdAt), 'MMM d, yyyy') : 
     'Unknown date';
+    
+  // Handler for opening edit dialog
+  const handleOpenEditDialog = () => {
+    if (project) {
+      setEditTitle(project.title);
+      setEditDescription(project.description || "");
+      setEditDialogOpen(true);
+    }
+  };
+  
+  // Handler for saving project edits
+  const handleSaveProject = () => {
+    if (!id) return;
+    
+    updateProject(
+      {
+        id: Number(id),
+        title: editTitle,
+        description: editDescription
+      },
+      {
+        onSuccess: () => {
+          toast({
+            title: "Project updated",
+            description: "Your project has been updated successfully."
+          });
+          setEditDialogOpen(false);
+        },
+        onError: () => {
+          toast({
+            title: "Error updating project",
+            description: "There was an error updating your project. Please try again.",
+            variant: "destructive"
+          });
+        }
+      }
+    );
+  };
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden bg-background">
-      <div className="flex flex-row flex-1 w-full h-full overflow-hidden">
-        <SidebarNavigation onCollapsedChange={setIsCollapsed} />
-        
-        <main className="flex-grow overflow-auto flex flex-col w-full" style={{ marginLeft: isMobile && isCollapsed ? '56px' : '0' }}>
+    <>
+      <div className="h-screen flex flex-col overflow-hidden bg-background">
+        <div className="flex flex-row flex-1 w-full h-full overflow-hidden">
+          <SidebarNavigation onCollapsedChange={setIsCollapsed} />
+          
+          <main className="flex-grow overflow-auto flex flex-col w-full" style={{ marginLeft: isMobile && isCollapsed ? '56px' : '0' }}>
           <header className="min-h-16 border-b border-neutral-200 dark:border-neutral-800 flex flex-wrap items-center justify-between px-4 sm:px-6 py-3 sticky top-0 bg-background z-10">
             <div className="flex items-center mr-4">
               {isLoading ? (
@@ -101,11 +150,22 @@ export default function Project() {
           {/* Show project overview on base route */}
           {location === `/project/${id}` ? (
             <div className="p-6 max-w-5xl mx-auto w-full">
-              <div className="mb-8">
-                <h1 className="text-3xl font-bold mb-2">{project?.title}</h1>
-                <p className="text-muted-foreground">
-                  Created on {formattedDate}
-                </p>
+              <div className="mb-8 flex justify-between items-start">
+                <div>
+                  <h1 className="text-3xl font-bold mb-2">{project?.title}</h1>
+                  <p className="text-muted-foreground">
+                    Created on {formattedDate}
+                  </p>
+                </div>
+                <Button 
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center gap-1"
+                  onClick={handleOpenEditDialog}
+                >
+                  <Pencil className="h-4 w-4" />
+                  <span>Edit Project</span>
+                </Button>
               </div>
 
               <Tabs value={selectedTab} onValueChange={setSelectedTab}>
@@ -252,5 +312,53 @@ export default function Project() {
         </main>
       </div>
     </div>
+
+      {/* Edit Project Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Project</DialogTitle>
+            <DialogDescription>
+              Make changes to your project details.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="projectTitle">Project Title</Label>
+              <Input
+                id="projectTitle"
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                placeholder="Enter project title"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="projectDescription">Description (optional)</Label>
+              <Textarea
+                id="projectDescription"
+                value={editDescription}
+                onChange={(e) => setEditDescription(e.target.value)}
+                placeholder="Enter project description"
+                rows={4}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setEditDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleSaveProject} 
+              disabled={!editTitle.trim() || isUpdating}
+            >
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
