@@ -17,7 +17,7 @@ import {
 interface EditorMenuBarProps {
   editor: Editor;
   wordCount: number;
-  saveStatus: 'saved' | 'saving';
+  saveStatus: 'saved' | 'typing' | 'saving';
   isFullscreen?: boolean;
   onToggleFullscreen?: () => void;
 }
@@ -166,8 +166,18 @@ export default function EditorMenuBar({
           {wordCount} {wordCount === 1 ? 'word' : 'words'}
         </span>
         
-        <span className="text-xs px-2 py-0.5 bg-success bg-opacity-10 text-success rounded-full">
-          {saveStatus === 'saved' ? 'Saved' : 'Saving...'}
+        <span className={`text-xs px-2 py-0.5 rounded-full ${
+          saveStatus === 'saved' 
+            ? 'bg-success bg-opacity-10 text-success' 
+            : saveStatus === 'typing'
+            ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400' 
+            : 'bg-yellow-50 text-yellow-600 dark:bg-yellow-900/20 dark:text-yellow-400'
+        }`}>
+          {saveStatus === 'saved' 
+            ? 'Saved' 
+            : saveStatus === 'typing' 
+            ? 'Typing...' 
+            : 'Saving...'}
         </span>
         
         <Button 

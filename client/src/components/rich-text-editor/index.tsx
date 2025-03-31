@@ -29,7 +29,7 @@ export default function RichTextEditor({
 }: RichTextEditorProps) {
   const { toast } = useToast();
   const [wordCount, setWordCount] = useState(0);
-  const [saveStatus, setSaveStatus] = useState<'saved' | 'saving'>('saved');
+  const [saveStatus, setSaveStatus] = useState<'saved' | 'typing' | 'saving'>('saved');
   const [isFullscreen, setIsFullscreen] = useState(false);
   const editorContainerRef = useRef<HTMLDivElement>(null);
   const { mutate: updateChapter } = useUpdateChapter();
@@ -94,12 +94,12 @@ export default function RichTextEditor({
           }
         }
       );
-    }, 1500),
+    }, 3000), // Increased from 1500ms to 3000ms (3 seconds)
     [chapterId, updateChapter, toast]
   );
 
   const handleContentChange = (html: string) => {
-    setSaveStatus('saving');
+    setSaveStatus('typing'); // Show 'typing' instead of immediately 'saving'
     debouncedSave(html);
   };
 
