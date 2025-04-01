@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import PlotStructureManager from '@/components/plot-structure/plot-structure-manager';
+import { ResizablePanel, ResizablePanelGroup, ResizableHandle } from '@/components/ui/resizable';
 
 interface WhiteboardProps {
   projectId: string | number;
@@ -150,55 +151,172 @@ export default function Whiteboard({ projectId, whiteboardId, initialData, onSav
       canvasRef.current.load(initialData);
     }
   }, [initialData]);
+  
+  // Toolbar buttons
+  const ToolbarButtons = () => (
+    <>
+      <Button variant="ghost" size="icon" title="Bold">
+        <span className="font-bold">B</span>
+      </Button>
+      
+      <Button variant="ghost" size="icon" title="Italic">
+        <span className="italic">I</span>
+      </Button>
+      
+      <Button variant="ghost" size="icon" title="Underline">
+        <span className="underline">U</span>
+      </Button>
+      
+      <Separator orientation="vertical" className="mx-1 h-6" />
+      
+      <Button variant="ghost" size="icon" title="Heading 1">
+        <span className="font-bold">H1</span>
+      </Button>
+      
+      <Button variant="ghost" size="icon" title="Heading 2">
+        <span className="font-bold">H2</span>
+      </Button>
+      
+      <Button variant="ghost" size="icon" title="Heading 3">
+        <span className="font-bold">H3</span>
+      </Button>
+      
+      <Separator orientation="vertical" className="mx-1 h-6" />
+      
+      <Button
+        variant="ghost"
+        size="icon"
+        title="Add Image"
+        onClick={handleUploadImage}
+      >
+        <ImageIcon className="h-4 w-4" />
+      </Button>
+      
+      <Button
+        variant="ghost"
+        size="icon"
+        title="Add Note"
+        onClick={() => handleToolChange('note')}
+      >
+        <StickyNote className="h-4 w-4" />
+      </Button>
+      
+      <Separator orientation="vertical" className="mx-1 h-6" />
+      
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={handleUndo}
+        title="Undo"
+      >
+        <Undo className="h-4 w-4" />
+      </Button>
+      
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={handleRedo}
+        title="Redo"
+      >
+        <Redo className="h-4 w-4" />
+      </Button>
+      
+      <div className="ml-auto flex items-center space-x-2">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={handleClear}
+          title="Clear canvas"
+          className="text-red-500"
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
+        
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleExport}
+          title="Export as image"
+        >
+          <Download className="h-4 w-4 mr-1" />
+          Export
+        </Button>
+        
+        <Button
+          variant="default"
+          size="sm"
+          onClick={handleSave}
+          title="Save whiteboard"
+        >
+          <Save className="h-4 w-4 mr-1" />
+          Save
+        </Button>
+      </div>
+    </>
+  );
 
   return (
     <div className="flex-grow flex overflow-hidden">
-      {/* Sidebar */}
-      {sidebarOpen && (
-        <div className="w-96 h-full flex flex-col overflow-hidden border-r">
-          <div className="p-2 border-b flex justify-between items-center">
-            <Tabs value={sidebarTab} onValueChange={(value: string) => setSidebarTab(value as any)}>
-              <TabsList>
-                <TabsTrigger value="plotStructures">
-                  <FileSpreadsheet className="h-4 w-4 mr-1" />
-                  <span className="hidden sm:inline">Plot Structures</span>
-                </TabsTrigger>
-                <TabsTrigger value="notes">
-                  <ListTree className="h-4 w-4 mr-1" />
-                  <span className="hidden sm:inline">Notes</span>
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={() => setSidebarOpen(false)}
-              title="Close sidebar"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-          </div>
-          
-          <div className="flex-grow overflow-hidden">
-            {sidebarTab === 'plotStructures' && (
-              <PlotStructureManager projectId={projectId} />
-            )}
-            {sidebarTab === 'notes' && (
-              <div className="p-4">
-                <h3 className="text-lg font-medium mb-2">Notes</h3>
-                <p className="text-sm text-muted-foreground">
-                  This feature will be available soon.
-                </p>
+      {sidebarOpen ? (
+        <ResizablePanelGroup direction="horizontal" className="flex-1">
+          {/* Sidebar */}
+          <ResizablePanel defaultSize={30} minSize={25} maxSize={45} className="h-full border-r">
+            <div className="h-full flex flex-col overflow-hidden">
+              <div className="p-2 border-b flex justify-between items-center">
+                <Tabs value={sidebarTab} onValueChange={(value: string) => setSidebarTab(value as any)}>
+                  <TabsList>
+                    <TabsTrigger value="plotStructures">
+                      <FileSpreadsheet className="h-4 w-4 mr-1" />
+                      <span className="hidden sm:inline">Plot Structures</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="notes">
+                      <ListTree className="h-4 w-4 mr-1" />
+                      <span className="hidden sm:inline">Notes</span>
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={() => setSidebarOpen(false)}
+                  title="Close sidebar"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
               </div>
-            )}
-          </div>
-        </div>
-      )}
-      
-      {/* Main content */}
-      <div className="flex-grow flex flex-col overflow-hidden">
-        <div className="p-2 border-b border-neutral-200 dark:border-neutral-800 flex flex-wrap justify-start items-center gap-1 bg-white dark:bg-neutral-900">
-          {!sidebarOpen && (
+              
+              <div className="flex-grow overflow-hidden">
+                {sidebarTab === 'plotStructures' && (
+                  <PlotStructureManager projectId={projectId} />
+                )}
+                {sidebarTab === 'notes' && (
+                  <div className="p-4">
+                    <h3 className="text-lg font-medium mb-2">Notes</h3>
+                    <p className="text-sm text-muted-foreground">
+                      This feature will be available soon.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </ResizablePanel>
+
+          <ResizableHandle withHandle />
+          
+          {/* Main content */}
+          <ResizablePanel defaultSize={70} className="h-full flex flex-col overflow-hidden">
+            <div className="p-2 border-b border-neutral-200 dark:border-neutral-800 flex flex-wrap justify-start items-center gap-1 bg-white dark:bg-neutral-900">
+              <ToolbarButtons />
+            </div>
+            
+            <div className="flex-grow relative bg-neutral-50 dark:bg-neutral-800 overflow-hidden">
+              <Canvas ref={canvasRef} />
+            </div>
+          </ResizablePanel>
+        </ResizablePanelGroup>
+      ) : (
+        <div className="flex-grow flex flex-col overflow-hidden">
+          <div className="p-2 border-b border-neutral-200 dark:border-neutral-800 flex flex-wrap justify-start items-center gap-1 bg-white dark:bg-neutral-900">
             <Button
               variant="ghost"
               size="icon"
@@ -208,135 +326,14 @@ export default function Whiteboard({ projectId, whiteboardId, initialData, onSav
             >
               <ChevronRight className="h-4 w-4" />
             </Button>
-          )}
+            <ToolbarButtons />
+          </div>
           
-          <Button
-            variant="ghost"
-            size="icon"
-            title="Bold"
-          >
-            <span className="font-bold">B</span>
-          </Button>
-          
-          <Button
-            variant="ghost" 
-            size="icon"
-            title="Italic"
-          >
-            <span className="italic">I</span>
-          </Button>
-          
-          <Button
-            variant="ghost"
-            size="icon" 
-            title="Underline"
-          >
-            <span className="underline">U</span>
-          </Button>
-          
-          <Separator orientation="vertical" className="mx-1 h-6" />
-          
-          <Button
-            variant="ghost"
-            size="icon"
-            title="Heading 1"
-          >
-            <span className="font-bold">H1</span>
-          </Button>
-          
-          <Button
-            variant="ghost"
-            size="icon"
-            title="Heading 2"
-          >
-            <span className="font-bold">H2</span>
-          </Button>
-          
-          <Button
-            variant="ghost"
-            size="icon"
-            title="Heading 3"
-          >
-            <span className="font-bold">H3</span>
-          </Button>
-          
-          <Separator orientation="vertical" className="mx-1 h-6" />
-          
-          <Button
-            variant="ghost"
-            size="icon"
-            title="Add Image"
-            onClick={handleUploadImage}
-          >
-            <ImageIcon className="h-4 w-4" />
-          </Button>
-          
-          <Button
-            variant="ghost"
-            size="icon"
-            title="Add Note"
-            onClick={() => handleToolChange('note')}
-          >
-            <StickyNote className="h-4 w-4" />
-          </Button>
-          
-          <Separator orientation="vertical" className="mx-1 h-6" />
-          
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleUndo}
-            title="Undo"
-          >
-            <Undo className="h-4 w-4" />
-          </Button>
-          
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleRedo}
-            title="Redo"
-          >
-            <Redo className="h-4 w-4" />
-          </Button>
-          
-          <div className="ml-auto flex items-center space-x-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleClear}
-              title="Clear canvas"
-              className="text-red-500"
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-            
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleExport}
-              title="Export as image"
-            >
-              <Download className="h-4 w-4 mr-1" />
-              Export
-            </Button>
-            
-            <Button
-              variant="default"
-              size="sm"
-              onClick={handleSave}
-              title="Save whiteboard"
-            >
-              <Save className="h-4 w-4 mr-1" />
-              Save
-            </Button>
+          <div className="flex-grow relative bg-neutral-50 dark:bg-neutral-800 overflow-hidden">
+            <Canvas ref={canvasRef} />
           </div>
         </div>
-        
-        <div className="flex-grow relative bg-neutral-50 dark:bg-neutral-800 overflow-hidden">
-          <Canvas ref={canvasRef} />
-        </div>
-      </div>
+      )}
     </div>
   );
 }

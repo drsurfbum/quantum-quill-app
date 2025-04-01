@@ -18,9 +18,9 @@ interface PlotStructureCardProps {
 
 export default function PlotStructureCard({ structure, onSelectStructure, onDeleteStructure }: PlotStructureCardProps) {
   return (
-    <Card className="border border-border flex flex-col">
+    <Card className="border border-border flex flex-col w-full h-full">
       <CardHeader className="pb-2">
-        <div className="flex justify-between items-start">
+        <div className="flex justify-between items-start w-full">
           <CardTitle className="flex-1 pr-4">{structure.name}</CardTitle>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
