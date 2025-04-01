@@ -180,10 +180,54 @@ export default function StoryBible() {
                 <Button 
                   variant="ghost" 
                   size="icon"
-                  onClick={() => {
+                  id="entry-type-button"
+                  onClick={(e) => {
+                    e.stopPropagation();
                     const menu = document.getElementById('entry-type-menu');
-                    if (menu) {
-                      menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+                    const button = document.getElementById('entry-type-button');
+                    
+                    if (menu && button) {
+                      // Toggle menu visibility
+                      const isVisible = menu.style.display !== 'none';
+                      
+                      if (!isVisible) {
+                        // Position the menu relative to the button
+                        const buttonRect = button.getBoundingClientRect();
+                        
+                        // Check if there's enough space on the right
+                        const rightSpace = window.innerWidth - buttonRect.right;
+                        const menuWidth = 250; // Max width of the menu
+                        
+                        if (rightSpace < menuWidth) {
+                          // Not enough space on right, position to the left of the button
+                          menu.style.right = (window.innerWidth - buttonRect.left) + 'px';
+                          menu.style.left = 'auto';
+                        } else {
+                          // Enough space on right, position from the left
+                          menu.style.left = buttonRect.left + 'px';
+                          menu.style.right = 'auto';
+                        }
+                        
+                        // Position vertically below the button
+                        menu.style.top = (buttonRect.bottom + 4) + 'px';
+                        menu.style.display = 'block';
+                        
+                        // Add click listener to document to close on outside clicks
+                        const handleClickOutside = (event: MouseEvent) => {
+                          const target = event.target as Node;
+                          if (menu && !menu.contains(target) && !button.contains(target)) {
+                            menu.style.display = 'none';
+                            document.removeEventListener('click', handleClickOutside);
+                          }
+                        };
+                        
+                        // Add with slight delay to prevent immediate closing
+                        setTimeout(() => {
+                          document.addEventListener('click', handleClickOutside);
+                        }, 100);
+                      } else {
+                        menu.style.display = 'none';
+                      }
                     }
                   }}
                 >
@@ -193,8 +237,8 @@ export default function StoryBible() {
                 {/* Dropdown menu for entry types */}
                 <div 
                   id="entry-type-menu" 
-                  className="absolute right-3 mt-8 bg-white dark:bg-neutral-800 shadow-md rounded-md py-1 z-10 border border-neutral-200 dark:border-neutral-700 overflow-y-auto max-h-[80vh]"
-                  style={{ display: 'none' }}
+                  className="fixed max-w-[250px] bg-white dark:bg-neutral-800 shadow-md rounded-md py-1 z-50 border border-neutral-200 dark:border-neutral-700 overflow-y-auto max-h-[80vh]"
+                  style={{ display: 'none', position: 'fixed' }}
                 >
                   <div className="py-1 px-2 text-xs text-neutral-500 dark:text-neutral-400 font-medium">
                     Create new:
@@ -429,28 +473,129 @@ export default function StoryBible() {
                   <p className="text-neutral-500 dark:text-neutral-400 mb-4 max-w-md">
                     Select an entry from your story bible or create a new one to start documenting your story elements.
                   </p>
-                  <div className="flex flex-wrap justify-center gap-2">
-                    <Button 
-                      variant="outline"
-                      onClick={() => handleCreateEntry('character')}
-                      disabled={isCreating}
-                    >
-                      <Users className="mr-2 h-4 w-4" /> New Character
-                    </Button>
-                    <Button 
-                      variant="outline"
-                      onClick={() => handleCreateEntry('location')}
-                      disabled={isCreating}
-                    >
-                      <MapPin className="mr-2 h-4 w-4" /> New Location
-                    </Button>
-                    <Button 
-                      variant="outline"
-                      onClick={() => handleCreateEntry('item')}
-                      disabled={isCreating}
-                    >
-                      <ShoppingBag className="mr-2 h-4 w-4" /> New Item
-                    </Button>
+                  {/* Characters & People section */}
+                  <div className="mb-4">
+                    <h4 className="text-sm font-medium text-neutral-500 dark:text-neutral-400 mb-2">Characters & People</h4>
+                    <div className="flex flex-wrap gap-2">
+                      <Button 
+                        variant="outline"
+                        onClick={() => handleCreateEntry('character')}
+                        disabled={isCreating}
+                        className="flex-grow sm:flex-grow-0"
+                      >
+                        <Users className="mr-2 h-4 w-4" /> Character
+                      </Button>
+                      <Button 
+                        variant="outline"
+                        onClick={() => handleCreateEntry('race')}
+                        disabled={isCreating}
+                        className="flex-grow sm:flex-grow-0"
+                      >
+                        <Globe className="mr-2 h-4 w-4" /> Race/Species
+                      </Button>
+                      <Button 
+                        variant="outline"
+                        onClick={() => handleCreateEntry('group')}
+                        disabled={isCreating}
+                        className="flex-grow sm:flex-grow-0"
+                      >
+                        <FolderTree className="mr-2 h-4 w-4" /> Group
+                      </Button>
+                      <Button 
+                        variant="outline"
+                        onClick={() => handleCreateEntry('government')}
+                        disabled={isCreating}
+                        className="flex-grow sm:flex-grow-0"
+                      >
+                        <Building className="mr-2 h-4 w-4" /> Government
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  {/* World Elements section */}
+                  <div className="mb-4">
+                    <h4 className="text-sm font-medium text-neutral-500 dark:text-neutral-400 mb-2">World Elements</h4>
+                    <div className="flex flex-wrap gap-2">
+                      <Button 
+                        variant="outline"
+                        onClick={() => handleCreateEntry('location')}
+                        disabled={isCreating}
+                        className="flex-grow sm:flex-grow-0"
+                      >
+                        <MapPin className="mr-2 h-4 w-4" /> Location
+                      </Button>
+                      <Button 
+                        variant="outline"
+                        onClick={() => handleCreateEntry('geography')}
+                        disabled={isCreating}
+                        className="flex-grow sm:flex-grow-0"
+                      >
+                        <Mountain className="mr-2 h-4 w-4" /> Geography
+                      </Button>
+                      <Button 
+                        variant="outline"
+                        onClick={() => handleCreateEntry('magicSystem')}
+                        disabled={isCreating}
+                        className="flex-grow sm:flex-grow-0"
+                      >
+                        <Wand2 className="mr-2 h-4 w-4" /> Magic System
+                      </Button>
+                      <Button 
+                        variant="outline"
+                        onClick={() => handleCreateEntry('language')}
+                        disabled={isCreating}
+                        className="flex-grow sm:flex-grow-0"
+                      >
+                        <Languages className="mr-2 h-4 w-4" /> Language
+                      </Button>
+                      <Button 
+                        variant="outline"
+                        onClick={() => handleCreateEntry('transportation')}
+                        disabled={isCreating}
+                        className="flex-grow sm:flex-grow-0"
+                      >
+                        <Train className="mr-2 h-4 w-4" /> Transportation
+                      </Button>
+                      <Button 
+                        variant="outline"
+                        onClick={() => handleCreateEntry('item')}
+                        disabled={isCreating}
+                        className="flex-grow sm:flex-grow-0"
+                      >
+                        <ShoppingBag className="mr-2 h-4 w-4" /> Item
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  {/* History & Lore section */}
+                  <div>
+                    <h4 className="text-sm font-medium text-neutral-500 dark:text-neutral-400 mb-2">History & Lore</h4>
+                    <div className="flex flex-wrap gap-2">
+                      <Button 
+                        variant="outline"
+                        onClick={() => handleCreateEntry('event')}
+                        disabled={isCreating}
+                        className="flex-grow sm:flex-grow-0"
+                      >
+                        <Calendar className="mr-2 h-4 w-4" /> Event
+                      </Button>
+                      <Button 
+                        variant="outline"
+                        onClick={() => handleCreateEntry('timeline')}
+                        disabled={isCreating}
+                        className="flex-grow sm:flex-grow-0"
+                      >
+                        <GitBranch className="mr-2 h-4 w-4" /> Timeline Event
+                      </Button>
+                      <Button 
+                        variant="outline"
+                        onClick={() => handleCreateEntry('lore')}
+                        disabled={isCreating}
+                        className="flex-grow sm:flex-grow-0"
+                      >
+                        <Scroll className="mr-2 h-4 w-4" /> Lore/Myth
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </div>
