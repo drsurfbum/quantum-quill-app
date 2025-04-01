@@ -84,6 +84,11 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
       const newWidth = Math.max(240, Math.min(600, startWidthRef.current + dx));
       
       setSidebarWidth(newWidth);
+      
+      // Apply the width directly to the sidebar element
+      if (sidebarRef.current) {
+        sidebarRef.current.style.width = `${newWidth}px`;
+      }
     };
 
     const handleMouseUp = () => {
@@ -208,7 +213,7 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
           ) : (
             <>
               <div className="flex h-full">
-                <div className="flex flex-col border-r" style={{ width: `${sidebarWidth}px`, minWidth: '240px' }}>
+                <div ref={sidebarRef} className="flex flex-col border-r overflow-hidden" style={{ width: `${sidebarWidth}px`, minWidth: '240px', maxWidth: '600px' }}>
                   {activeSection && (
                     <div className="flex items-center justify-between border-b p-2 bg-muted/30">
                       <Button
@@ -231,7 +236,7 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
                     </div>
                   )}
                 
-                  <div className="flex flex-1 overflow-hidden" ref={sidebarRef}>
+                  <div className="flex-1 overflow-hidden">
                     <ScrollArea className="h-full w-full">
                       <div className="p-2">
                         {sortedSections.map((section) => (
@@ -246,18 +251,19 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
                         ))}
                       </div>
                     </ScrollArea>
-                    <div 
-                      ref={resizeHandleRef}
-                      className="w-1 cursor-ew-resize h-full hover:bg-primary/20 active:bg-primary/40"
-                    ></div>
                   </div>
+                  <div 
+                    ref={resizeHandleRef}
+                    className="w-1 absolute right-0 h-full cursor-ew-resize hover:bg-primary/20 active:bg-primary/40"
+                    style={{ top: 0, bottom: 0 }}
+                  ></div>
                 </div>
 
                 <div className="flex-1 overflow-auto">
                   {activeSection ? (
-                    <div className="h-full flex flex-col">
-                      <div className="p-4 pb-2">
-                        <h3 className="text-lg font-semibold mb-2">
+                    <div className="h-full flex flex-col p-4">
+                      <div className="pb-4">
+                        <h3 className="text-lg font-semibold mb-3">
                           {sortedSections.find(s => s.sectionKey === activeSection)?.title}
                         </h3>
                         
@@ -293,70 +299,70 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
                         </div>
                       </div>
                       
-                      <div className="flex-grow p-4 pt-0">
+                      <div className="flex-1 flex flex-col">
                         {(() => {
                           const section = sortedSections.find(s => s.sectionKey === activeSection);
                           if (!section) return null;
                           
                           const isEditing = editMode[section.sectionKey] || false;
                           
-                          return (
-                            <div className="h-full flex flex-col">
-                              {isEditing ? (
-                                <>
-                                  <Textarea
-                                    value={editedContent[section.sectionKey] || ''}
-                                    onChange={(e) => setEditedContent({
-                                      ...editedContent,
-                                      [section.sectionKey]: e.target.value
-                                    })}
-                                    className="min-h-[200px] flex-grow"
-                                    placeholder={`Write your content for ${section.title} here...`}
-                                  />
-                                  
-                                  <div className="flex justify-end space-x-2 mt-4">
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => cancelEditing(section.sectionKey)}
-                                      disabled={isSaving}
-                                    >
-                                      Cancel
-                                    </Button>
-                                    <Button
-                                      size="sm"
-                                      onClick={() => saveSection(section)}
-                                      disabled={isSaving}
-                                    >
-                                      <Save className="h-4 w-4 mr-1" /> Save
-                                    </Button>
-                                  </div>
-                                </>
-                              ) : (
-                                <>
-                                  <div className="prose prose-sm dark:prose-invert max-w-none flex-grow">
-                                    {section.content ? (
-                                      <div style={{ whiteSpace: 'pre-wrap' }}>{section.content}</div>
-                                    ) : (
-                                      <p className="text-muted-foreground italic">
-                                        No content yet. Click edit to add content for this section.
-                                      </p>
-                                    )}
-                                  </div>
-                                  
-                                  <div className="flex justify-end mt-4">
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => startEditing(section.sectionKey, section.content || '')}
-                                    >
-                                      <Edit className="h-4 w-4 mr-1" /> Edit
-                                    </Button>
-                                  </div>
-                                </>
-                              )}
-                            </div>
-                          );
+                          if (isEditing) {
+                            return (
+                              <div className="flex flex-col h-full">
+                                <Textarea
+                                  value={editedContent[section.sectionKey] || ''}
+                                  onChange={(e) => setEditedContent({
+                                    ...editedContent,
+                                    [section.sectionKey]: e.target.value
+                                  })}
+                                  className="flex-1 min-h-[200px] resize-none"
+                                  placeholder={`Write your content for ${section.title} here...`}
+                                />
+                                
+                                <div className="flex justify-end space-x-2 mt-4">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => cancelEditing(section.sectionKey)}
+                                    disabled={isSaving}
+                                  >
+                                    Cancel
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    onClick={() => saveSection(section)}
+                                    disabled={isSaving}
+                                  >
+                                    <Save className="h-4 w-4 mr-1" /> Save
+                                  </Button>
+                                </div>
+                              </div>
+                            );
+                          } else {
+                            return (
+                              <div className="flex flex-col h-full">
+                                <div className="prose prose-sm dark:prose-invert max-w-none flex-1 bg-card p-4 rounded-md border">
+                                  {section.content ? (
+                                    <div style={{ whiteSpace: 'pre-wrap' }}>{section.content}</div>
+                                  ) : (
+                                    <p className="text-muted-foreground italic">
+                                      No content yet. Click edit to add content for this section.
+                                    </p>
+                                  )}
+                                </div>
+                                
+                                <div className="flex justify-end mt-4">
+                                  <Button
+                                    variant="default"
+                                    size="sm"
+                                    onClick={() => startEditing(section.sectionKey, section.content || '')}
+                                  >
+                                    <Edit className="h-4 w-4 mr-1" /> Edit
+                                  </Button>
+                                </div>
+                              </div>
+                            );
+                          }
                         })()}
                       </div>
                     </div>
