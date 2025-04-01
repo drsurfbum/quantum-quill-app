@@ -23,6 +23,13 @@ const entryTypes = [
   { id: "location", label: "Locations", icon: MapPin },
   { id: "item", label: "Items", icon: ShoppingBag },
   { id: "event", label: "Events", icon: Calendar },
+  { id: "race", label: "Races & Species", icon: Users },
+  { id: "group", label: "Groups & Factions", icon: Users },
+  { id: "magic", label: "Magic & Abilities", icon: Sparkles },
+  { id: "language", label: "Languages", icon: MessageSquare },
+  { id: "transport", label: "Transportation", icon: Plane },
+  { id: "government", label: "Governments", icon: Landmark },
+  { id: "history", label: "History & Lore", icon: BookOpen }
 ];
 
 export default function StoryBible() {
