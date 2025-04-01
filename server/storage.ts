@@ -5,7 +5,11 @@ import {
   type Whiteboard, type InsertWhiteboard,
   type OutlineItem, type InsertOutlineItem,
   type StoryBibleEntry, type InsertStoryBibleEntry,
-  users, projects, chapters, whiteboards, outlineItems, storyBibleEntries
+  type PlotStructureTemplate, type InsertPlotStructureTemplate,
+  type PlotStructure, type InsertPlotStructure,
+  type PlotStructureSection, type InsertPlotStructureSection,
+  users, projects, chapters, whiteboards, outlineItems, storyBibleEntries,
+  plotStructureTemplates, plotStructures, plotStructureSections
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and } from "drizzle-orm";
@@ -59,6 +63,27 @@ export interface IStorage {
   createStoryBibleEntry(entry: InsertStoryBibleEntry): Promise<StoryBibleEntry>;
   updateStoryBibleEntry(id: number, entry: Partial<StoryBibleEntry>): Promise<StoryBibleEntry | undefined>;
   deleteStoryBibleEntry(id: number): Promise<boolean>;
+  
+  // Plot Structure Template methods
+  getPlotStructureTemplate(id: number): Promise<PlotStructureTemplate | undefined>;
+  getAllPlotStructureTemplates(): Promise<PlotStructureTemplate[]>;
+  createPlotStructureTemplate(template: InsertPlotStructureTemplate): Promise<PlotStructureTemplate>;
+  updatePlotStructureTemplate(id: number, template: Partial<PlotStructureTemplate>): Promise<PlotStructureTemplate | undefined>;
+  deletePlotStructureTemplate(id: number): Promise<boolean>;
+  
+  // Plot Structure methods
+  getPlotStructure(id: number): Promise<PlotStructure | undefined>;
+  getProjectPlotStructures(projectId: number): Promise<PlotStructure[]>;
+  createPlotStructure(structure: InsertPlotStructure): Promise<PlotStructure>;
+  updatePlotStructure(id: number, structure: Partial<PlotStructure>): Promise<PlotStructure | undefined>;
+  deletePlotStructure(id: number): Promise<boolean>;
+  
+  // Plot Structure Section methods
+  getPlotStructureSection(id: number): Promise<PlotStructureSection | undefined>;
+  getPlotStructureSections(plotStructureId: number): Promise<PlotStructureSection[]>;
+  createPlotStructureSection(section: InsertPlotStructureSection): Promise<PlotStructureSection>;
+  updatePlotStructureSection(id: number, section: Partial<PlotStructureSection>): Promise<PlotStructureSection | undefined>;
+  deletePlotStructureSection(id: number): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
@@ -69,6 +94,9 @@ export class MemStorage implements IStorage {
   private whiteboardsMap: Map<number, Whiteboard>;
   private outlineItemsMap: Map<number, OutlineItem>;
   private storyBibleEntriesMap: Map<number, StoryBibleEntry>;
+  private plotStructureTemplatesMap: Map<number, PlotStructureTemplate>;
+  private plotStructuresMap: Map<number, PlotStructure>;
+  private plotStructureSectionsMap: Map<number, PlotStructureSection>;
   
   private userId: number;
   private projectId: number;
@@ -76,6 +104,9 @@ export class MemStorage implements IStorage {
   private whiteboardId: number;
   private outlineItemId: number;
   private storyBibleEntryId: number;
+  private plotStructureTemplateId: number;
+  private plotStructureId: number;
+  private plotStructureSectionId: number;
 
   constructor() {
     // Create memory session store
@@ -90,6 +121,9 @@ export class MemStorage implements IStorage {
     this.whiteboardsMap = new Map();
     this.outlineItemsMap = new Map();
     this.storyBibleEntriesMap = new Map();
+    this.plotStructureTemplatesMap = new Map();
+    this.plotStructuresMap = new Map();
+    this.plotStructureSectionsMap = new Map();
     
     this.userId = 1;
     this.projectId = 1;
@@ -97,6 +131,9 @@ export class MemStorage implements IStorage {
     this.whiteboardId = 1;
     this.outlineItemId = 1;
     this.storyBibleEntryId = 1;
+    this.plotStructureTemplateId = 1;
+    this.plotStructureId = 1;
+    this.plotStructureSectionId = 1;
 
     // Add demo user
     this.createUser({
@@ -326,7 +363,10 @@ export class MemStorage implements IStorage {
       id,
       createdAt: now,
       updatedAt: now,
-      content: insertEntry.content || ""
+      content: insertEntry.content || "",
+      category: insertEntry.category || null,
+      tags: insertEntry.tags || null,
+      relatedEntryIds: insertEntry.relatedEntryIds || null
     };
     this.storyBibleEntriesMap.set(id, entry);
     return entry;
@@ -347,6 +387,148 @@ export class MemStorage implements IStorage {
 
   async deleteStoryBibleEntry(id: number): Promise<boolean> {
     return this.storyBibleEntriesMap.delete(id);
+  }
+  
+  // Plot Structure Template methods
+  async getPlotStructureTemplate(id: number): Promise<PlotStructureTemplate | undefined> {
+    return this.plotStructureTemplatesMap.get(id);
+  }
+  
+  async getAllPlotStructureTemplates(): Promise<PlotStructureTemplate[]> {
+    return Array.from(this.plotStructureTemplatesMap.values());
+  }
+  
+  async createPlotStructureTemplate(template: InsertPlotStructureTemplate): Promise<PlotStructureTemplate> {
+    const id = this.plotStructureTemplateId++;
+    const now = new Date();
+    
+    // Create the template with all required fields explicitly set
+    const newTemplate: PlotStructureTemplate = {
+      id,
+      name: template.name,
+      templateType: template.templateType,
+      sections: template.sections,
+      description: template.description || null,
+      isDefault: template.isDefault || null,
+      createdAt: now,
+      updatedAt: now
+    };
+    
+    this.plotStructureTemplatesMap.set(id, newTemplate);
+    return newTemplate;
+  }
+  
+  async updatePlotStructureTemplate(id: number, templateUpdate: Partial<PlotStructureTemplate>): Promise<PlotStructureTemplate | undefined> {
+    const template = await this.getPlotStructureTemplate(id);
+    if (!template) return undefined;
+
+    const updatedTemplate = {
+      ...template,
+      ...templateUpdate,
+      updatedAt: new Date()
+    };
+    this.plotStructureTemplatesMap.set(id, updatedTemplate);
+    return updatedTemplate;
+  }
+  
+  async deletePlotStructureTemplate(id: number): Promise<boolean> {
+    return this.plotStructureTemplatesMap.delete(id);
+  }
+  
+  // Plot Structure methods
+  async getPlotStructure(id: number): Promise<PlotStructure | undefined> {
+    return this.plotStructuresMap.get(id);
+  }
+  
+  async getProjectPlotStructures(projectId: number): Promise<PlotStructure[]> {
+    return Array.from(this.plotStructuresMap.values())
+      .filter(structure => structure.projectId === projectId);
+  }
+  
+  async createPlotStructure(structure: InsertPlotStructure): Promise<PlotStructure> {
+    const id = this.plotStructureId++;
+    const now = new Date();
+    
+    // Create the structure with all required fields explicitly set
+    const newStructure: PlotStructure = {
+      id,
+      projectId: structure.projectId,
+      templateId: structure.templateId,
+      name: structure.name,
+      description: structure.description || null,
+      parentId: structure.parentId || null,
+      order: structure.order || null,
+      createdAt: now,
+      updatedAt: now
+    };
+    
+    this.plotStructuresMap.set(id, newStructure);
+    return newStructure;
+  }
+  
+  async updatePlotStructure(id: number, structureUpdate: Partial<PlotStructure>): Promise<PlotStructure | undefined> {
+    const structure = await this.getPlotStructure(id);
+    if (!structure) return undefined;
+
+    const updatedStructure = {
+      ...structure,
+      ...structureUpdate,
+      updatedAt: new Date()
+    };
+    this.plotStructuresMap.set(id, updatedStructure);
+    return updatedStructure;
+  }
+  
+  async deletePlotStructure(id: number): Promise<boolean> {
+    return this.plotStructuresMap.delete(id);
+  }
+  
+  // Plot Structure Section methods
+  async getPlotStructureSection(id: number): Promise<PlotStructureSection | undefined> {
+    return this.plotStructureSectionsMap.get(id);
+  }
+  
+  async getPlotStructureSections(plotStructureId: number): Promise<PlotStructureSection[]> {
+    return Array.from(this.plotStructureSectionsMap.values())
+      .filter(section => section.plotStructureId === plotStructureId)
+      .sort((a, b) => a.order - b.order);
+  }
+  
+  async createPlotStructureSection(section: InsertPlotStructureSection): Promise<PlotStructureSection> {
+    const id = this.plotStructureSectionId++;
+    const now = new Date();
+    
+    // Create the section with all required fields explicitly set
+    const newSection: PlotStructureSection = {
+      id,
+      plotStructureId: section.plotStructureId,
+      sectionKey: section.sectionKey,
+      title: section.title,
+      content: section.content || "",
+      order: section.order,
+      createdAt: now,
+      updatedAt: now
+    };
+    
+    this.plotStructureSectionsMap.set(id, newSection);
+    return newSection;
+  }
+  
+  async updatePlotStructureSection(id: number, sectionUpdate: Partial<PlotStructureSection>): Promise<PlotStructureSection | undefined> {
+    const section = await this.getPlotStructureSection(id);
+    if (!section) return undefined;
+
+    const updatedSection = {
+      ...section,
+      ...sectionUpdate,
+      updatedAt: new Date()
+    };
+    this.plotStructureSectionsMap.set(id, updatedSection);
+    return updatedSection;
+  }
+  
+  async deletePlotStructureSection(id: number): Promise<boolean> {
+    return this.plotStructureSectionsMap.delete(id);
   }
 }
 
@@ -550,6 +732,100 @@ export class DatabaseStorage implements IStorage {
 
   async deleteStoryBibleEntry(id: number): Promise<boolean> {
     const result = await db.delete(storyBibleEntries).where(eq(storyBibleEntries.id, id));
+    return !!result;
+  }
+  
+  // Plot Structure Template methods
+  async getPlotStructureTemplate(id: number): Promise<PlotStructureTemplate | undefined> {
+    const [template] = await db.select().from(plotStructureTemplates).where(eq(plotStructureTemplates.id, id));
+    return template;
+  }
+  
+  async getAllPlotStructureTemplates(): Promise<PlotStructureTemplate[]> {
+    return db.select().from(plotStructureTemplates);
+  }
+  
+  async createPlotStructureTemplate(template: InsertPlotStructureTemplate): Promise<PlotStructureTemplate> {
+    const [newTemplate] = await db.insert(plotStructureTemplates).values(template).returning();
+    return newTemplate;
+  }
+  
+  async updatePlotStructureTemplate(id: number, templateUpdate: Partial<PlotStructureTemplate>): Promise<PlotStructureTemplate | undefined> {
+    const [updatedTemplate] = await db
+      .update(plotStructureTemplates)
+      .set({ ...templateUpdate, updatedAt: new Date() })
+      .where(eq(plotStructureTemplates.id, id))
+      .returning();
+    return updatedTemplate;
+  }
+  
+  async deletePlotStructureTemplate(id: number): Promise<boolean> {
+    const result = await db.delete(plotStructureTemplates).where(eq(plotStructureTemplates.id, id));
+    return !!result;
+  }
+  
+  // Plot Structure methods
+  async getPlotStructure(id: number): Promise<PlotStructure | undefined> {
+    const [structure] = await db.select().from(plotStructures).where(eq(plotStructures.id, id));
+    return structure;
+  }
+  
+  async getProjectPlotStructures(projectId: number): Promise<PlotStructure[]> {
+    return db
+      .select()
+      .from(plotStructures)
+      .where(eq(plotStructures.projectId, projectId));
+  }
+  
+  async createPlotStructure(structure: InsertPlotStructure): Promise<PlotStructure> {
+    const [newStructure] = await db.insert(plotStructures).values(structure).returning();
+    return newStructure;
+  }
+  
+  async updatePlotStructure(id: number, structureUpdate: Partial<PlotStructure>): Promise<PlotStructure | undefined> {
+    const [updatedStructure] = await db
+      .update(plotStructures)
+      .set({ ...structureUpdate, updatedAt: new Date() })
+      .where(eq(plotStructures.id, id))
+      .returning();
+    return updatedStructure;
+  }
+  
+  async deletePlotStructure(id: number): Promise<boolean> {
+    const result = await db.delete(plotStructures).where(eq(plotStructures.id, id));
+    return !!result;
+  }
+  
+  // Plot Structure Section methods
+  async getPlotStructureSection(id: number): Promise<PlotStructureSection | undefined> {
+    const [section] = await db.select().from(plotStructureSections).where(eq(plotStructureSections.id, id));
+    return section;
+  }
+  
+  async getPlotStructureSections(plotStructureId: number): Promise<PlotStructureSection[]> {
+    return db
+      .select()
+      .from(plotStructureSections)
+      .where(eq(plotStructureSections.plotStructureId, plotStructureId))
+      .orderBy(plotStructureSections.order);
+  }
+  
+  async createPlotStructureSection(section: InsertPlotStructureSection): Promise<PlotStructureSection> {
+    const [newSection] = await db.insert(plotStructureSections).values(section).returning();
+    return newSection;
+  }
+  
+  async updatePlotStructureSection(id: number, sectionUpdate: Partial<PlotStructureSection>): Promise<PlotStructureSection | undefined> {
+    const [updatedSection] = await db
+      .update(plotStructureSections)
+      .set({ ...sectionUpdate, updatedAt: new Date() })
+      .where(eq(plotStructureSections.id, id))
+      .returning();
+    return updatedSection;
+  }
+  
+  async deletePlotStructureSection(id: number): Promise<boolean> {
+    const result = await db.delete(plotStructureSections).where(eq(plotStructureSections.id, id));
     return !!result;
   }
 }

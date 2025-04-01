@@ -1,6 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { initPlotTemplates } from "./init-plot-templates";
 
 const app = express();
 app.use(express.json());
@@ -51,6 +52,9 @@ Headers: ${JSON.stringify({
 });
 
 (async () => {
+  // Initialize plot structure templates
+  await initPlotTemplates();
+  
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {

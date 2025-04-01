@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, jsonb, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, jsonb, timestamp, varchar } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -132,3 +132,74 @@ export const insertStoryBibleEntrySchema = createInsertSchema(storyBibleEntries)
 
 export type InsertStoryBibleEntry = z.infer<typeof insertStoryBibleEntrySchema>;
 export type StoryBibleEntry = typeof storyBibleEntries.$inferSelect;
+
+// Plot Structure Templates
+export const plotStructureTemplates = pgTable("plot_structure_templates", {
+  id: serial("id").primaryKey(),
+  templateType: varchar("template_type", { length: 50 }).notNull(), // freytag, hero_journey, three_act, etc.
+  name: text("name").notNull(),
+  description: text("description"),
+  sections: jsonb("sections").notNull(), // Array of sections with names, descriptions, and order
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+  isDefault: boolean("is_default").default(false),
+});
+
+export const insertPlotStructureTemplateSchema = createInsertSchema(plotStructureTemplates).pick({
+  templateType: true,
+  name: true,
+  description: true,
+  sections: true,
+  isDefault: true,
+});
+
+export type InsertPlotStructureTemplate = z.infer<typeof insertPlotStructureTemplateSchema>;
+export type PlotStructureTemplate = typeof plotStructureTemplates.$inferSelect;
+
+// Plot Structures (user instances of templates)
+export const plotStructures = pgTable("plot_structures", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").notNull(),
+  templateId: integer("template_id").notNull(), // References plotStructureTemplates.id
+  name: text("name").notNull(),
+  description: text("description"),
+  parentId: integer("parent_id"), // For nested structures (null means top-level)
+  order: integer("order").default(0), // For ordering multiple plot structures
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertPlotStructureSchema = createInsertSchema(plotStructures).pick({
+  projectId: true,
+  templateId: true,
+  name: true,
+  description: true,
+  parentId: true,
+  order: true,
+});
+
+export type InsertPlotStructure = z.infer<typeof insertPlotStructureSchema>;
+export type PlotStructure = typeof plotStructures.$inferSelect;
+
+// Plot Structure Sections (actual content for each section)
+export const plotStructureSections = pgTable("plot_structure_sections", {
+  id: serial("id").primaryKey(),
+  plotStructureId: integer("plot_structure_id").notNull(), // References plotStructures.id
+  sectionKey: varchar("section_key", { length: 100 }).notNull(), // Key to match against template section
+  title: text("title").notNull(),
+  content: text("content").default(""), // User's content for this section
+  order: integer("order").notNull(), // Order within the plot structure
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertPlotStructureSectionSchema = createInsertSchema(plotStructureSections).pick({
+  plotStructureId: true,
+  sectionKey: true,
+  title: true,
+  content: true,
+  order: true,
+});
+
+export type InsertPlotStructureSection = z.infer<typeof insertPlotStructureSectionSchema>;
+export type PlotStructureSection = typeof plotStructureSections.$inferSelect;
