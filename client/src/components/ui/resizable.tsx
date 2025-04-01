@@ -1,28 +1,41 @@
+import * as React from "react"
 import { GripVertical } from "lucide-react"
 import * as ResizablePrimitive from "react-resizable-panels"
 
 import { cn } from "@/lib/utils"
 
-const ResizablePanelGroup = ({
-  className,
-  ...props
-}: React.ComponentProps<typeof ResizablePrimitive.PanelGroup>) => (
+const ResizablePanelGroup = React.forwardRef<
+  React.ElementRef<typeof ResizablePrimitive.PanelGroup>,
+  React.ComponentPropsWithoutRef<typeof ResizablePrimitive.PanelGroup>
+>(({ className, ...props }, ref) => (
   <ResizablePrimitive.PanelGroup
+    ref={ref}
     className={cn(
       "flex h-full w-full data-[panel-group-direction=vertical]:flex-col",
       className
     )}
     {...props}
   />
-)
+))
+ResizablePanelGroup.displayName = "ResizablePanelGroup"
 
-const ResizablePanel = ResizablePrimitive.Panel
+const ResizablePanel = React.forwardRef<
+  React.ElementRef<typeof ResizablePrimitive.Panel>,
+  React.ComponentPropsWithoutRef<typeof ResizablePrimitive.Panel>
+>(({ className, ...props }, ref) => (
+  <ResizablePrimitive.Panel
+    ref={ref}
+    className={cn("relative h-full w-full overflow-auto", className)}
+    {...props}
+  />
+))
+ResizablePanel.displayName = "ResizablePanel"
 
 const ResizableHandle = ({
-  withHandle,
   className,
+  withHandle = false,
   ...props
-}: React.ComponentProps<typeof ResizablePrimitive.PanelResizeHandle> & {
+}: React.ComponentPropsWithoutRef<typeof ResizablePrimitive.PanelResizeHandle> & {
   withHandle?: boolean
 }) => (
   <ResizablePrimitive.PanelResizeHandle
@@ -39,5 +52,6 @@ const ResizableHandle = ({
     )}
   </ResizablePrimitive.PanelResizeHandle>
 )
+ResizableHandle.displayName = "ResizableHandle"
 
 export { ResizablePanelGroup, ResizablePanel, ResizableHandle }

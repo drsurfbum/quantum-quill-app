@@ -23,16 +23,48 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Badge } from '@/components/ui/badge';
 import { 
   ChevronLeft, 
   ChevronRight, 
   Edit, 
   Save, 
   X, 
-  AlertCircle 
+  AlertCircle, 
+  ChevronRightSquare
 } from 'lucide-react';
 import { PlotStructureSection } from '@shared/schema';
+import { ResizablePanel, ResizablePanelGroup, ResizableHandle } from "@/components/ui/resizable";
+
+// Define section examples for different story structures
+const SECTION_EXAMPLES: Record<string, string> = {
+  // Dan Harmon's Story Circle
+  "you": "Luke Skywalker lives a simple life on Tatooine with his aunt and uncle.",
+  "need": "Princess Leia's message asks for help, and Obi-Wan invites Luke to learn the ways of the Force.",
+  "go": "Luke leaves his home planet on the Millennium Falcon after stormtroopers kill his family.",
+  "search": "Luke rescues the princess from the Death Star and learns more about his abilities.",
+  "find": "Luke discovers he can use the Force and decides to join the Rebellion.",
+  "take": "Luke loses Obi-Wan but gains new allies and responsibilities in the fight against the Empire.",
+  "return": "Luke returns to the Rebel base with the Death Star plans and his new understanding of the Force.",
+  "change": "Luke is no longer a farm boy but a hero of the Rebellion with a new purpose.",
+  
+  // Freytag's Pyramid
+  "exposition": "Harry Potter lives under the stairs at his aunt and uncle's house, unaware of his magical heritage.",
+  "incitingIncident": "Harry receives a letter from Hogwarts, revealing his true identity as a wizard.",
+  "risingAction": "Harry attends Hogwarts, makes friends, and faces increasingly dangerous situations.",
+  "climax": "Harry confronts Voldemort in the Chamber of Secrets, destroying the diary and saving Ginny.",
+  "fallingAction": "The truth about Tom Riddle is revealed, and Harry returns to normal school life.",
+  "resolution": "Harry returns to the Dursleys, but with the knowledge that he belongs in the wizarding world.",
+  
+  // Three Act Structure
+  "act1Setup": "We meet John McClane, a New York cop heading to LA to reconcile with his estranged wife at her company's Christmas party.",
+  "act1Inciting": "Terrorists take over the building, and John is the only one who escapes, finding himself alone and outgunned.",
+  "act1ToPart2": "John decides to fight back and alert the authorities, beginning his one-man war against the terrorists.",
+  "act2Rising": "John faces increasingly difficult obstacles, kills some terrorists, and makes contact with a police officer outside.",
+  "act2Midpoint": "John discovers the terrorists are actually sophisticated thieves planning to steal $640 million in bearer bonds.",
+  "act2ToAct3": "The terrorists discover John's identity and take his wife hostage, raising the personal stakes.",
+  "act3Climax": "John confronts Hans Gruber in a final showdown, saving his wife and stopping the heist.",
+  "act3Resolution": "John and his wife reconcile as the authorities take control of the situation.",
+};
 
 interface PlotStructureViewProps {
   structureId: number;
@@ -43,14 +75,7 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
   const [activeSection, setActiveSection] = useState<string | null>(null);
   const [editedContent, setEditedContent] = useState<Record<string, string>>({});
   const [editMode, setEditMode] = useState<Record<string, boolean>>({});
-  const [sidebarWidth, setSidebarWidth] = useState<number>(300);
   
-  const sidebarRef = useRef<HTMLDivElement>(null);
-  const resizeHandleRef = useRef<HTMLDivElement>(null);
-  const resizingRef = useRef<boolean>(false);
-  const startXRef = useRef<number>(0);
-  const startWidthRef = useRef<number>(0);
-
   const { data: structure, isLoading: isLoadingStructure } = usePlotStructure(structureId);
   const { data: sections = [], isLoading: isLoadingSections } = usePlotStructureSections(structureId);
   const { updateSection, isLoading: isSaving } = usePlotStructureActions();
@@ -64,53 +89,6 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
       setActiveSection(sortedSections[0].sectionKey);
     }
   }, [sortedSections, activeSection]);
-
-  // Handle sidebar resize
-  useEffect(() => {
-    const handleMouseDown = (e: MouseEvent) => {
-      if (resizeHandleRef.current && resizeHandleRef.current.contains(e.target as Node)) {
-        resizingRef.current = true;
-        startXRef.current = e.clientX;
-        startWidthRef.current = sidebarWidth;
-        document.body.style.cursor = 'ew-resize';
-        document.body.style.userSelect = 'none';
-      }
-    };
-
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!resizingRef.current) return;
-      
-      const dx = e.clientX - startXRef.current;
-      const newWidth = Math.max(240, Math.min(600, startWidthRef.current + dx));
-      
-      setSidebarWidth(newWidth);
-      
-      // Apply the width directly to the sidebar element
-      if (sidebarRef.current) {
-        sidebarRef.current.style.width = `${newWidth}px`;
-      }
-    };
-
-    const handleMouseUp = () => {
-      if (resizingRef.current) {
-        resizingRef.current = false;
-        document.body.style.cursor = '';
-        document.body.style.userSelect = '';
-      }
-    };
-
-    document.addEventListener('mousedown', handleMouseDown);
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
-
-    return () => {
-      document.removeEventListener('mousedown', handleMouseDown);
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-      document.body.style.cursor = '';
-      document.body.style.userSelect = '';
-    };
-  }, [sidebarWidth]);
 
   // Navigate between sections
   const navigateToSection = (direction: 'next' | 'prev') => {
@@ -155,6 +133,7 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
     }
   };
 
+  // Loading state
   if (isLoadingStructure || isLoadingSections) {
     return (
       <div className="p-4 space-y-4">
@@ -169,7 +148,8 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
       </div>
     );
   }
-
+  
+  // Not found state
   if (!structure) {
     return (
       <Alert className="m-4">
@@ -181,9 +161,12 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
     );
   }
 
+  const activeSectionData = activeSection ? sortedSections.find(s => s.sectionKey === activeSection) : null;
+  const isEditing = activeSectionData ? editMode[activeSectionData.sectionKey] || false : false;
+
   return (
-    <div className="flex flex-col h-full">
-      <div className="border-b p-4 flex justify-between items-center">
+    <div className="flex flex-col h-full bg-background">
+      <div className="border-b p-4 flex justify-between items-center bg-card">
         <div>
           <h2 className="text-xl font-bold">{structure.name}</h2>
           {structure.description && (
@@ -198,7 +181,7 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
       </div>
 
       <Tabs defaultValue="editor" className="flex-1 flex flex-col">
-        <div className="border-b px-4">
+        <div className="border-b px-4 bg-card">
           <TabsList>
             <TabsTrigger value="editor">Editor</TabsTrigger>
             <TabsTrigger value="overview">Overview</TabsTrigger>
@@ -211,159 +194,120 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
               <p className="text-muted-foreground">No sections found for this plot structure.</p>
             </div>
           ) : (
-            <>
-              <div className="flex h-full">
-                <div ref={sidebarRef} className="flex flex-col border-r overflow-hidden" style={{ width: `${sidebarWidth}px`, minWidth: '240px', maxWidth: '600px' }}>
-                  {activeSection && (
-                    <div className="flex items-center justify-between border-b p-2 bg-muted/30">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => navigateToSection('prev')}
-                        disabled={!activeSection}
-                      >
-                        <ChevronLeft className="h-4 w-4 mr-1" /> Previous
-                      </Button>
-                      
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => navigateToSection('next')}
-                        disabled={!activeSection}
-                      >
-                        Next <ChevronRight className="h-4 w-4 ml-1" />
-                      </Button>
-                    </div>
-                  )}
-                
-                  <div className="flex-1 overflow-hidden">
-                    <ScrollArea className="h-full w-full">
-                      <div className="p-2">
-                        {sortedSections.map((section) => (
-                          <Button
-                            key={section.id}
-                            variant={activeSection === section.sectionKey ? "default" : "ghost"}
-                            className="w-full justify-start mb-1 text-left"
-                            onClick={() => setActiveSection(section.sectionKey)}
-                          >
-                            {section.title}
-                          </Button>
-                        ))}
-                      </div>
-                    </ScrollArea>
+            <ResizablePanelGroup direction="horizontal" className="flex-1">
+              <ResizablePanel defaultSize={30} minSize={20} maxSize={40} className="h-full">
+                <div className="flex h-full flex-col">
+                  <div className="flex items-center justify-between border-b p-2 bg-muted/30">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => navigateToSection('prev')}
+                      disabled={!activeSection}
+                    >
+                      <ChevronLeft className="h-4 w-4 mr-1" /> Previous
+                    </Button>
+                    
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => navigateToSection('next')}
+                      disabled={!activeSection}
+                    >
+                      Next <ChevronRight className="h-4 w-4 ml-1" />
+                    </Button>
                   </div>
-                  <div 
-                    ref={resizeHandleRef}
-                    className="w-1 absolute right-0 h-full cursor-ew-resize hover:bg-primary/20 active:bg-primary/40"
-                    style={{ top: 0, bottom: 0 }}
-                  ></div>
+                
+                  <ScrollArea className="flex-1">
+                    <div className="p-2">
+                      {sortedSections.map((section) => (
+                        <Button
+                          key={section.id}
+                          variant={activeSection === section.sectionKey ? "default" : "ghost"}
+                          className="w-full justify-start mb-1 text-left"
+                          onClick={() => setActiveSection(section.sectionKey)}
+                        >
+                          {section.title}
+                        </Button>
+                      ))}
+                    </div>
+                  </ScrollArea>
                 </div>
-
-                <div className="flex-1 overflow-auto">
-                  {activeSection ? (
+              </ResizablePanel>
+              
+              <ResizableHandle withHandle />
+            
+              <ResizablePanel defaultSize={70} className="h-full focus-visible:outline-none">
+                <div className="h-full flex flex-col">
+                  {activeSectionData ? (
                     <div className="h-full flex flex-col p-4">
                       <div className="pb-4">
                         <h3 className="text-lg font-semibold mb-3">
-                          {sortedSections.find(s => s.sectionKey === activeSection)?.title}
+                          {activeSectionData.title}
                         </h3>
                         
                         <div className="mb-4 text-sm bg-muted/20 p-3 rounded-md border">
                           <p className="text-muted-foreground">
                             <strong>Example:</strong> {' '}
-                            {(() => {
-                              const section = sortedSections.find(s => s.sectionKey === activeSection);
-                              if (!section) return null;
-                              
-                              // Examples for each section key
-                              const examples: Record<string, string> = {
-                                "you": "Luke Skywalker lives a simple life on Tatooine with his aunt and uncle.",
-                                "need": "Princess Leia's message asks for help, and Obi-Wan invites Luke to learn the ways of the Force.",
-                                "go": "Luke leaves his home planet on the Millennium Falcon after stormtroopers kill his family.",
-                                "search": "Luke rescues the princess from the Death Star and learns more about his abilities.",
-                                "find": "Luke discovers he can use the Force and decides to join the Rebellion.",
-                                "take": "Luke loses Obi-Wan but gains new allies and responsibilities in the fight against the Empire.",
-                                "return": "Luke returns to the Rebel base with the Death Star plans and his new understanding of the Force.",
-                                "change": "Luke is no longer a farm boy but a hero of the Rebellion with a new purpose.",
-                                // Add examples for other section types
-                                "exposition": "Harry Potter lives under the stairs at his aunt and uncle's house, unaware of his magical heritage.",
-                                "incitingIncident": "Harry receives a letter from Hogwarts, revealing his true identity as a wizard.",
-                                "risingAction": "Harry attends Hogwarts, makes friends, and faces increasingly dangerous situations.",
-                                "climax": "Harry confronts Voldemort in the Chamber of Secrets, destroying the diary and saving Ginny.",
-                                "fallingAction": "The truth about Tom Riddle is revealed, and Harry returns to normal school life.",
-                                "resolution": "Harry returns to the Dursleys, but with the knowledge that he belongs in the wizarding world.",
-                              };
-                              
-                              return examples[section.sectionKey] || "Create your story content for this section.";
-                            })()}
+                            {SECTION_EXAMPLES[activeSectionData.sectionKey] || 
+                             "Create your story content for this section."}
                           </p>
                         </div>
                       </div>
                       
                       <div className="flex-1 flex flex-col">
-                        {(() => {
-                          const section = sortedSections.find(s => s.sectionKey === activeSection);
-                          if (!section) return null;
-                          
-                          const isEditing = editMode[section.sectionKey] || false;
-                          
-                          if (isEditing) {
-                            return (
-                              <div className="flex flex-col h-full">
-                                <Textarea
-                                  value={editedContent[section.sectionKey] || ''}
-                                  onChange={(e) => setEditedContent({
-                                    ...editedContent,
-                                    [section.sectionKey]: e.target.value
-                                  })}
-                                  className="flex-1 min-h-[200px] resize-none"
-                                  placeholder={`Write your content for ${section.title} here...`}
-                                />
-                                
-                                <div className="flex justify-end space-x-2 mt-4">
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => cancelEditing(section.sectionKey)}
-                                    disabled={isSaving}
-                                  >
-                                    Cancel
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    onClick={() => saveSection(section)}
-                                    disabled={isSaving}
-                                  >
-                                    <Save className="h-4 w-4 mr-1" /> Save
-                                  </Button>
-                                </div>
-                              </div>
-                            );
-                          } else {
-                            return (
-                              <div className="flex flex-col h-full">
-                                <div className="prose prose-sm dark:prose-invert max-w-none flex-1 bg-card p-4 rounded-md border">
-                                  {section.content ? (
-                                    <div style={{ whiteSpace: 'pre-wrap' }}>{section.content}</div>
-                                  ) : (
-                                    <p className="text-muted-foreground italic">
-                                      No content yet. Click edit to add content for this section.
-                                    </p>
-                                  )}
-                                </div>
-                                
-                                <div className="flex justify-end mt-4">
-                                  <Button
-                                    variant="default"
-                                    size="sm"
-                                    onClick={() => startEditing(section.sectionKey, section.content || '')}
-                                  >
-                                    <Edit className="h-4 w-4 mr-1" /> Edit
-                                  </Button>
-                                </div>
-                              </div>
-                            );
-                          }
-                        })()}
+                        {isEditing ? (
+                          <div className="flex flex-col h-full">
+                            <Textarea
+                              value={editedContent[activeSectionData.sectionKey] || ''}
+                              onChange={(e) => setEditedContent({
+                                ...editedContent,
+                                [activeSectionData.sectionKey]: e.target.value
+                              })}
+                              className="flex-1 min-h-[200px] resize-none"
+                              placeholder={`Write your content for ${activeSectionData.title} here...`}
+                            />
+                            
+                            <div className="flex justify-end space-x-2 mt-4">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => cancelEditing(activeSectionData.sectionKey)}
+                                disabled={isSaving}
+                              >
+                                Cancel
+                              </Button>
+                              <Button
+                                size="sm"
+                                onClick={() => saveSection(activeSectionData)}
+                                disabled={isSaving}
+                              >
+                                <Save className="h-4 w-4 mr-1" /> Save
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col h-full">
+                            <div className="prose prose-sm dark:prose-invert max-w-none flex-1 bg-card p-4 rounded-md border">
+                              {activeSectionData.content ? (
+                                <div style={{ whiteSpace: 'pre-wrap' }}>{activeSectionData.content}</div>
+                              ) : (
+                                <p className="text-muted-foreground italic">
+                                  No content yet. Click edit to add content for this section.
+                                </p>
+                              )}
+                            </div>
+                            
+                            <div className="flex justify-end mt-4">
+                              <Button
+                                variant="default"
+                                size="sm"
+                                onClick={() => startEditing(activeSectionData.sectionKey, activeSectionData.content || '')}
+                              >
+                                <Edit className="h-4 w-4 mr-1" /> Edit
+                              </Button>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   ) : (
@@ -374,13 +318,13 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
                     </div>
                   )}
                 </div>
-              </div>
-            </>
+              </ResizablePanel>
+            </ResizablePanelGroup>
           )}
         </TabsContent>
 
-        <TabsContent value="overview" className="flex-1 p-4 overflow-auto">
-          <ScrollArea className="h-full pr-4">
+        <TabsContent value="overview" className="flex-1 overflow-hidden">
+          <ScrollArea className="h-full p-4">
             <Card className="mb-6">
               <CardHeader>
                 <CardTitle>{structure.name}</CardTitle>
