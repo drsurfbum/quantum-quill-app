@@ -8,7 +8,6 @@ import {
   Card, 
   CardContent, 
   CardDescription, 
-  CardFooter, 
   CardHeader, 
   CardTitle 
 } from '@/components/ui/card';
@@ -45,6 +44,7 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
   const [editedContent, setEditedContent] = useState<Record<string, string>>({});
   const [editMode, setEditMode] = useState<Record<string, boolean>>({});
   const [sidebarWidth, setSidebarWidth] = useState<number>(300);
+  
   const sidebarRef = useRef<HTMLDivElement>(null);
   const resizeHandleRef = useRef<HTMLDivElement>(null);
   const resizingRef = useRef<boolean>(false);
@@ -54,6 +54,16 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
   const { data: structure, isLoading: isLoadingStructure } = usePlotStructure(structureId);
   const { data: sections = [], isLoading: isLoadingSections } = usePlotStructureSections(structureId);
   const { updateSection, isLoading: isSaving } = usePlotStructureActions();
+  
+  // Sort sections by order
+  const sortedSections = [...sections].sort((a, b) => a.order - b.order);
+
+  // Set active section to first section by default when loading
+  useEffect(() => {
+    if (sortedSections.length > 0 && !activeSection) {
+      setActiveSection(sortedSections[0].sectionKey);
+    }
+  }, [sortedSections, activeSection]);
 
   // Handle sidebar resize
   useEffect(() => {
@@ -73,10 +83,7 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
       const dx = e.clientX - startXRef.current;
       const newWidth = Math.max(240, Math.min(600, startWidthRef.current + dx));
       
-      if (sidebarRef.current) {
-        setSidebarWidth(newWidth);
-        sidebarRef.current.style.width = `${newWidth}px`;
-      }
+      setSidebarWidth(newWidth);
     };
 
     const handleMouseUp = () => {
@@ -102,19 +109,19 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
 
   // Navigate between sections
   const navigateToSection = (direction: 'next' | 'prev') => {
-    if (sections.length === 0 || !activeSection) return;
+    if (sortedSections.length === 0 || !activeSection) return;
     
-    const currentIndex = sections.findIndex(section => section.sectionKey === activeSection);
+    const currentIndex = sortedSections.findIndex(section => section.sectionKey === activeSection);
     if (currentIndex === -1) return;
     
     let newIndex;
     if (direction === 'next') {
-      newIndex = (currentIndex + 1) % sections.length;
+      newIndex = (currentIndex + 1) % sortedSections.length;
     } else {
-      newIndex = (currentIndex - 1 + sections.length) % sections.length;
+      newIndex = (currentIndex - 1 + sortedSections.length) % sortedSections.length;
     }
     
-    const newSectionKey = sections[newIndex].sectionKey;
+    const newSectionKey = sortedSections[newIndex].sectionKey;
     if (newSectionKey) {
       setActiveSection(newSectionKey);
     }
@@ -142,9 +149,6 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
       setEditMode(prev => ({ ...prev, [section.sectionKey]: false }));
     }
   };
-
-  // Sort sections by order
-  const sortedSections = [...sections].sort((a, b) => a.order - b.order);
 
   if (isLoadingStructure || isLoadingSections) {
     return (
@@ -197,33 +201,6 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
         </div>
         
         <TabsContent value="editor" className="flex-1 flex flex-col p-0">
-          {sortedSections.length > 0 && activeSection && (
-            <div className="flex items-center justify-between border-b p-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigateToSection('prev')}
-                disabled={!activeSection}
-              >
-                <ChevronLeft className="h-4 w-4 mr-1" /> Previous
-              </Button>
-              
-              <div className="text-sm font-medium">
-                <Badge variant="outline">
-                  {sortedSections.find(s => s.sectionKey === activeSection)?.title || activeSection}
-                </Badge>
-              </div>
-              
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigateToSection('next')}
-                disabled={!activeSection}
-              >
-                Next <ChevronRight className="h-4 w-4 ml-1" />
-              </Button>
-            </div>
-          )}
           {sortedSections.length === 0 ? (
             <div className="p-4 text-center">
               <p className="text-muted-foreground">No sections found for this plot structure.</p>
@@ -231,29 +208,49 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
           ) : (
             <>
               <div className="flex h-full">
-                <div 
-                  ref={sidebarRef} 
-                  style={{ width: `${sidebarWidth}px` }} 
-                  className="min-w-[240px] border-r overflow-hidden flex"
-                >
-                  <ScrollArea className="h-full w-full">
-                    <div className="p-2">
-                      {sortedSections.map((section) => (
-                        <Button
-                          key={section.id}
-                          variant={activeSection === section.sectionKey ? "default" : "ghost"}
-                          className="w-full justify-start mb-1 text-left"
-                          onClick={() => setActiveSection(section.sectionKey)}
-                        >
-                          {section.title}
-                        </Button>
-                      ))}
+                <div className="flex flex-col border-r" style={{ width: `${sidebarWidth}px`, minWidth: '240px' }}>
+                  {activeSection && (
+                    <div className="flex items-center justify-between border-b p-2 bg-muted/30">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => navigateToSection('prev')}
+                        disabled={!activeSection}
+                      >
+                        <ChevronLeft className="h-4 w-4 mr-1" /> Previous
+                      </Button>
+                      
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => navigateToSection('next')}
+                        disabled={!activeSection}
+                      >
+                        Next <ChevronRight className="h-4 w-4 ml-1" />
+                      </Button>
                     </div>
-                  </ScrollArea>
-                  <div 
-                    ref={resizeHandleRef}
-                    className="w-1 cursor-ew-resize h-full hover:bg-primary/20 active:bg-primary/40"
-                  ></div>
+                  )}
+                
+                  <div className="flex flex-1 overflow-hidden" ref={sidebarRef}>
+                    <ScrollArea className="h-full w-full">
+                      <div className="p-2">
+                        {sortedSections.map((section) => (
+                          <Button
+                            key={section.id}
+                            variant={activeSection === section.sectionKey ? "default" : "ghost"}
+                            className="w-full justify-start mb-1 text-left"
+                            onClick={() => setActiveSection(section.sectionKey)}
+                          >
+                            {section.title}
+                          </Button>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                    <div 
+                      ref={resizeHandleRef}
+                      className="w-1 cursor-ew-resize h-full hover:bg-primary/20 active:bg-primary/40"
+                    ></div>
+                  </div>
                 </div>
 
                 <div className="flex-1 overflow-auto">
@@ -263,6 +260,37 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
                         <h3 className="text-lg font-semibold mb-2">
                           {sortedSections.find(s => s.sectionKey === activeSection)?.title}
                         </h3>
+                        
+                        <div className="mb-4 text-sm bg-muted/20 p-3 rounded-md border">
+                          <p className="text-muted-foreground">
+                            <strong>Example:</strong> {' '}
+                            {(() => {
+                              const section = sortedSections.find(s => s.sectionKey === activeSection);
+                              if (!section) return null;
+                              
+                              // Examples for each section key
+                              const examples: Record<string, string> = {
+                                "you": "Luke Skywalker lives a simple life on Tatooine with his aunt and uncle.",
+                                "need": "Princess Leia's message asks for help, and Obi-Wan invites Luke to learn the ways of the Force.",
+                                "go": "Luke leaves his home planet on the Millennium Falcon after stormtroopers kill his family.",
+                                "search": "Luke rescues the princess from the Death Star and learns more about his abilities.",
+                                "find": "Luke discovers he can use the Force and decides to join the Rebellion.",
+                                "take": "Luke loses Obi-Wan but gains new allies and responsibilities in the fight against the Empire.",
+                                "return": "Luke returns to the Rebel base with the Death Star plans and his new understanding of the Force.",
+                                "change": "Luke is no longer a farm boy but a hero of the Rebellion with a new purpose.",
+                                // Add examples for other section types
+                                "exposition": "Harry Potter lives under the stairs at his aunt and uncle's house, unaware of his magical heritage.",
+                                "incitingIncident": "Harry receives a letter from Hogwarts, revealing his true identity as a wizard.",
+                                "risingAction": "Harry attends Hogwarts, makes friends, and faces increasingly dangerous situations.",
+                                "climax": "Harry confronts Voldemort in the Chamber of Secrets, destroying the diary and saving Ginny.",
+                                "fallingAction": "The truth about Tom Riddle is revealed, and Harry returns to normal school life.",
+                                "resolution": "Harry returns to the Dursleys, but with the knowledge that he belongs in the wizarding world.",
+                              };
+                              
+                              return examples[section.sectionKey] || "Create your story content for this section.";
+                            })()}
+                          </p>
+                        </div>
                       </div>
                       
                       <div className="flex-grow p-4 pt-0">
