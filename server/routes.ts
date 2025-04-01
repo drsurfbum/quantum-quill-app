@@ -1,7 +1,15 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertProjectSchema, insertChapterSchema, insertWhiteboardSchema, insertOutlineItemSchema, insertStoryBibleEntrySchema } from "@shared/schema";
+import { 
+  insertProjectSchema, 
+  insertChapterSchema, 
+  insertWhiteboardSchema, 
+  insertOutlineItemSchema, 
+  insertStoryBibleEntrySchema,
+  insertPlotStructureSchema,
+  insertPlotStructureSectionSchema
+} from "@shared/schema";
 import { z } from "zod";
 import { ZodError } from "zod-validation-error";
 import { setupAuth } from "./auth";
@@ -366,6 +374,165 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     res.status(204).send();
+  });
+
+  // Plot structure template routes
+  app.get("/api/plot-templates", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const templates = await storage.getAllPlotStructureTemplates();
+      res.json(templates);
+    } catch (error) {
+      console.error("Error fetching plot templates:", error);
+      res.status(500).json({ message: "Failed to fetch plot structure templates" });
+    }
+  });
+
+  app.get("/api/plot-templates/:id", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const template = await storage.getPlotStructureTemplate(id);
+      
+      if (!template) {
+        return res.status(404).json({ message: "Plot structure template not found" });
+      }
+      
+      res.json(template);
+    } catch (error) {
+      console.error("Error fetching plot template:", error);
+      res.status(500).json({ message: "Failed to fetch plot structure template" });
+    }
+  });
+
+  // Plot structure routes
+  app.get("/api/projects/:projectId/plot-structures", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const projectId = parseInt(req.params.projectId);
+      const structures = await storage.getProjectPlotStructures(projectId);
+      res.json(structures);
+    } catch (error) {
+      console.error("Error fetching plot structures:", error);
+      res.status(500).json({ message: "Failed to fetch plot structures" });
+    }
+  });
+
+  app.post("/api/plot-structures", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const validatedData = insertPlotStructureSchema.parse(req.body);
+      const structure = await storage.createPlotStructure(validatedData);
+      res.status(201).json(structure);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid plot structure data", errors: error.errors });
+      }
+      console.error("Error creating plot structure:", error);
+      res.status(500).json({ message: "Failed to create plot structure" });
+    }
+  });
+
+  app.get("/api/plot-structures/:id", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const structure = await storage.getPlotStructure(id);
+      
+      if (!structure) {
+        return res.status(404).json({ message: "Plot structure not found" });
+      }
+      
+      res.json(structure);
+    } catch (error) {
+      console.error("Error fetching plot structure:", error);
+      res.status(500).json({ message: "Failed to fetch plot structure" });
+    }
+  });
+
+  app.put("/api/plot-structures/:id", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const updatedStructure = await storage.updatePlotStructure(id, req.body);
+      
+      if (!updatedStructure) {
+        return res.status(404).json({ message: "Plot structure not found" });
+      }
+      
+      res.json(updatedStructure);
+    } catch (error) {
+      console.error("Error updating plot structure:", error);
+      res.status(500).json({ message: "Failed to update plot structure" });
+    }
+  });
+
+  app.delete("/api/plot-structures/:id", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const success = await storage.deletePlotStructure(id);
+      
+      if (!success) {
+        return res.status(404).json({ message: "Plot structure not found" });
+      }
+      
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting plot structure:", error);
+      res.status(500).json({ message: "Failed to delete plot structure" });
+    }
+  });
+
+  // Plot structure section routes
+  app.get("/api/plot-structures/:structureId/sections", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const structureId = parseInt(req.params.structureId);
+      const sections = await storage.getPlotStructureSections(structureId);
+      res.json(sections);
+    } catch (error) {
+      console.error("Error fetching plot structure sections:", error);
+      res.status(500).json({ message: "Failed to fetch plot structure sections" });
+    }
+  });
+
+  app.post("/api/plot-structure-sections", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const validatedData = insertPlotStructureSectionSchema.parse(req.body);
+      const section = await storage.createPlotStructureSection(validatedData);
+      res.status(201).json(section);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid plot structure section data", errors: error.errors });
+      }
+      console.error("Error creating plot structure section:", error);
+      res.status(500).json({ message: "Failed to create plot structure section" });
+    }
+  });
+
+  app.put("/api/plot-structure-sections/:id", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const updatedSection = await storage.updatePlotStructureSection(id, req.body);
+      
+      if (!updatedSection) {
+        return res.status(404).json({ message: "Plot structure section not found" });
+      }
+      
+      res.json(updatedSection);
+    } catch (error) {
+      console.error("Error updating plot structure section:", error);
+      res.status(500).json({ message: "Failed to update plot structure section" });
+    }
+  });
+
+  app.delete("/api/plot-structure-sections/:id", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const success = await storage.deletePlotStructureSection(id);
+      
+      if (!success) {
+        return res.status(404).json({ message: "Plot structure section not found" });
+      }
+      
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting plot structure section:", error);
+      res.status(500).json({ message: "Failed to delete plot structure section" });
+    }
   });
 
   const httpServer = createServer(app);
