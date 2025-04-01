@@ -28,7 +28,7 @@ export default function Whiteboard({ projectId, whiteboardId, initialData, onSav
   const [selectedTool, setSelectedTool] = useState<Tool>('select');
   const [color, setColor] = useState('#000000');
   const [brushSize, setBrushSize] = useState('2');
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [sidebarTab, setSidebarTab] = useState<'plotStructures' | 'notes'>('plotStructures');
   
   const toggleSidebar = (tab: 'plotStructures' | 'notes') => {
@@ -155,7 +155,7 @@ export default function Whiteboard({ projectId, whiteboardId, initialData, onSav
     <div className="flex-grow flex overflow-hidden">
       {/* Sidebar */}
       {sidebarOpen && (
-        <div className="w-80 h-full flex flex-col overflow-hidden border-r">
+        <div className="w-96 h-full flex flex-col overflow-hidden border-r">
           <div className="p-2 border-b flex justify-between items-center">
             <Tabs value={sidebarTab} onValueChange={(value: string) => setSidebarTab(value as any)}>
               <TabsList>
@@ -211,100 +211,74 @@ export default function Whiteboard({ projectId, whiteboardId, initialData, onSav
           )}
           
           <Button
-            variant={selectedTool === 'select' ? 'default' : 'ghost'}
+            variant="ghost"
             size="icon"
-            onClick={() => handleToolChange('select')}
-            title="Select tool"
+            title="Bold"
           >
-            <MousePointer className="h-4 w-4" />
+            <span className="font-bold">B</span>
           </Button>
           
           <Button
-            variant={selectedTool === 'move' ? 'default' : 'ghost'}
+            variant="ghost" 
             size="icon"
-            onClick={() => handleToolChange('move')}
-            title="Move canvas"
+            title="Italic"
           >
-            <Move className="h-4 w-4" />
+            <span className="italic">I</span>
           </Button>
           
           <Button
-            variant={selectedTool === 'pen' ? 'default' : 'ghost'}
-            size="icon"
-            onClick={() => handleToolChange('pen')}
-            title="Pen tool"
+            variant="ghost"
+            size="icon" 
+            title="Underline"
           >
-            <Pen className="h-4 w-4" />
-          </Button>
-          
-          <Button
-            variant={selectedTool === 'text' ? 'default' : 'ghost'}
-            size="icon"
-            onClick={() => handleToolChange('text')}
-            title="Text tool"
-          >
-            <Type className="h-4 w-4" />
-          </Button>
-          
-          <Button
-            variant={selectedTool === 'rectangle' ? 'default' : 'ghost'}
-            size="icon"
-            onClick={() => handleToolChange('rectangle')}
-            title="Rectangle tool"
-          >
-            <Square className="h-4 w-4" />
-          </Button>
-          
-          <Button
-            variant={selectedTool === 'circle' ? 'default' : 'ghost'}
-            size="icon"
-            onClick={() => handleToolChange('circle')}
-            title="Circle tool"
-          >
-            <Circle className="h-4 w-4" />
-          </Button>
-          
-          <Button
-            variant={selectedTool === 'note' ? 'default' : 'ghost'}
-            size="icon"
-            onClick={() => handleToolChange('note')}
-            title="Sticky note"
-          >
-            <StickyNote className="h-4 w-4" />
-          </Button>
-          
-          <Button
-            variant={selectedTool === 'image' ? 'default' : 'ghost'}
-            size="icon"
-            onClick={handleUploadImage}
-            title="Upload image"
-          >
-            <ImageIcon className="h-4 w-4" />
+            <span className="underline">U</span>
           </Button>
           
           <Separator orientation="vertical" className="mx-1 h-6" />
           
-          <div className="flex items-center space-x-2">
-            <input
-              type="color"
-              value={color}
-              onChange={handleColorChange}
-              className="w-6 h-6 rounded-md border-0"
-              title="Choose color"
-            />
-            
-            <Select value={brushSize} onValueChange={handleBrushSizeChange}>
-              <SelectTrigger className="w-[70px] h-8">
-                <SelectValue placeholder="Size" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="1">Thin</SelectItem>
-                <SelectItem value="2">Medium</SelectItem>
-                <SelectItem value="4">Thick</SelectItem>
-                <SelectItem value="8">Extra Thick</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            title="Heading 1"
+          >
+            <span className="font-bold">H1</span>
+          </Button>
+          
+          <Button
+            variant="ghost"
+            size="icon"
+            title="Heading 2"
+          >
+            <span className="font-bold">H2</span>
+          </Button>
+          
+          <Button
+            variant="ghost"
+            size="icon"
+            title="Heading 3"
+          >
+            <span className="font-bold">H3</span>
+          </Button>
+          
+          <Separator orientation="vertical" className="mx-1 h-6" />
+          
+          <Button
+            variant="ghost"
+            size="icon"
+            title="Add Image"
+            onClick={handleUploadImage}
+          >
+            <ImageIcon className="h-4 w-4" />
+          </Button>
+          
+          <Button
+            variant="ghost"
+            size="icon"
+            title="Add Note"
+            onClick={() => handleToolChange('note')}
+          >
+            <StickyNote className="h-4 w-4" />
+          </Button>
           
           <Separator orientation="vertical" className="mx-1 h-6" />
           

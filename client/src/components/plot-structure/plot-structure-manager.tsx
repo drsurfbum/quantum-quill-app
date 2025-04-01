@@ -4,6 +4,7 @@ import {
   usePlotStructureActions,
   usePlotTemplates
 } from '@/hooks/use-plot-structure';
+import { queryClient } from '@/lib/queryClient';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -78,13 +79,34 @@ export default function PlotStructureManager({ projectId }: PlotStructureManager
     }
   };
 
-  const handleDeletePlotStructure = () => {
+  const handleDeletePlotStructure = async () => {
     if (plotToDelete) {
-      deletePlotStructure(plotToDelete);
-      
-      // If we're deleting the currently selected structure, clear the selection
-      if (selectedPlotStructure === plotToDelete) {
-        setSelectedPlotStructure(null);
+      try {
+        await deletePlotStructure(plotToDelete);
+        
+        // Filter out the deleted structure from our local state
+        const updatedStructures = plotStructures.filter(s => s.id !== plotToDelete);
+        queryClient.setQueryData(
+          [`/api/projects/${numericProjectId}/plot-structures`], 
+          updatedStructures
+        );
+        
+        // If we're deleting the currently selected structure, clear the selection
+        if (selectedPlotStructure === plotToDelete) {
+          setSelectedPlotStructure(null);
+        }
+        
+        toast({
+          title: 'Plot structure deleted',
+          description: 'Your plot structure has been deleted successfully.'
+        });
+      } catch (error) {
+        console.error('Error deleting plot structure:', error);
+        toast({
+          title: 'Error deleting plot structure',
+          description: 'There was a problem deleting your plot structure.',
+          variant: 'destructive'
+        });
       }
       
       setPlotToDelete(null);
