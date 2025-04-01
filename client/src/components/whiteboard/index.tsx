@@ -19,11 +19,12 @@ interface WhiteboardProps {
   whiteboardId?: string | number;
   initialData?: any;
   onSave?: (data: any) => void;
+  hideCanvas?: boolean;
 }
 
 type Tool = 'select' | 'pen' | 'text' | 'rectangle' | 'circle' | 'note' | 'image' | 'move';
 
-export default function Whiteboard({ projectId, whiteboardId, initialData, onSave }: WhiteboardProps) {
+export default function Whiteboard({ projectId, whiteboardId, initialData, onSave, hideCanvas = false }: WhiteboardProps) {
   const canvasRef = useRef<any>(null);
   const { toast } = useToast();
   const [selectedTool, setSelectedTool] = useState<Tool>('select');
@@ -310,7 +311,7 @@ export default function Whiteboard({ projectId, whiteboardId, initialData, onSav
             </div>
             
             <div className="flex-grow relative bg-neutral-50 dark:bg-neutral-800 overflow-hidden">
-              <Canvas ref={canvasRef} />
+              {!hideCanvas && <Canvas ref={canvasRef} />}
             </div>
           </ResizablePanel>
         </ResizablePanelGroup>
@@ -330,7 +331,7 @@ export default function Whiteboard({ projectId, whiteboardId, initialData, onSav
           </div>
           
           <div className="flex-grow relative bg-neutral-50 dark:bg-neutral-800 overflow-hidden">
-            <Canvas ref={canvasRef} />
+            {!hideCanvas && <Canvas ref={canvasRef} />}
           </div>
         </div>
       )}

@@ -185,6 +185,7 @@ export default function Storyboard() {
               whiteboardId={currentWhiteboardId || undefined}
               initialData={currentWhiteboard?.canvasData}
               onSave={handleSave}
+              hideCanvas={true}
             />
           )}
         </div>
