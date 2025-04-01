@@ -323,7 +323,7 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
           )}
         </TabsContent>
 
-        <TabsContent value="overview" className="flex-1 overflow-hidden">
+        <TabsContent value="overview" className="flex-1 p-0">
           <ScrollArea className="h-full p-4">
             <Card className="mb-6">
               <CardHeader>
