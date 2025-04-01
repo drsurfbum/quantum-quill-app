@@ -4,10 +4,13 @@ import ThemeToggle from "@/components/ui/theme-toggle";
 import ExportModal from "@/components/export-modal";
 import { useProject } from "@/hooks/use-project";
 import { Button } from "@/components/ui/button";
-import { Share2, ExternalLink, Plus, Users, MapPin, ShoppingBag, Calendar, FileText } from "lucide-react";
+import { 
+  Share2, ExternalLink, Plus, Users, MapPin, ShoppingBag, Calendar, FileText,
+  Edit3, Grid, ListTree, BookOpen, Languages, Wand2, Train, 
+  Building, FolderTree, GitBranch, Scroll, Globe, Mountain, Workflow 
+} from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
-import { Edit3, Grid, ListTree, BookOpen } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useStoryBibleEntries, useCreateStoryBibleEntry } from "@/hooks/use-story-bible";
 import { useState, useEffect } from "react";
@@ -20,9 +23,18 @@ import { useIsMobile } from "@/hooks/use-mobile";
 const entryTypes = [
   { id: "all", label: "All", icon: FileText },
   { id: "character", label: "Characters", icon: Users },
+  { id: "race", label: "Races/Species", icon: Globe },
   { id: "location", label: "Locations", icon: MapPin },
   { id: "item", label: "Items", icon: ShoppingBag },
   { id: "event", label: "Events", icon: Calendar },
+  { id: "language", label: "Languages", icon: Languages },
+  { id: "magicSystem", label: "Magic Systems", icon: Wand2 },
+  { id: "transportation", label: "Transportation", icon: Train },
+  { id: "government", label: "Governments", icon: Building },
+  { id: "group", label: "Groups", icon: FolderTree },
+  { id: "timeline", label: "Timeline Events", icon: GitBranch },
+  { id: "lore", label: "Lore/Myths", icon: Scroll },
+  { id: "geography", label: "Geography", icon: Mountain },
 ];
 
 export default function StoryBible() {
@@ -42,15 +54,15 @@ export default function StoryBible() {
     }
   }, [isMobile]);
   
-  const { data: project, isLoading: isLoadingProject } = useProject(id);
-  const { data: entries = [], isLoading: isLoadingEntries } = useStoryBibleEntries(id);
+  const { data: project, isLoading: isLoadingProject } = useProject(id ? Number(id) : 0);
+  const { data: entries = [], isLoading: isLoadingEntries } = useStoryBibleEntries(id ? Number(id) : 0);
   const { mutate: createEntry, isPending: isCreating } = useCreateStoryBibleEntry();
   
   // Filter entries by type and search term
   const filteredEntries = entries.filter(entry => {
     const matchesType = selectedType === "all" || entry.entryType === selectedType;
     const matchesSearch = entry.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         entry.content.toLowerCase().includes(searchTerm.toLowerCase());
+                         (entry.content ? entry.content.toLowerCase().includes(searchTerm.toLowerCase()) : false);
     return matchesType && matchesSearch;
   }).sort((a, b) => a.title.localeCompare(b.title));
   
@@ -181,11 +193,16 @@ export default function StoryBible() {
                 {/* Dropdown menu for entry types */}
                 <div 
                   id="entry-type-menu" 
-                  className="absolute right-3 mt-8 bg-white dark:bg-neutral-800 shadow-md rounded-md py-1 z-10 border border-neutral-200 dark:border-neutral-700"
+                  className="absolute right-3 mt-8 bg-white dark:bg-neutral-800 shadow-md rounded-md py-1 z-10 border border-neutral-200 dark:border-neutral-700 overflow-y-auto max-h-[80vh]"
                   style={{ display: 'none' }}
                 >
                   <div className="py-1 px-2 text-xs text-neutral-500 dark:text-neutral-400 font-medium">
                     Create new:
+                  </div>
+                  
+                  {/* Characters & Races */}
+                  <div className="py-1 px-2 text-xs text-neutral-500 dark:text-neutral-400 font-medium border-t border-neutral-200 dark:border-neutral-700 mt-1">
+                    Characters & People
                   </div>
                   <Button 
                     variant="ghost" 
@@ -203,11 +220,93 @@ export default function StoryBible() {
                     size="sm" 
                     className="w-full justify-start px-3 py-1 h-8"
                     onClick={() => {
+                      handleCreateEntry('race');
+                      document.getElementById('entry-type-menu')!.style.display = 'none';
+                    }}
+                  >
+                    <Globe className="h-4 w-4 mr-2" /> Race/Species
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="w-full justify-start px-3 py-1 h-8"
+                    onClick={() => {
+                      handleCreateEntry('group');
+                      document.getElementById('entry-type-menu')!.style.display = 'none';
+                    }}
+                  >
+                    <FolderTree className="h-4 w-4 mr-2" /> Group
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="w-full justify-start px-3 py-1 h-8"
+                    onClick={() => {
+                      handleCreateEntry('government');
+                      document.getElementById('entry-type-menu')!.style.display = 'none';
+                    }}
+                  >
+                    <Building className="h-4 w-4 mr-2" /> Government
+                  </Button>
+                  
+                  {/* World Elements */}
+                  <div className="py-1 px-2 text-xs text-neutral-500 dark:text-neutral-400 font-medium border-t border-neutral-200 dark:border-neutral-700 mt-1">
+                    World Elements
+                  </div>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="w-full justify-start px-3 py-1 h-8"
+                    onClick={() => {
                       handleCreateEntry('location');
                       document.getElementById('entry-type-menu')!.style.display = 'none';
                     }}
                   >
                     <MapPin className="h-4 w-4 mr-2" /> Location
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="w-full justify-start px-3 py-1 h-8"
+                    onClick={() => {
+                      handleCreateEntry('geography');
+                      document.getElementById('entry-type-menu')!.style.display = 'none';
+                    }}
+                  >
+                    <Mountain className="h-4 w-4 mr-2" /> Geography
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="w-full justify-start px-3 py-1 h-8"
+                    onClick={() => {
+                      handleCreateEntry('magicSystem');
+                      document.getElementById('entry-type-menu')!.style.display = 'none';
+                    }}
+                  >
+                    <Wand2 className="h-4 w-4 mr-2" /> Magic System
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="w-full justify-start px-3 py-1 h-8"
+                    onClick={() => {
+                      handleCreateEntry('language');
+                      document.getElementById('entry-type-menu')!.style.display = 'none';
+                    }}
+                  >
+                    <Languages className="h-4 w-4 mr-2" /> Language
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="w-full justify-start px-3 py-1 h-8"
+                    onClick={() => {
+                      handleCreateEntry('transportation');
+                      document.getElementById('entry-type-menu')!.style.display = 'none';
+                    }}
+                  >
+                    <Train className="h-4 w-4 mr-2" /> Transportation
                   </Button>
                   <Button 
                     variant="ghost" 
@@ -220,6 +319,11 @@ export default function StoryBible() {
                   >
                     <ShoppingBag className="h-4 w-4 mr-2" /> Item
                   </Button>
+                  
+                  {/* History & Lore */}
+                  <div className="py-1 px-2 text-xs text-neutral-500 dark:text-neutral-400 font-medium border-t border-neutral-200 dark:border-neutral-700 mt-1">
+                    History & Lore
+                  </div>
                   <Button 
                     variant="ghost" 
                     size="sm" 
@@ -230,6 +334,28 @@ export default function StoryBible() {
                     }}
                   >
                     <Calendar className="h-4 w-4 mr-2" /> Event
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="w-full justify-start px-3 py-1 h-8"
+                    onClick={() => {
+                      handleCreateEntry('timeline');
+                      document.getElementById('entry-type-menu')!.style.display = 'none';
+                    }}
+                  >
+                    <GitBranch className="h-4 w-4 mr-2" /> Timeline Event
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="w-full justify-start px-3 py-1 h-8"
+                    onClick={() => {
+                      handleCreateEntry('lore');
+                      document.getElementById('entry-type-menu')!.style.display = 'none';
+                    }}
+                  >
+                    <Scroll className="h-4 w-4 mr-2" /> Lore/Myth
                   </Button>
                 </div>
               </div>

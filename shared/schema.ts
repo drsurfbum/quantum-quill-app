@@ -110,9 +110,12 @@ export type OutlineItem = typeof outlineItems.$inferSelect;
 export const storyBibleEntries = pgTable("story_bible_entries", {
   id: serial("id").primaryKey(),
   projectId: integer("project_id").notNull(),
-  entryType: text("entry_type").notNull(), // character, location, item, etc.
+  entryType: text("entry_type").notNull(), // character, location, item, race, language, etc.
   title: text("title").notNull(),
   content: text("content").default(""),
+  category: text("category"), // For sub-categorization (e.g., for characters: protagonist, antagonist)
+  tags: text("tags").array(), // For flexible tagging
+  relatedEntryIds: integer("related_entry_ids").array(), // For relationships between entries
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -122,6 +125,9 @@ export const insertStoryBibleEntrySchema = createInsertSchema(storyBibleEntries)
   entryType: true,
   title: true,
   content: true,
+  category: true,
+  tags: true,
+  relatedEntryIds: true,
 });
 
 export type InsertStoryBibleEntry = z.infer<typeof insertStoryBibleEntrySchema>;
