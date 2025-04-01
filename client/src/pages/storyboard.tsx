@@ -24,16 +24,16 @@ export default function Storyboard() {
   const isMobile = useIsMobile();
   const [isCollapsed, setIsCollapsed] = useState(isMobile);
   const [currentWhiteboardId, setCurrentWhiteboardId] = useState<number | null>(null);
-  
+
   // Auto-collapse on mobile
   useEffect(() => {
     if (isMobile) {
       setIsCollapsed(true);
     }
   }, [isMobile]);
-  
+
   const { data: project, isLoading: isLoadingProject } = useProject(id);
-  
+
   // Get available whiteboards for this project
   const { data: whiteboards = [], isLoading: isLoadingWhiteboards } = useQuery<WhiteboardType[]>({
     queryKey: [`/api/projects/${id}/whiteboards`],
@@ -102,7 +102,7 @@ export default function Storyboard() {
     <div className="h-screen flex flex-col overflow-hidden bg-background">
       <div className="flex flex-row flex-1 w-full h-full overflow-hidden">
         <SidebarNavigation onCollapsedChange={setIsCollapsed} />
-        
+
         <main className="flex-grow overflow-hidden flex flex-col w-full pl-0 md:pl-0" style={{marginLeft: isCollapsed ? '56px' : '0'}}>
         <header className="h-16 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between px-4 sm:px-6">
           <div className="flex items-center">
@@ -114,14 +114,14 @@ export default function Storyboard() {
           </div>
           <div className="flex items-center space-x-2 sm:space-x-4">
             <ThemeToggle />
-            
+
             <Button variant="ghost" className="flex items-center gap-1">
               <Share2 className="h-4 w-4" />
               <span className="hidden sm:inline">Share</span>
             </Button>
-            
+
             {project && <ExportModal projectId={project.id} projectTitle={project.title} />}
-            
+
             <Button className="flex items-center gap-1">
               <ExternalLink className="h-4 w-4" />
               <span className="hidden sm:inline">Preview</span>
@@ -136,34 +136,34 @@ export default function Storyboard() {
                 <TabsTrigger value="write" className={cn(
                   "data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none",
                   location === `/project/${id}/write` ? "border-b-2 border-primary" : ""
-                )}>
+                )} style={{marginRight: '1rem'}}>
                   <Edit3 className="mr-1 h-4 w-4" /> Write
                 </TabsTrigger>
               </Link>
-              
+
               <Link href={`/project/${id}/storyboard`}>
                 <TabsTrigger value="storyboard" className={cn(
                   "data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none",
                   location === `/project/${id}/storyboard` ? "border-b-2 border-primary" : ""
-                )}>
+                )} style={{marginRight: '1rem'}}>
                   <Grid className="mr-1 h-4 w-4" /> Storyboard
                 </TabsTrigger>
               </Link>
-              
+
               <Link href={`/project/${id}/outline`}>
                 <TabsTrigger value="outline" className={cn(
                   "data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none",
                   location === `/project/${id}/outline` ? "border-b-2 border-primary" : ""
-                )}>
+                )} style={{marginRight: '1rem'}}>
                   <ListTree className="mr-1 h-4 w-4" /> Outline
                 </TabsTrigger>
               </Link>
-              
+
               <Link href={`/project/${id}/story-bible`}>
                 <TabsTrigger value="story-bible" className={cn(
                   "data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none",
                   location === `/project/${id}/story-bible` ? "border-b-2 border-primary" : ""
-                )}>
+                )} style={{marginRight: '1rem'}}>
                   <BookOpen className="mr-1 h-4 w-4" /> Story Bible
                 </TabsTrigger>
               </Link>
