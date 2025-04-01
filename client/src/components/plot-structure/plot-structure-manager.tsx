@@ -43,6 +43,7 @@ import {
 import { type PlotStructureTemplate } from '@shared/schema';
 import TemplateSelector from './template-selector';
 import PlotStructureView from './plot-structure-view';
+import PlotStructureCard from './plot-structure-card';
 
 interface PlotStructureManagerProps {
   projectId: number | string;
@@ -168,47 +169,15 @@ export default function PlotStructureManager({ projectId }: PlotStructureManager
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {plotStructures.map((structure) => (
-                  <Card key={structure.id} className="border border-border">
-                    <CardHeader className="pb-2">
-                      <div className="flex justify-between items-start">
-                        <CardTitle>{structure.name}</CardTitle>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem 
-                              className="text-destructive focus:text-destructive"
-                              onClick={() => {
-                                setPlotToDelete(structure.id);
-                                setDeleteConfirmOpen(true);
-                              }}
-                            >
-                              <Trash2 className="h-4 w-4 mr-2" /> Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                      {structure.description && (
-                        <CardDescription>{structure.description}</CardDescription>
-                      )}
-                    </CardHeader>
-                    <CardContent className="pb-2">
-                      <p className="text-sm text-muted-foreground">
-                        Click to view and edit this plot structure.
-                      </p>
-                    </CardContent>
-                    <CardFooter>
-                      <Button 
-                        variant="outline" 
-                        onClick={() => setSelectedPlotStructure(structure.id)}
-                      >
-                        View Structure
-                      </Button>
-                    </CardFooter>
-                  </Card>
+                  <PlotStructureCard 
+                    key={structure.id}
+                    structure={structure}
+                    onSelectStructure={setSelectedPlotStructure}
+                    onDeleteStructure={(id) => {
+                      setPlotToDelete(id);
+                      setDeleteConfirmOpen(true);
+                    }}
+                  />
                 ))}
               </div>
             )}
