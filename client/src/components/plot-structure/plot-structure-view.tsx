@@ -127,7 +127,10 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
               description: "Your changes have been automatically saved.",
               duration: 5000 // 5 seconds auto-dismiss
             });
-            // Keep editing mode active
+            
+            // Important: keep the activeSection as is, so we stay in the editor
+            // without navigation and allow continuing to edit
+            setActiveSection(sectionKey); // Ensure we stay on the same section
           },
           onError: () => {
             setSaveStatus(prev => ({ ...prev, [sectionKey]: 'saved' }));
@@ -135,7 +138,7 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
         }
       );
     }, 2000),
-    [updateSection, toast]
+    [updateSection, toast, setActiveSection]
   );
 
   // Initialize content for editing
@@ -169,7 +172,12 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
               description: "Your changes have been saved successfully.",
               duration: 5000 // 5 seconds auto-dismiss
             });
-            // Keep editing mode active - don't close the editor
+            
+            // Important: keep the activeSection as is, so we stay in the editor
+            if (onClose) {
+              // Only call onClose if explicitly requested, not after saving
+              // This prevents navigation back to the structure list
+            }
           }
         }
       );
@@ -192,6 +200,9 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
               description: "Your changes have been saved successfully.",
               duration: 5000 // 5 seconds auto-dismiss
             });
+            
+            // Important: keep the activeSection as is, so we stay in the editor
+            // and don't navigate away after saving
           }
         }
       );

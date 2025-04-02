@@ -163,6 +163,13 @@ export function usePlotStructureActions() {
           );
         }
       );
+      
+      // Show success toast notification that auto-dismisses after 5 seconds
+      toast({
+        title: 'Section updated',
+        description: 'Your changes have been saved successfully.',
+        duration: 5000 // 5 seconds auto-dismiss
+      });
     },
     onError: (error) => {
       toast({
