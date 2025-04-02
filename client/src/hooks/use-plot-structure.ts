@@ -152,9 +152,17 @@ export function usePlotStructureActions() {
       return await res.json() as PlotStructureSection;
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: [`/api/plot-structures/${data.plotStructureId}/sections`] });
-      // Only show a toast notification if explicitly requested by passing showToast: true
-      // This will avoid toast when autosaving
+      // Instead of invalidating, we'll update the query cache directly to avoid re-fetching
+      // This prevents the component from unmounting and remounting
+      queryClient.setQueryData(
+        [`/api/plot-structures/${data.plotStructureId}/sections`], 
+        (oldData: PlotStructureSection[] | undefined) => {
+          if (!oldData) return [data];
+          return oldData.map(section => 
+            section.id === data.id ? { ...section, ...data } : section
+          );
+        }
+      );
     },
     onError: (error) => {
       toast({
