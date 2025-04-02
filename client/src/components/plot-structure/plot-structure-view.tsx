@@ -28,7 +28,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { 
   ChevronLeft, 
   ChevronRight, 
-  Edit, 
   Save, 
   X, 
   AlertCircle, 
@@ -76,7 +75,6 @@ interface PlotStructureViewProps {
 export default function PlotStructureView({ structureId, onClose }: PlotStructureViewProps) {
   const [activeSection, setActiveSection] = useState<string | null>(null);
   const [editedContent, setEditedContent] = useState<Record<string, string>>({});
-  const [editMode, setEditMode] = useState<Record<string, boolean>>({});
   const [saveStatus, setSaveStatus] = useState<Record<string, 'saved' | 'typing' | 'saving'>>({});
   
   const { toast } = useToast();
@@ -140,17 +138,13 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
     [updateSection, toast]
   );
 
-  // Start editing a section
-  const startEditing = (sectionKey: string, content: string | null) => {
-    setEditedContent(prev => ({ ...prev, [sectionKey]: content || '' }));
-    setEditMode(prev => ({ ...prev, [sectionKey]: true }));
-    setSaveStatus(prev => ({ ...prev, [sectionKey]: 'saved' }));
-  };
-
-  // Cancel editing a section
-  const cancelEditing = (sectionKey: string) => {
-    setEditMode(prev => ({ ...prev, [sectionKey]: false }));
-  };
+  // Initialize content for editing
+  const initializeContent = useCallback((sectionKey: string, content: string | null) => {
+    if (!editedContent[sectionKey]) {
+      setEditedContent(prev => ({ ...prev, [sectionKey]: content || '' }));
+      setSaveStatus(prev => ({ ...prev, [sectionKey]: 'saved' }));
+    }
+  }, [editedContent]);
 
   // Handle content change with autosave
   const handleContentChange = (sectionKey: string, content: string, sectionId: number) => {
@@ -182,8 +176,8 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
     }
   };
 
-  // Save and close
-  const saveAndClose = (section: PlotStructureSection) => {
+  // Save with specific message
+  const saveWithMessage = (section: PlotStructureSection, title: string) => {
     const content = editedContent[section.sectionKey];
     if (content !== undefined) {
       setSaveStatus(prev => ({ ...prev, [section.sectionKey]: 'saving' }));
@@ -194,12 +188,10 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
             setSaveStatus(prev => ({ ...prev, [section.sectionKey]: 'saved' }));
             // Show a toast that auto-dismisses after 5 seconds
             toast({
-              title: "Section saved and closed",
+              title,
               description: "Your changes have been saved successfully.",
               duration: 5000 // 5 seconds auto-dismiss
             });
-            // Close the editor
-            setEditMode(prev => ({ ...prev, [section.sectionKey]: false }));
           }
         }
       );
@@ -235,7 +227,13 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
   }
 
   const activeSectionData = activeSection ? sortedSections.find(s => s.sectionKey === activeSection) : null;
-  const isEditing = activeSectionData ? editMode[activeSectionData.sectionKey] || false : false;
+  
+  // Initialize edited content for active section
+  useEffect(() => {
+    if (activeSectionData && !editedContent[activeSectionData.sectionKey]) {
+      initializeContent(activeSectionData.sectionKey, activeSectionData.content);
+    }
+  }, [activeSectionData, editedContent, initializeContent]);
 
   return (
     <div className="flex flex-col h-full bg-background">
@@ -328,84 +326,44 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
                       </div>
                       
                       <div className="flex-1 flex flex-col">
-                        {isEditing ? (
-                          <div className="flex flex-col h-full">
-                            <Textarea
-                              value={editedContent[activeSectionData.sectionKey] || ''}
-                              onChange={(e) => handleContentChange(
-                                activeSectionData.sectionKey,
-                                e.target.value,
-                                activeSectionData.id
-                              )}
-                              className="flex-1 min-h-[200px] resize-none"
-                              placeholder={`Write your content for ${activeSectionData.title} here...`}
-                            />
+                        <div className="flex flex-col h-full">
+                          <Textarea
+                            value={editedContent[activeSectionData.sectionKey] || ''}
+                            onChange={(e) => handleContentChange(
+                              activeSectionData.sectionKey,
+                              e.target.value,
+                              activeSectionData.id
+                            )}
+                            className="flex-1 min-h-[200px] resize-none"
+                            placeholder={`Write your content for ${activeSectionData.title} here...`}
+                          />
+                          
+                          <div className="flex items-center justify-between mt-4">
+                            <span className={`text-xs px-2 py-0.5 rounded-full ${
+                              saveStatus[activeSectionData.sectionKey] === 'saved' 
+                                ? 'bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400' 
+                                : saveStatus[activeSectionData.sectionKey] === 'typing'
+                                ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400' 
+                                : 'bg-yellow-50 text-yellow-600 dark:bg-yellow-900/20 dark:text-yellow-400'
+                            }`}>
+                              {saveStatus[activeSectionData.sectionKey] === 'saved' 
+                                ? 'Saved' 
+                                : saveStatus[activeSectionData.sectionKey] === 'typing' 
+                                ? 'Typing...' 
+                                : 'Saving...'}
+                            </span>
                             
-                            <div className="flex items-center justify-between mt-4">
-                              <span className={`text-xs px-2 py-0.5 rounded-full ${
-                                saveStatus[activeSectionData.sectionKey] === 'saved' 
-                                  ? 'bg-success bg-opacity-10 text-success' 
-                                  : saveStatus[activeSectionData.sectionKey] === 'typing'
-                                  ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400' 
-                                  : 'bg-yellow-50 text-yellow-600 dark:bg-yellow-900/20 dark:text-yellow-400'
-                              }`}>
-                                {saveStatus[activeSectionData.sectionKey] === 'saved' 
-                                  ? 'Saved' 
-                                  : saveStatus[activeSectionData.sectionKey] === 'typing' 
-                                  ? 'Typing...' 
-                                  : 'Saving...'}
-                              </span>
-                              
-                              <div className="flex space-x-2">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => cancelEditing(activeSectionData.sectionKey)}
-                                  disabled={isSaving}
-                                >
-                                  Cancel
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => saveAndClose(activeSectionData)}
-                                  disabled={isSaving}
-                                >
-                                  <Save className="h-4 w-4 mr-1" /> Save & Close
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  onClick={() => saveSection(activeSectionData)}
-                                  disabled={isSaving}
-                                >
-                                  <Save className="h-4 w-4 mr-1" /> Save & Continue
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="flex flex-col h-full">
-                            <div className="prose prose-sm dark:prose-invert max-w-none flex-1 bg-card p-4 rounded-md border">
-                              {activeSectionData.content ? (
-                                <div style={{ whiteSpace: 'pre-wrap' }}>{activeSectionData.content}</div>
-                              ) : (
-                                <p className="text-muted-foreground italic">
-                                  No content yet. Click edit to add content for this section.
-                                </p>
-                              )}
-                            </div>
-                            
-                            <div className="flex justify-end mt-4">
+                            <div className="flex space-x-2">
                               <Button
-                                variant="default"
                                 size="sm"
-                                onClick={() => startEditing(activeSectionData.sectionKey, activeSectionData.content || '')}
+                                onClick={() => saveWithMessage(activeSectionData, "Section saved")}
+                                disabled={isSaving}
                               >
-                                <Edit className="h-4 w-4 mr-1" /> Edit
+                                <Save className="h-4 w-4 mr-1" /> Save
                               </Button>
                             </div>
                           </div>
-                        )}
+                        </div>
                       </div>
                     </div>
                   ) : (
@@ -457,7 +415,6 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
                         size="sm"
                         onClick={() => {
                           setActiveSection(section.sectionKey);
-                          startEditing(section.sectionKey, section.content || '');
                           document.querySelector('[data-value="editor"]')?.dispatchEvent(
                             new MouseEvent('click', { bubbles: true })
                           );
