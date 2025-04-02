@@ -153,10 +153,8 @@ export function usePlotStructureActions() {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: [`/api/plot-structures/${data.plotStructureId}/sections`] });
-      toast({
-        title: 'Section updated',
-        description: 'Your section has been updated successfully.'
-      });
+      // Only show a toast notification if explicitly requested by passing showToast: true
+      // This will avoid toast when autosaving
     },
     onError: (error) => {
       toast({

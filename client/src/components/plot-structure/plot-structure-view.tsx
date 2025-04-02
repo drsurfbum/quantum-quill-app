@@ -5,6 +5,7 @@ import {
   usePlotStructureSections, 
   usePlotStructureActions 
 } from '@/hooks/use-plot-structure';
+import { useToast } from '@/hooks/use-toast';
 import { 
   Card, 
   CardContent, 
@@ -78,6 +79,7 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
   const [editMode, setEditMode] = useState<Record<string, boolean>>({});
   const [saveStatus, setSaveStatus] = useState<Record<string, 'saved' | 'typing' | 'saving'>>({});
   
+  const { toast } = useToast();
   const { data: structure, isLoading: isLoadingStructure } = usePlotStructure(structureId);
   const { data: sections = [], isLoading: isLoadingSections } = usePlotStructureSections(structureId);
   const { updateSection, isLoading: isSaving } = usePlotStructureActions();
@@ -121,7 +123,13 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
         {
           onSuccess: () => {
             setSaveStatus(prev => ({ ...prev, [sectionKey]: 'saved' }));
-            // Don't change edit mode - keep editing
+            // Show a toast that auto-dismisses after 5 seconds
+            toast({
+              title: "Section updated",
+              description: "Your changes have been automatically saved.",
+              duration: 5000 // 5 seconds auto-dismiss
+            });
+            // Keep editing mode active
           },
           onError: () => {
             setSaveStatus(prev => ({ ...prev, [sectionKey]: 'saved' }));
@@ -129,7 +137,7 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
         }
       );
     }, 2000),
-    [updateSection]
+    [updateSection, toast]
   );
 
   // Start editing a section
@@ -161,6 +169,12 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
         {
           onSuccess: () => {
             setSaveStatus(prev => ({ ...prev, [section.sectionKey]: 'saved' }));
+            // Show a toast that auto-dismisses after 5 seconds
+            toast({
+              title: "Section saved",
+              description: "Your changes have been saved successfully.",
+              duration: 5000 // 5 seconds auto-dismiss
+            });
             // Keep editing mode active - don't close the editor
           }
         }
@@ -178,6 +192,13 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
         {
           onSuccess: () => {
             setSaveStatus(prev => ({ ...prev, [section.sectionKey]: 'saved' }));
+            // Show a toast that auto-dismisses after 5 seconds
+            toast({
+              title: "Section saved and closed",
+              description: "Your changes have been saved successfully.",
+              duration: 5000 // 5 seconds auto-dismiss
+            });
+            // Close the editor
             setEditMode(prev => ({ ...prev, [section.sectionKey]: false }));
           }
         }
