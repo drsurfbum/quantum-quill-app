@@ -227,13 +227,6 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
   }
 
   const activeSectionData = activeSection ? sortedSections.find(s => s.sectionKey === activeSection) : null;
-  
-  // Initialize edited content for active section
-  useEffect(() => {
-    if (activeSectionData && !editedContent[activeSectionData.sectionKey]) {
-      initializeContent(activeSectionData.sectionKey, activeSectionData.content);
-    }
-  }, [activeSectionData, editedContent, initializeContent]);
 
   return (
     <div className="flex flex-col h-full bg-background">
@@ -327,6 +320,11 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
                       
                       <div className="flex-1 flex flex-col">
                         <div className="flex flex-col h-full">
+                          {/* Initialize content if needed */}
+                          {!editedContent[activeSectionData.sectionKey] && (
+                            initializeContent(activeSectionData.sectionKey, activeSectionData.content),
+                            null
+                          )}
                           <Textarea
                             value={editedContent[activeSectionData.sectionKey] || ''}
                             onChange={(e) => handleContentChange(
