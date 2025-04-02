@@ -121,6 +121,7 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
         {
           onSuccess: () => {
             setSaveStatus(prev => ({ ...prev, [sectionKey]: 'saved' }));
+            // Don't change edit mode - keep editing
           },
           onError: () => {
             setSaveStatus(prev => ({ ...prev, [sectionKey]: 'saved' }));
@@ -150,8 +151,25 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
     debouncedSave(sectionId, sectionKey, content);
   };
 
-  // Manual save section content
+  // Manual save section content (continuing edit)
   const saveSection = (section: PlotStructureSection) => {
+    const content = editedContent[section.sectionKey];
+    if (content !== undefined) {
+      setSaveStatus(prev => ({ ...prev, [section.sectionKey]: 'saving' }));
+      updateSection(
+        { id: section.id, data: { content } },
+        {
+          onSuccess: () => {
+            setSaveStatus(prev => ({ ...prev, [section.sectionKey]: 'saved' }));
+            // Keep editing mode active - don't close the editor
+          }
+        }
+      );
+    }
+  };
+
+  // Save and close
+  const saveAndClose = (section: PlotStructureSection) => {
     const content = editedContent[section.sectionKey];
     if (content !== undefined) {
       setSaveStatus(prev => ({ ...prev, [section.sectionKey]: 'saving' }));
@@ -327,11 +345,19 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
                                   Cancel
                                 </Button>
                                 <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => saveAndClose(activeSectionData)}
+                                  disabled={isSaving}
+                                >
+                                  <Save className="h-4 w-4 mr-1" /> Save & Close
+                                </Button>
+                                <Button
                                   size="sm"
                                   onClick={() => saveSection(activeSectionData)}
                                   disabled={isSaving}
                                 >
-                                  <Save className="h-4 w-4 mr-1" /> Save
+                                  <Save className="h-4 w-4 mr-1" /> Save & Continue
                                 </Button>
                               </div>
                             </div>
