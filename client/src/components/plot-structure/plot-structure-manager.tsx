@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback, memo } from 'react';
+import { useState } from 'react';
 import { 
   useProjectPlotStructures, 
   usePlotStructureActions,
@@ -50,56 +50,15 @@ interface PlotStructureManagerProps {
   projectId: number | string;
 }
 
-/**
- * A stable plot structure management component with optimized re-render patterns
- */
-export default memo(function PlotStructureManager({ projectId }: PlotStructureManagerProps) {
-  // Ensure projectId is always a number
+export default function PlotStructureManager({ projectId }: PlotStructureManagerProps) {
   const numericProjectId = typeof projectId === 'string' ? parseInt(projectId) : projectId;
-  
-  // Hooks
   const { toast } = useToast();
   const { state, setPlotStructureId } = useAppState();
   
-  // Local component state with useRef for stability
-  const stateRef = useRef({
-    templateSelectorOpen: false,
-    deleteConfirmOpen: false,
-    plotToDelete: null as number | null
-  });
-  
-  // Dialog state with useState for rendering
-  const [dialogState, setDialogState] = useState({
-    templateSelectorOpen: false,
-    deleteConfirmOpen: false,
-    plotToDelete: null as number | null
-  });
-  
-  // Update refs when state changes
-  useEffect(() => {
-    stateRef.current = dialogState;
-  }, [dialogState]);
-  
-  // Stable state setters
-  const setTemplateSelectorOpen = useCallback((open: boolean) => {
-    const newState = { ...stateRef.current, templateSelectorOpen: open };
-    stateRef.current = newState;
-    setDialogState(newState);
-  }, []);
-  
-  const setDeleteConfirmOpen = useCallback((open: boolean) => {
-    const newState = { ...stateRef.current, deleteConfirmOpen: open };
-    stateRef.current = newState;
-    setDialogState(newState);
-  }, []);
-  
-  const setPlotToDelete = useCallback((id: number | null) => {
-    const newState = { ...stateRef.current, plotToDelete: id };
-    stateRef.current = newState;
-    setDialogState(newState);
-  }, []);
+  const [templateSelectorOpen, setTemplateSelectorOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [plotToDelete, setPlotToDelete] = useState<number | null>(null);
 
-  // Data fetching with stable dependencies
   const { data: plotStructures = [], isLoading: isLoadingStructures } = useProjectPlotStructures(numericProjectId);
   const { data: templates = [], isLoading: isLoadingTemplates } = usePlotTemplates();
   const { createFromTemplate, deletePlotStructure } = usePlotStructureActions();
@@ -123,19 +82,19 @@ export default memo(function PlotStructureManager({ projectId }: PlotStructureMa
   };
 
   const handleDeletePlotStructure = async () => {
-    if (dialogState.plotToDelete) {
+    if (plotToDelete) {
       try {
-        await deletePlotStructure(dialogState.plotToDelete);
+        await deletePlotStructure(plotToDelete);
         
         // Filter out the deleted structure from our local state
-        const updatedStructures = plotStructures.filter(s => s.id !== dialogState.plotToDelete);
+        const updatedStructures = plotStructures.filter(s => s.id !== plotToDelete);
         queryClient.setQueryData(
           [`/api/projects/${numericProjectId}/plot-structures`], 
           updatedStructures
         );
         
         // If we're deleting the currently selected structure, clear the selection
-        if (state.plotStructureId === dialogState.plotToDelete) {
+        if (state.plotStructureId === plotToDelete) {
           setPlotStructureId(null);
         }
         
@@ -226,14 +185,14 @@ export default memo(function PlotStructureManager({ projectId }: PlotStructureMa
 
       {/* Template selector dialog */}
       <TemplateSelector 
-        open={dialogState.templateSelectorOpen} 
+        open={templateSelectorOpen} 
         onOpenChange={setTemplateSelectorOpen}
         projectId={numericProjectId}
         onSelectTemplate={handleCreateFromTemplate}
       />
 
       {/* Delete confirmation dialog */}
-      <AlertDialog open={dialogState.deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
@@ -255,4 +214,4 @@ export default memo(function PlotStructureManager({ projectId }: PlotStructureMa
       </AlertDialog>
     </div>
   );
-});
+}

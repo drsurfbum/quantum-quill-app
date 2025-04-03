@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { debounce } from 'lodash';
 import { 
   usePlotStructure, 
@@ -71,16 +71,9 @@ interface PlotStructureViewProps {
 }
 
 export default function PlotStructureView({ structureId, onClose }: PlotStructureViewProps) {
-  // Use refs to avoid re-renders - properly initialized
-  const activeSectionRef = useRef<string | null>(null);
+  // Simple state management
   const [activeSection, setActiveSection] = useState<string | null>(null);
-  
-  // Edited content state - with explicit initialization
-  const editedContentRef = useRef<Record<string, string>>({});
   const [editedContent, setEditedContent] = useState<Record<string, string>>({});
-  
-  // Save status tracking - with explicit initialization
-  const saveStatusRef = useRef<Record<string, 'saved' | 'typing' | 'saving'>>({});
   const [saveStatus, setSaveStatus] = useState<Record<string, 'saved' | 'typing' | 'saving'>>({});
   
   // Fetch data without toast
@@ -93,25 +86,16 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
 
   // Set active section to first section when data is loaded
   useEffect(() => {
-    if (sortedSections.length > 0 && !activeSectionRef.current) {
-      const firstSectionKey = sortedSections[0].sectionKey;
-      activeSectionRef.current = firstSectionKey;
-      setActiveSection(firstSectionKey);
+    if (sortedSections.length > 0 && !activeSection) {
+      setActiveSection(sortedSections[0].sectionKey);
     }
-  }, [sortedSections]);
+  }, [sortedSections, activeSection]);
 
-  // Keep ref in sync with state
-  useEffect(() => {
-    activeSectionRef.current = activeSection;
-  }, [activeSection]);
-
-  // Navigate between sections with refs to prevent render cycles
-  const navigateToSection = useCallback((direction: 'next' | 'prev') => {
-    if (sortedSections.length === 0 || !activeSectionRef.current) return;
+  // Navigate between sections
+  const navigateToSection = (direction: 'next' | 'prev') => {
+    if (sortedSections.length === 0 || !activeSection) return;
     
-    const currentIndex = sortedSections.findIndex(
-      section => section.sectionKey === activeSectionRef.current
-    );
+    const currentIndex = sortedSections.findIndex(section => section.sectionKey === activeSection);
     if (currentIndex === -1) return;
     
     let newIndex;
@@ -121,50 +105,30 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
       newIndex = (currentIndex - 1 + sortedSections.length) % sortedSections.length;
     }
     
-    const newSectionKey = sortedSections[newIndex].sectionKey;
-    activeSectionRef.current = newSectionKey;
-    setActiveSection(newSectionKey);
-  }, [sortedSections]);
+    setActiveSection(sortedSections[newIndex].sectionKey);
+  };
 
-  // Keep content refs in sync with state
-  useEffect(() => {
-    editedContentRef.current = editedContent;
-  }, [editedContent]);
-  
-  useEffect(() => {
-    saveStatusRef.current = saveStatus;
-  }, [saveStatus]);
-
-  // Initialize content for editing with ref safety
+  // Initialize content for editing
   const initializeContent = useCallback((sectionKey: string, content: string | null) => {
-    if (!editedContentRef.current[sectionKey]) {
-      const newContent = content || '';
-      editedContentRef.current = { ...editedContentRef.current, [sectionKey]: newContent };
-      saveStatusRef.current = { ...saveStatusRef.current, [sectionKey]: 'saved' };
-      
-      setEditedContent(prev => ({ ...prev, [sectionKey]: newContent }));
+    if (!editedContent[sectionKey]) {
+      setEditedContent(prev => ({ ...prev, [sectionKey]: content || '' }));
       setSaveStatus(prev => ({ ...prev, [sectionKey]: 'saved' }));
     }
-  }, []);
+  }, [editedContent]);
 
-  // Handle content change with debounced autosave - much more stable
+  // Handle content change with debounced autosave
   const debouncedSave = useCallback(
     debounce((sectionId: number, sectionKey: string, content: string) => {
-      // Update ref first
-      saveStatusRef.current = { ...saveStatusRef.current, [sectionKey]: 'saving' };
-      setSaveStatus(saveStatusRef.current);
+      setSaveStatus(prev => ({ ...prev, [sectionKey]: 'saving' }));
       
       updateSection(
         { id: sectionId, data: { content } },
         {
           onSuccess: () => {
-            // Update refs safely
-            saveStatusRef.current = { ...saveStatusRef.current, [sectionKey]: 'saved' };
-            setSaveStatus(saveStatusRef.current);
+            setSaveStatus(prev => ({ ...prev, [sectionKey]: 'saved' }));
           },
           onError: () => {
-            saveStatusRef.current = { ...saveStatusRef.current, [sectionKey]: 'saved' };
-            setSaveStatus(saveStatusRef.current);
+            setSaveStatus(prev => ({ ...prev, [sectionKey]: 'saved' }));
           }
         }
       );
@@ -172,46 +136,34 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
     [updateSection]
   );
 
-  // Handle content change with ref safety
-  const handleContentChange = useCallback((sectionKey: string, content: string, sectionId: number) => {
-    // Update refs first
-    editedContentRef.current = { ...editedContentRef.current, [sectionKey]: content };
-    saveStatusRef.current = { ...saveStatusRef.current, [sectionKey]: 'typing' };
-    
-    // Then update state only once
-    setEditedContent(editedContentRef.current);
-    setSaveStatus(saveStatusRef.current);
-    
-    // Trigger save with stable refs
+  // Handle content change
+  const handleContentChange = (sectionKey: string, content: string, sectionId: number) => {
+    setEditedContent(prev => ({ ...prev, [sectionKey]: content }));
+    setSaveStatus(prev => ({ ...prev, [sectionKey]: 'typing' }));
     debouncedSave(sectionId, sectionKey, content);
-  }, [debouncedSave]);
+  };
 
-  // Manual save function with ref safety
-  const saveSection = useCallback((section: PlotStructureSection) => {
+  // Manual save function
+  const saveSection = (section: PlotStructureSection) => {
     const currentSection = section.sectionKey;
-    const content = editedContentRef.current[currentSection];
+    const content = editedContent[currentSection];
     
     if (content !== undefined) {
-      // Update ref first
-      saveStatusRef.current = { ...saveStatusRef.current, [currentSection]: 'saving' };
-      setSaveStatus(saveStatusRef.current);
+      setSaveStatus(prev => ({ ...prev, [currentSection]: 'saving' }));
       
       updateSection(
         { id: section.id, data: { content } },
         {
           onSuccess: () => {
-            // Update ref first then state
-            saveStatusRef.current = { ...saveStatusRef.current, [currentSection]: 'saved' };
-            setSaveStatus(saveStatusRef.current);
+            setSaveStatus(prev => ({ ...prev, [currentSection]: 'saved' }));
           },
           onError: () => {
-            saveStatusRef.current = { ...saveStatusRef.current, [currentSection]: 'saved' };
-            setSaveStatus(saveStatusRef.current);
+            setSaveStatus(prev => ({ ...prev, [currentSection]: 'saved' }));
           }
         }
       );
     }
-  }, [updateSection]);
+  };
 
   // Loading state
   if (isLoadingStructure || isLoadingSections) {
