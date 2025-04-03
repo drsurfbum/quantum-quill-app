@@ -87,11 +87,12 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
   const sortedSections = [...sections].sort((a, b) => a.order - b.order);
 
   // Set active section to first section by default when loading
+  // Only run once when sections are first loaded - don't depend on activeSection
   useEffect(() => {
     if (sortedSections.length > 0 && !activeSection) {
       setActiveSection(sortedSections[0].sectionKey);
     }
-  }, [sortedSections, activeSection]);
+  }, [sortedSections]);
 
   // Navigate between sections
   const navigateToSection = (direction: 'next' | 'prev') => {
@@ -123,11 +124,8 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
           onSuccess: () => {
             setSaveStatus(prev => ({ ...prev, [sectionKey]: 'saved' }));
             
-            // Important: keep the activeSection as is, so we stay in the editor
-            // without navigation and allow continuing to edit
-            if (activeSection !== sectionKey) {
-              setActiveSection(sectionKey); // Ensure we stay on the same section
-            }
+            // Important: we don't need to setActiveSection here anymore
+            // as we're keeping the state stable through the wrapper component
           },
           onError: () => {
             setSaveStatus(prev => ({ ...prev, [sectionKey]: 'saved' }));
@@ -135,7 +133,7 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
         }
       );
     }, 2000),
-    [updateSection, setActiveSection, activeSection]
+    [updateSection]
   );
 
   // Initialize content for editing
@@ -167,11 +165,7 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
         {
           onSuccess: () => {
             setSaveStatus(prev => ({ ...prev, [currentSection]: 'saved' }));
-            
-            // Explicitly ensure we maintain the active section after saving
-            if (activeSection !== currentSection) {
-              setActiveSection(currentSection);
-            }
+            // No need to modify activeSection here
           },
           onError: () => {
             // Set status back to saved on error to allow retrying
@@ -198,11 +192,7 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
           onSuccess: (updatedSection) => {
             // Update status immediately
             setSaveStatus(prev => ({ ...prev, [currentSection]: 'saved' }));
-            
-            // Explicitly ensure we keep the active section after saving
-            if (activeSection !== currentSection) {
-              setActiveSection(currentSection);
-            }
+            // No need to modify activeSection here
           },
           onError: () => {
             setSaveStatus(prev => ({ ...prev, [currentSection]: 'saved' }));
