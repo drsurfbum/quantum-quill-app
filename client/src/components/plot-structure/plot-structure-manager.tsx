@@ -42,7 +42,7 @@ import {
 } from 'lucide-react';
 import { type PlotStructureTemplate } from '@shared/schema';
 import TemplateSelector from './template-selector';
-import PlotStructureView from './plot-structure-view';
+import PlotStructureEditorWrapper from './plot-structure-editor-wrapper';
 import PlotStructureCard from './plot-structure-card';
 
 interface PlotStructureManagerProps {
@@ -130,7 +130,7 @@ export default function PlotStructureManager({ projectId }: PlotStructureManager
       </div>
 
       {selectedPlotStructure ? (
-        <PlotStructureView 
+        <PlotStructureEditorWrapper
           structureId={selectedPlotStructure} 
           onClose={() => setSelectedPlotStructure(null)} 
         />
