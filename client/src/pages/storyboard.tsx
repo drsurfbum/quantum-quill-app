@@ -11,7 +11,7 @@ import { Edit3, Grid, ListTree, BookOpen } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
-import EmergencyPlotStructure from "@/components/plot-structure/emergency-plot-structure";
+import RobustPlotManager from "@/components/plot-structure/robust-plot-manager";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 export default function Storyboard() {
@@ -112,7 +112,7 @@ export default function Storyboard() {
               </div>
             </div>
           ) : (
-            <EmergencyPlotStructure projectId={typeof id === 'string' ? parseInt(id) : id || 0} />
+            <RobustPlotManager projectId={typeof id === 'string' ? parseInt(id) : id || 0} />
           )}
         </div>
       </main>
