@@ -42,8 +42,9 @@ import {
 } from 'lucide-react';
 import { type PlotStructureTemplate } from '@shared/schema';
 import TemplateSelector from './template-selector';
-import PlotStructureEditorWrapper from './plot-structure-editor-wrapper';
+import StablePlotStructureEditor from './stable-plot-structure-editor';
 import PlotStructureCard from './plot-structure-card';
+import { useAppState } from '@/contexts/app-state-context';
 
 interface PlotStructureManagerProps {
   projectId: number | string;
@@ -52,10 +53,10 @@ interface PlotStructureManagerProps {
 export default function PlotStructureManager({ projectId }: PlotStructureManagerProps) {
   const numericProjectId = typeof projectId === 'string' ? parseInt(projectId) : projectId;
   const { toast } = useToast();
+  const { state, setPlotStructureId } = useAppState();
   
   const [templateSelectorOpen, setTemplateSelectorOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-  const [selectedPlotStructure, setSelectedPlotStructure] = useState<number | null>(null);
   const [plotToDelete, setPlotToDelete] = useState<number | null>(null);
 
   const { data: plotStructures = [], isLoading: isLoadingStructures } = useProjectPlotStructures(numericProjectId);
@@ -65,7 +66,7 @@ export default function PlotStructureManager({ projectId }: PlotStructureManager
   const handleCreateFromTemplate = async (template: PlotStructureTemplate) => {
     try {
       const newStructure = await createFromTemplate(numericProjectId, template);
-      setSelectedPlotStructure(newStructure.id);
+      setPlotStructureId(newStructure.id);
       toast({
         title: 'Plot structure created',
         description: `${template.name} structure has been created successfully.`
@@ -93,8 +94,8 @@ export default function PlotStructureManager({ projectId }: PlotStructureManager
         );
         
         // If we're deleting the currently selected structure, clear the selection
-        if (selectedPlotStructure === plotToDelete) {
-          setSelectedPlotStructure(null);
+        if (state.plotStructureId === plotToDelete) {
+          setPlotStructureId(null);
         }
         
         toast({
@@ -129,11 +130,8 @@ export default function PlotStructureManager({ projectId }: PlotStructureManager
         </Button>
       </div>
 
-      {selectedPlotStructure ? (
-        <PlotStructureEditorWrapper
-          structureId={selectedPlotStructure} 
-          onClose={() => setSelectedPlotStructure(null)} 
-        />
+      {state.plotStructureId ? (
+        <StablePlotStructureEditor />
       ) : (
         <div className="flex-1 p-4 overflow-auto">
           <ScrollArea className="h-full pr-4">
@@ -172,7 +170,7 @@ export default function PlotStructureManager({ projectId }: PlotStructureManager
                   <PlotStructureCard 
                     key={structure.id}
                     structure={structure}
-                    onSelectStructure={setSelectedPlotStructure}
+                    onSelectStructure={setPlotStructureId}
                     onDeleteStructure={(id) => {
                       setPlotToDelete(id);
                       setDeleteConfirmOpen(true);
