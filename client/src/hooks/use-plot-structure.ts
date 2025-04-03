@@ -152,8 +152,10 @@ export function usePlotStructureActions() {
       return await res.json() as PlotStructureSection;
     },
     onSuccess: (data) => {
-      // Instead of invalidating, we'll update the query cache directly to avoid re-fetching
-      // This prevents the component from unmounting and remounting
+      // Update the local cache directly without triggering any invalidation
+      // This is the critical change to match the chapter editor behavior
+      
+      // Update the sections list cache
       queryClient.setQueryData(
         [`/api/plot-structures/${data.plotStructureId}/sections`], 
         (oldData: PlotStructureSection[] | undefined) => {
@@ -173,8 +175,8 @@ export function usePlotStructureActions() {
         }
       );
       
-      // No toast here - let the component handle this for better UX
-      // This prevents too many toast notifications from appearing during autosave
+      // IMPORTANT: No invalidation or refetching of any queries
+      // No toast notifications either
     },
     onError: (error) => {
       toast({

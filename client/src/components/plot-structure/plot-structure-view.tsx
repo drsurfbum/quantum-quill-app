@@ -171,20 +171,12 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
           onSuccess: () => {
             setSaveStatus(prev => ({ ...prev, [currentSection]: 'saved' }));
             
-            // Show a toast with shorter duration to minimize interference
-            toast({
-              title: "Section saved",
-              description: "Your changes have been saved successfully.",
-              duration: 3000 // 3 seconds auto-dismiss
-            });
+            // NO toast notification for autosave
             
             // Explicitly ensure we maintain the active section after saving
             if (activeSection !== currentSection) {
               setActiveSection(currentSection);
             }
-            
-            // Important: don't call onClose after saving
-            // This prevents navigation away from the editor
           },
           onError: (error) => {
             // Set status back to saved on error to allow retrying
@@ -200,7 +192,7 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
     }
   };
 
-  // Save with specific message
+  // Save with specific message (no toast notifications)
   const saveWithMessage = (section: PlotStructureSection, title: string) => {
     // Store the active section to maintain focus after save
     const currentSection = section.sectionKey;
@@ -217,12 +209,7 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
             // Update status immediately
             setSaveStatus(prev => ({ ...prev, [currentSection]: 'saved' }));
             
-            // Show a minimalist toast that dismisses quickly
-            toast({
-              title,
-              description: "Your changes have been saved successfully.",
-              duration: 3000 // Shorter duration to reduce chance of interference
-            });
+            // NO toast notification for successful saves
             
             // Explicitly ensure we keep the active section after saving
             if (activeSection !== currentSection) {
