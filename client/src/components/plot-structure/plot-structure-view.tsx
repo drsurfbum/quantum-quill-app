@@ -84,12 +84,41 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
   // Sort sections by order - recalculate only when sections change
   const sortedSections = [...sections].sort((a, b) => a.order - b.order);
 
+  // Initialize content for editing
+  const initializeContent = useCallback((sectionKey: string, content: string | null) => {
+    setEditedContent(prev => {
+      // Only update if the key doesn't exist to prevent unnecessary re-renders
+      if (!prev[sectionKey]) {
+        return { ...prev, [sectionKey]: content || '' };
+      }
+      return prev;
+    });
+    setSaveStatus(prev => {
+      // Only update if the key doesn't exist
+      if (!prev[sectionKey]) {
+        return { ...prev, [sectionKey]: 'saved' };
+      }
+      return prev;
+    });
+  }, []);
+  
   // Set active section to first section when data is loaded
   useEffect(() => {
     if (sortedSections.length > 0 && !activeSection) {
       setActiveSection(sortedSections[0].sectionKey);
     }
   }, [sortedSections, activeSection]);
+  
+  // Get current active section data
+  const activeSectionData = activeSection ? 
+    sortedSections.find(s => s.sectionKey === activeSection) : null;
+    
+  // Initialize content for active section when it changes
+  useEffect(() => {
+    if (activeSectionData && !editedContent[activeSectionData.sectionKey]) {
+      initializeContent(activeSectionData.sectionKey, activeSectionData.content);
+    }
+  }, [activeSectionData, initializeContent, editedContent]);
 
   // Navigate between sections
   const navigateToSection = (direction: 'next' | 'prev') => {
@@ -107,14 +136,6 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
     
     setActiveSection(sortedSections[newIndex].sectionKey);
   };
-
-  // Initialize content for editing
-  const initializeContent = useCallback((sectionKey: string, content: string | null) => {
-    if (!editedContent[sectionKey]) {
-      setEditedContent(prev => ({ ...prev, [sectionKey]: content || '' }));
-      setSaveStatus(prev => ({ ...prev, [sectionKey]: 'saved' }));
-    }
-  }, [editedContent]);
 
   // Handle content change with debounced autosave
   const debouncedSave = useCallback(
@@ -192,8 +213,6 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
       </Alert>
     );
   }
-
-  const activeSectionData = activeSection ? sortedSections.find(s => s.sectionKey === activeSection) : null;
   
   return (
     <div className="flex flex-col h-full bg-background">
@@ -287,11 +306,7 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
                       
                       <div className="flex-1 flex flex-col">
                         <div className="flex flex-col h-full">
-                          {/* Initialize content if needed */}
-                          {!editedContent[activeSectionData.sectionKey] && (
-                            initializeContent(activeSectionData.sectionKey, activeSectionData.content),
-                            null
-                          )}
+                          {/* Initialize content using useEffect instead of in render */}
                           <Textarea
                             value={editedContent[activeSectionData.sectionKey] || ''}
                             onChange={(e) => handleContentChange(
