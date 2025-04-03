@@ -27,25 +27,26 @@ function PlotCard({
   onDelete: (id: number) => void;
 }) {
   return (
-    <Card className="border border-border h-full flex flex-col">
-      <CardHeader>
-        <CardTitle className="text-lg">{structure.name}</CardTitle>
-        <CardDescription>{structure.description}</CardDescription>
-      </CardHeader>
-      <CardFooter className="flex justify-between mt-auto pt-4">
-        <Button variant="outline" size="sm" onClick={() => onEdit(structure.id)}>
-          <PenSquare className="h-4 w-4 mr-1" /> Edit
-        </Button>
-        <Button 
-          variant="outline" 
-          size="sm" 
-          className="text-destructive hover:text-destructive" 
-          onClick={() => onDelete(structure.id)}
-        >
-          <Trash2 className="h-4 w-4 mr-1" /> Delete
-        </Button>
-      </CardFooter>
-    </Card>
+    <div className="flex flex-col border rounded-lg shadow-sm overflow-hidden bg-card">
+      <div className="p-4">
+        <h3 className="text-lg font-semibold mb-1">{structure.name}</h3>
+        <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{structure.description || 'No description'}</p>
+        
+        <div className="flex space-x-2 mt-2">
+          <Button variant="outline" size="sm" onClick={() => onEdit(structure.id)}>
+            <PenSquare className="h-4 w-4 mr-1" /> Edit
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="text-destructive hover:text-destructive" 
+            onClick={() => onDelete(structure.id)}
+          >
+            <Trash2 className="h-4 w-4 mr-1" /> Delete
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -69,20 +70,17 @@ function EmptyState({ onCreateNew }: { onCreateNew: () => void }) {
 // Loading state component
 function LoadingState() {
   return (
-    <div className="space-y-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       {[1, 2, 3, 4].map(i => (
-        <Card key={i} className="border border-border">
-          <CardHeader>
-            <Skeleton className="h-6 w-48 mb-2" />
-            <Skeleton className="h-4 w-full" />
-          </CardHeader>
-          <CardContent>
-            <Skeleton className="h-12 w-full" />
-          </CardContent>
-          <CardFooter>
-            <Skeleton className="h-8 w-24" />
-          </CardFooter>
-        </Card>
+        <div key={i} className="border rounded-lg shadow-sm overflow-hidden bg-card p-4">
+          <Skeleton className="h-6 w-48 mb-2" />
+          <Skeleton className="h-4 w-full mb-3" />
+          
+          <div className="flex space-x-2 mt-3">
+            <Skeleton className="h-8 w-16" />
+            <Skeleton className="h-8 w-16" />
+          </div>
+        </div>
       ))}
     </div>
   );

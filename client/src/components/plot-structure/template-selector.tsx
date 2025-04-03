@@ -78,12 +78,16 @@ export default function TemplateSelector({
                     <CardHeader>
                       <CardTitle>{template.name}</CardTitle>
                       <CardDescription>
-                        {template.description?.substring(0, 120)}{template.description?.length > 120 ? '...' : ''}
+                        {template.description 
+                          ? (template.description.length > 120 
+                              ? template.description.substring(0, 120) + '...' 
+                              : template.description)
+                          : 'No description available'}
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
                       <p className="text-sm text-muted-foreground">
-                        A {template.sectionCount || '?'}-section structure that helps you organize your story.
+                        A structure template that helps you organize your story.
                       </p>
                     </CardContent>
                     <CardFooter className="justify-between">

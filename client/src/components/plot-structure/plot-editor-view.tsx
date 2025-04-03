@@ -156,17 +156,20 @@ export default function PlotEditorView({ structureId, onClose }: PlotEditorViewP
       }
     }
     
-    toast({
-      title: 'All changes saved',
-      description: 'Your plot structure has been updated successfully.'
-    });
+    // Only show toast when manually saving
+    if (dirtyKeysArray.length > 0) {
+      toast({
+        title: 'All changes saved',
+        description: 'Your plot structure has been updated successfully.'
+      });
+    }
   }, [saveStructure, saveSection, dirtyFields, toast]);
   
-  // Debounced save function
+  // Debounced save function with a longer delay to reduce frequent saves
   const debouncedSave = useCallback(
     debounce(() => {
       saveAllChanges();
-    }, 2000),
+    }, 5000), // Increased to 5 seconds
     [saveAllChanges]
   );
   
@@ -217,9 +220,21 @@ export default function PlotEditorView({ structureId, onClose }: PlotEditorViewP
   
   // Handle safe navigation away
   const handleClose = () => {
-    // If we have unsaved changes, save them first
+    // If we have unsaved changes, save them first but don't show toast
     if (dirtyFields.size > 0) {
-      saveAllChanges().then(() => {
+      // Use individual save methods directly to avoid toast messages
+      Promise.all([
+        saveStructure(),
+        ...Array.from(dirtyFields)
+          .filter(key => key.startsWith('section-'))
+          .map(key => {
+            const sectionId = parseInt(key.replace('section-', ''));
+            if (!isNaN(sectionId)) {
+              return saveSection(sectionId);
+            }
+            return Promise.resolve();
+          })
+      ]).then(() => {
         onClose();
       });
     } else {
