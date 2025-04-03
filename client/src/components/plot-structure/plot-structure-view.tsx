@@ -5,7 +5,8 @@ import {
   usePlotStructureSections, 
   usePlotStructureActions 
 } from '@/hooks/use-plot-structure';
-import { useToast } from '@/hooks/use-toast';
+// Removed toast to prevent navigation issues
+// import { useToast } from '@/hooks/use-toast';
 import { 
   Card, 
   CardContent, 
@@ -77,7 +78,7 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
   const [editedContent, setEditedContent] = useState<Record<string, string>>({});
   const [saveStatus, setSaveStatus] = useState<Record<string, 'saved' | 'typing' | 'saving'>>({});
   
-  const { toast } = useToast();
+  // No toast to prevent navigation issues
   const { data: structure, isLoading: isLoadingStructure } = usePlotStructure(structureId);
   const { data: sections = [], isLoading: isLoadingSections } = usePlotStructureSections(structureId);
   const { updateSection, isLoading: isSaving } = usePlotStructureActions();
@@ -121,16 +122,12 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
         {
           onSuccess: () => {
             setSaveStatus(prev => ({ ...prev, [sectionKey]: 'saved' }));
-            // Show a toast that auto-dismisses after 5 seconds
-            toast({
-              title: "Section updated",
-              description: "Your changes have been automatically saved.",
-              duration: 5000 // 5 seconds auto-dismiss
-            });
             
             // Important: keep the activeSection as is, so we stay in the editor
             // without navigation and allow continuing to edit
-            setActiveSection(sectionKey); // Ensure we stay on the same section
+            if (activeSection !== sectionKey) {
+              setActiveSection(sectionKey); // Ensure we stay on the same section
+            }
           },
           onError: () => {
             setSaveStatus(prev => ({ ...prev, [sectionKey]: 'saved' }));
@@ -138,7 +135,7 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
         }
       );
     }, 2000),
-    [updateSection, toast, setActiveSection]
+    [updateSection, setActiveSection, activeSection]
   );
 
   // Initialize content for editing
@@ -171,21 +168,14 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
           onSuccess: () => {
             setSaveStatus(prev => ({ ...prev, [currentSection]: 'saved' }));
             
-            // NO toast notification for autosave
-            
             // Explicitly ensure we maintain the active section after saving
             if (activeSection !== currentSection) {
               setActiveSection(currentSection);
             }
           },
-          onError: (error) => {
+          onError: () => {
             // Set status back to saved on error to allow retrying
             setSaveStatus(prev => ({ ...prev, [currentSection]: 'saved' }));
-            toast({
-              title: "Error Saving",
-              description: "Failed to save your changes. Please try again.",
-              variant: "destructive"
-            });
           }
         }
       );
@@ -209,20 +199,13 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
             // Update status immediately
             setSaveStatus(prev => ({ ...prev, [currentSection]: 'saved' }));
             
-            // NO toast notification for successful saves
-            
             // Explicitly ensure we keep the active section after saving
             if (activeSection !== currentSection) {
               setActiveSection(currentSection);
             }
           },
-          onError: (error) => {
+          onError: () => {
             setSaveStatus(prev => ({ ...prev, [currentSection]: 'saved' }));
-            toast({
-              title: "Error Saving",
-              description: error.message || "Failed to save changes.",
-              variant: "destructive"
-            });
           }
         }
       );
