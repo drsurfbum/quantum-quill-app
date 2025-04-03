@@ -164,18 +164,24 @@ export function usePlotStructureActions() {
         }
       );
       
-      // Show success toast notification that auto-dismisses after 5 seconds
-      toast({
-        title: 'Section updated',
-        description: 'Your changes have been saved successfully.',
-        duration: 5000 // 5 seconds auto-dismiss
-      });
+      // Also update the individual section cache if it exists
+      queryClient.setQueryData(
+        [`/api/plot-structure-sections/${data.id}`], 
+        (oldData: PlotStructureSection | undefined) => {
+          if (!oldData) return data;
+          return { ...oldData, ...data };
+        }
+      );
+      
+      // No toast here - let the component handle this for better UX
+      // This prevents too many toast notifications from appearing during autosave
     },
     onError: (error) => {
       toast({
         title: 'Failed to update section',
         description: error.message,
-        variant: 'destructive'
+        variant: 'destructive',
+        duration: 3000 // Shorter duration
       });
     }
   });

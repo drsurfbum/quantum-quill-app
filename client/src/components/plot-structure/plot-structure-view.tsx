@@ -158,26 +158,42 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
 
   // Manual save section content (continuing edit)
   const saveSection = (section: PlotStructureSection) => {
-    const content = editedContent[section.sectionKey];
+    // Capture the current section key for persistence
+    const currentSection = section.sectionKey;
+    
+    const content = editedContent[currentSection];
     if (content !== undefined) {
-      setSaveStatus(prev => ({ ...prev, [section.sectionKey]: 'saving' }));
+      setSaveStatus(prev => ({ ...prev, [currentSection]: 'saving' }));
+      
       updateSection(
         { id: section.id, data: { content } },
         {
           onSuccess: () => {
-            setSaveStatus(prev => ({ ...prev, [section.sectionKey]: 'saved' }));
-            // Show a toast that auto-dismisses after 5 seconds
+            setSaveStatus(prev => ({ ...prev, [currentSection]: 'saved' }));
+            
+            // Show a toast with shorter duration to minimize interference
             toast({
               title: "Section saved",
               description: "Your changes have been saved successfully.",
-              duration: 5000 // 5 seconds auto-dismiss
+              duration: 3000 // 3 seconds auto-dismiss
             });
             
-            // Important: keep the activeSection as is, so we stay in the editor
-            if (onClose) {
-              // Only call onClose if explicitly requested, not after saving
-              // This prevents navigation back to the structure list
+            // Explicitly ensure we maintain the active section after saving
+            if (activeSection !== currentSection) {
+              setActiveSection(currentSection);
             }
+            
+            // Important: don't call onClose after saving
+            // This prevents navigation away from the editor
+          },
+          onError: (error) => {
+            // Set status back to saved on error to allow retrying
+            setSaveStatus(prev => ({ ...prev, [currentSection]: 'saved' }));
+            toast({
+              title: "Error Saving",
+              description: "Failed to save your changes. Please try again.",
+              variant: "destructive"
+            });
           }
         }
       );
@@ -186,23 +202,40 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
 
   // Save with specific message
   const saveWithMessage = (section: PlotStructureSection, title: string) => {
-    const content = editedContent[section.sectionKey];
+    // Store the active section to maintain focus after save
+    const currentSection = section.sectionKey;
+    
+    const content = editedContent[currentSection];
     if (content !== undefined) {
-      setSaveStatus(prev => ({ ...prev, [section.sectionKey]: 'saving' }));
+      setSaveStatus(prev => ({ ...prev, [currentSection]: 'saving' }));
+      
+      // Use queryClient.setQueryData to update the cache without refetching
       updateSection(
         { id: section.id, data: { content } },
         {
-          onSuccess: () => {
-            setSaveStatus(prev => ({ ...prev, [section.sectionKey]: 'saved' }));
-            // Show a toast that auto-dismisses after 5 seconds
+          onSuccess: (updatedSection) => {
+            // Update status immediately
+            setSaveStatus(prev => ({ ...prev, [currentSection]: 'saved' }));
+            
+            // Show a minimalist toast that dismisses quickly
             toast({
               title,
               description: "Your changes have been saved successfully.",
-              duration: 5000 // 5 seconds auto-dismiss
+              duration: 3000 // Shorter duration to reduce chance of interference
             });
             
-            // Important: keep the activeSection as is, so we stay in the editor
-            // and don't navigate away after saving
+            // Explicitly ensure we keep the active section after saving
+            if (activeSection !== currentSection) {
+              setActiveSection(currentSection);
+            }
+          },
+          onError: (error) => {
+            setSaveStatus(prev => ({ ...prev, [currentSection]: 'saved' }));
+            toast({
+              title: "Error Saving",
+              description: error.message || "Failed to save changes.",
+              variant: "destructive"
+            });
           }
         }
       );
