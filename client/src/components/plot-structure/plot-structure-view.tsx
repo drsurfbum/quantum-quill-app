@@ -71,15 +71,15 @@ interface PlotStructureViewProps {
 }
 
 export default function PlotStructureView({ structureId, onClose }: PlotStructureViewProps) {
-  // Use refs to avoid re-renders
+  // Use refs to avoid re-renders - properly initialized
   const activeSectionRef = useRef<string | null>(null);
   const [activeSection, setActiveSection] = useState<string | null>(null);
   
-  // Edited content state
+  // Edited content state - with explicit initialization
   const editedContentRef = useRef<Record<string, string>>({});
   const [editedContent, setEditedContent] = useState<Record<string, string>>({});
   
-  // Save status tracking
+  // Save status tracking - with explicit initialization
   const saveStatusRef = useRef<Record<string, 'saved' | 'typing' | 'saving'>>({});
   const [saveStatus, setSaveStatus] = useState<Record<string, 'saved' | 'typing' | 'saving'>>({});
   
