@@ -42,6 +42,9 @@ export default function OutlineRichEditor({ item, projectId }: OutlineRichEditor
   
   const { mutate: updateItem } = useUpdateOutlineItem();
   
+  // Track if this is initial load to prevent auto-save on first click
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -59,21 +62,32 @@ export default function OutlineRichEditor({ item, projectId }: OutlineRichEditor
     ],
     content: item.content || '<p>Start writing here...</p>',
     onUpdate: ({ editor }) => {
-      // Store current cursor position
-      const selection = editor.view.state.selection;
+      // Skip autosave on initial focus/click
+      if (isInitialLoad) {
+        setIsInitialLoad(false);
+        return;
+      }
       
       // Get HTML content
       const html = editor.getHTML();
       
-      // Trigger save without losing focus
-      handleContentChange(html);
+      // Only trigger save if content has actually changed
+      if (html !== item.content) {
+        // Trigger save without losing focus
+        handleContentChange(html);
+      }
     },
+    // Only auto-focus on desktop devices
+    autofocus: false,
   });
 
   // Reset state when item changes
   useEffect(() => {
     setTitle(item.title);
     setIsCompleted(item.isCompleted || false);
+    
+    // Reset initial load state when item changes to prevent auto-save on first interaction
+    setIsInitialLoad(true);
     
     // Only update content if it has changed to avoid cursor jumping
     if (editor && editor.isEditable) {
@@ -103,6 +117,16 @@ export default function OutlineRichEditor({ item, projectId }: OutlineRichEditor
   // Set up debounced save with longer delay to prevent cursor jumping
   const debouncedSave = useCallback(
     debounce((newTitle: string, newContent: string, newIsCompleted: boolean) => {
+      // Skip save if no real changes were made to avoid unnecessary updates
+      if (item.title === newTitle && item.content === newContent && item.isCompleted === newIsCompleted) {
+        setSaveStatus('saved');
+        return;
+      }
+
+      // Keep track of editor focus state before saving
+      const wasFocused = editor?.isFocused;
+      const scrollPosition = window.scrollY;
+
       updateItem(
         { 
           id: item.id, 
@@ -113,6 +137,14 @@ export default function OutlineRichEditor({ item, projectId }: OutlineRichEditor
         {
           onSuccess: () => {
             setSaveStatus('saved');
+            
+            // Restore focus and scroll position if it was focused before
+            if (wasFocused && editor) {
+              setTimeout(() => {
+                editor.commands.focus();
+                window.scrollTo(0, scrollPosition);
+              }, 10);
+            }
           },
           onError: () => {
             toast({
@@ -124,8 +156,8 @@ export default function OutlineRichEditor({ item, projectId }: OutlineRichEditor
           }
         }
       );
-    }, 2000), // Increased from 1000ms to 2000ms to reduce save frequency
-    [updateItem, toast]
+    }, 3000), // Increased to 3000ms to further reduce save frequency and prevent UI issues
+    [updateItem, toast, item.title, item.content, item.isCompleted, editor]
   );
   
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
