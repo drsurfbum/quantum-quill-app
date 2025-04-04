@@ -83,42 +83,63 @@ export default function OutlineRichEditor({ item, projectId }: OutlineRichEditor
 
   // Reset state when item changes
   useEffect(() => {
+    // When item changes, we need to completely reset all state to prevent content bleed
     setTitle(item.title);
     setIsCompleted(item.isCompleted || false);
     
     // Reset initial load state when item changes to prevent auto-save on first interaction
     setIsInitialLoad(true);
     
-    // Only update content if it has changed to avoid cursor jumping
+    // Always update the content when item changes to ensure consistency
     if (editor && editor.isEditable) {
       const currentContent = editor.getHTML();
-      if (item.content && currentContent !== item.content) {
-        // Store current selection and cursor position
-        const selection = editor.view.state.selection;
-        const isFocused = editor.isFocused;
-        const scrollPosition = window.scrollY;
-        
-        // Set new content
+      // Store editor state before update
+      const isFocused = editor.isFocused; 
+      const scrollPosition = window.scrollY;
+      
+      // Force update editor content to match the current item
+      // This is critical to prevent content bleeding between items
+      if (item.content) {
         editor.commands.setContent(item.content);
+      } else {
+        editor.commands.setContent('<p>Start writing here...</p>');
+      }
         
-        // If editor was focused, restore focus
-        if (isFocused) {
-          // Delay to ensure the DOM has been updated
-          setTimeout(() => {
-            editor.commands.focus('end');
-            // Try to maintain scroll position
-            window.scrollTo(0, scrollPosition);
-          }, 10);
-        }
+      // If editor was focused, restore focus after a short delay
+      // to ensure the DOM has been fully updated
+      if (isFocused) {
+        setTimeout(() => {
+          editor.commands.focus();
+          window.scrollTo(0, scrollPosition);
+        }, 50); // Increased timeout for more reliability
       }
     }
-  }, [item, editor]);
+  }, [item.id, editor]); // Only depend on item.id not the entire item to prevent unnecessary re-renders
   
   // Set up debounced save with longer delay to prevent cursor jumping
   const debouncedSave = useCallback(
     debounce((newTitle: string, newContent: string, newIsCompleted: boolean) => {
-      // Skip save if no real changes were made to avoid unnecessary updates
-      if (item.title === newTitle && item.content === newContent && item.isCompleted === newIsCompleted) {
+      // During initial load, don't trigger a save
+      if (isInitialLoad) {
+        setSaveStatus('saved');
+        return;
+      }
+      
+      // Skip save if content is empty/default or no real changes were made
+      const isDefaultContent = !newContent || 
+                             newContent === '<p>Start writing here...</p>' || 
+                             newContent === '<p></p>';
+      
+      const contentUnchanged = item.content === newContent ||
+                             (isDefaultContent && (!item.content || item.content === '<p>Start writing here...</p>'));
+                            
+      if (item.title === newTitle && contentUnchanged && item.isCompleted === newIsCompleted) {
+        setSaveStatus('saved');
+        return;
+      }
+
+      // Avoid saving empty/default content
+      if (isDefaultContent && item.title === newTitle && item.isCompleted === newIsCompleted) {
         setSaveStatus('saved');
         return;
       }
@@ -126,24 +147,40 @@ export default function OutlineRichEditor({ item, projectId }: OutlineRichEditor
       // Keep track of editor focus state before saving
       const wasFocused = editor?.isFocused;
       const scrollPosition = window.scrollY;
+      
+      // Get the item ID at the time of save to prevent race conditions
+      const currentItemId = item.id;
 
       updateItem(
         { 
-          id: item.id, 
+          id: currentItemId, 
           title: newTitle, 
           content: newContent,
           isCompleted: newIsCompleted 
         },
         {
-          onSuccess: () => {
-            setSaveStatus('saved');
+          onSuccess: (result) => {
+            if (!result.success) {
+              toast({
+                title: "Failed to save",
+                description: "There was an error saving your changes. Please try again.",
+                variant: "destructive",
+              });
+              setSaveStatus('saved');
+              return;
+            }
             
-            // Restore focus and scroll position if it was focused before
-            if (wasFocused && editor) {
-              setTimeout(() => {
-                editor.commands.focus();
-                window.scrollTo(0, scrollPosition);
-              }, 10);
+            // Only update if we're still on the same item
+            if (currentItemId === item.id) {
+              setSaveStatus('saved');
+              
+              // Restore focus and scroll position if it was focused before
+              if (wasFocused && editor) {
+                setTimeout(() => {
+                  editor.commands.focus();
+                  window.scrollTo(0, scrollPosition);
+                }, 10);
+              }
             }
           },
           onError: () => {
@@ -157,7 +194,7 @@ export default function OutlineRichEditor({ item, projectId }: OutlineRichEditor
         }
       );
     }, 3000), // Increased to 3000ms to further reduce save frequency and prevent UI issues
-    [updateItem, toast, item.title, item.content, item.isCompleted, editor]
+    [updateItem, toast, item.id, item.title, item.content, item.isCompleted, editor, isInitialLoad]
   );
   
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {

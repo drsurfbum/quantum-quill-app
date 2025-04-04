@@ -26,7 +26,7 @@ interface OutlineItemProps {
   item: OutlineItemType;
   items: OutlineItemType[];
   selectedItemId: number | null;
-  onSelectItem: (id: number) => void;
+  onSelectItem: (id: number | null) => void;  // Allow null for deselection
   onCreateItem: (parentId: number | null) => void;
   projectId: number;
   level?: number;
@@ -68,7 +68,7 @@ export default function OutlineItem({
     if (confirm("Are you sure you want to delete this outline item and all its children?")) {
       // If this was the selected item, deselect it before deleting to prevent UI issues
       if (selectedItemId === item.id) {
-        onSelectItem(0);
+        onSelectItem(null);
       }
       
       deleteItem(
@@ -156,7 +156,18 @@ export default function OutlineItem({
           <div 
             className="flex-grow cursor-pointer truncate px-1 py-0.5 text-sm flex items-center"
             style={{ paddingLeft: hasChildren ? '0' : '20px' }}
-            onClick={() => onSelectItem(item.id)}
+            onClick={() => {
+              // Clear current selection first to prevent content bleeding
+              if (selectedItemId && selectedItemId !== item.id) {
+                onSelectItem(null);
+                // Then select this item after a short delay to ensure clean transition
+                setTimeout(() => {
+                  onSelectItem(item.id);
+                }, 50);
+              } else {
+                onSelectItem(item.id);
+              }
+            }}
           >
             {item.isCompleted && (
               <div className="w-2 h-2 bg-green-500 rounded-full mr-1.5" />

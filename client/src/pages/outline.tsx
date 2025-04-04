@@ -46,7 +46,7 @@ export default function Outline() {
     .sort((a, b) => a.order - b.order);
   
   // Find selected item
-  const selectedItem = outlineItems.find(item => item.id === selectedItemId);
+  const selectedItem = selectedItemId ? outlineItems.find(item => item.id === selectedItemId) : undefined;
   
   // Access app state context directly
   const { setOutlineItemExpanded } = useAppState();
@@ -85,10 +85,15 @@ export default function Outline() {
       setOutlineItemExpanded(parentId, true);
     }
     
+    // First deselect current item to avoid content bleeding issues
+    if (selectedItemId) {
+      setSelectedItemId(null);
+    }
+    
     createOutlineItem(
       {
         title: "New Section",
-        content: "",
+        content: "<p>Start writing here...</p>",  // Initialize with default content
         projectId: Number(id),
         parentId,
         order: maxOrder + 1
@@ -106,9 +111,6 @@ export default function Outline() {
           
           const newItem = result.data;
           
-          // Select the new item
-          setSelectedItemId(newItem.id);
-          
           // If the item has a parent, ensure the parent stays expanded
           if (newItem.parentId) {
             setOutlineItemExpanded(newItem.parentId, true);
@@ -118,6 +120,12 @@ export default function Outline() {
             title: "Section created",
             description: "New outline section has been created."
           });
+          
+          // Delay selecting the new item to allow the UI to update
+          // This prevents "flashing" where item opens and closes quickly
+          setTimeout(() => {
+            setSelectedItemId(newItem.id);
+          }, 100);
         },
         onError: (error) => {
           console.error("Create error:", error);
