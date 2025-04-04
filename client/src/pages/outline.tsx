@@ -13,6 +13,7 @@ import { useOutlineItems, useCreateOutlineItem } from "@/hooks/use-outline";
 import { useState, useEffect } from "react";
 import OutlineItem from "@/components/outline/outline-item";
 import OutlineEditor from "@/components/outline/outline-editor";
+import OutlineRichEditor from "@/components/outline/outline-rich-editor";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -253,7 +254,7 @@ export default function Outline() {
                     {selectedItem.title}
                   </h2>
                 </div>
-                <OutlineEditor 
+                <OutlineRichEditor 
                   item={selectedItem}
                   projectId={Number(id)}
                 />

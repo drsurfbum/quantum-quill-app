@@ -26,7 +26,8 @@ export const useCreateOutlineItem = () => {
       content?: string, 
       projectId: number, 
       parentId: number | null,
-      order: number 
+      order: number,
+      isCompleted?: boolean
     }) => {
       const res = await apiRequest('POST', '/api/outline', data);
       return res.json();
@@ -45,7 +46,8 @@ export const useUpdateOutlineItem = () => {
       title?: string, 
       content?: string,
       parentId?: number | null,
-      order?: number 
+      order?: number,
+      isCompleted?: boolean
     }) => {
       const res = await apiRequest('PUT', `/api/outline/${id}`, data);
       return res.json();

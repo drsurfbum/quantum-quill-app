@@ -124,11 +124,16 @@ export default function OutlineItem({
           </Button>
           
           <div 
-            className="flex-grow cursor-pointer truncate px-1 py-0.5 text-sm"
+            className="flex-grow cursor-pointer truncate px-1 py-0.5 text-sm flex items-center"
             style={{ paddingLeft: hasChildren ? '0' : '20px' }}
             onClick={() => onSelectItem(item.id)}
           >
-            {item.title}
+            {item.isCompleted && (
+              <div className="w-2 h-2 bg-green-500 rounded-full mr-1.5" />
+            )}
+            <span className={item.isCompleted ? "line-through text-muted-foreground" : ""}>
+              {item.title}
+            </span>
           </div>
           
           <div className="opacity-0 group-hover:opacity-100 flex">

@@ -91,6 +91,7 @@ export const outlineItems = pgTable("outline_items", {
   content: text("content").default(""),
   parentId: integer("parent_id"),
   order: integer("order").notNull(),
+  isCompleted: boolean("is_completed").default(false),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -101,6 +102,7 @@ export const insertOutlineItemSchema = createInsertSchema(outlineItems).pick({
   content: true,
   parentId: true,
   order: true,
+  isCompleted: true,
 });
 
 export type InsertOutlineItem = z.infer<typeof insertOutlineItemSchema>;
