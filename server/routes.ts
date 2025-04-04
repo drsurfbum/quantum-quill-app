@@ -16,18 +16,49 @@ import { setupAuth } from "./auth";
 
 // Middleware to check if user is authenticated
 const isAuthenticated = (req: Request, res: Response, next: Function) => {
+  // First check if user is authenticated through session
+  let isSessionAuth = req.isAuthenticated() && !!req.user;
+  
+  // If not authenticated through session, check for token-based auth
+  if (!isSessionAuth) {
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.substring(7); // Remove 'Bearer ' prefix
+      
+      // Simple token validation - production would use JWT
+      if (token && token.startsWith('user-')) {
+        try {
+          // Extract user ID from token - format is user-{userId}-{timestamp}
+          const parts = token.split('-');
+          if (parts.length >= 2) {
+            const userId = parseInt(parts[1]);
+            if (!isNaN(userId)) {
+              // Manual authentication - set user on request
+              req.user = { id: userId, username: "TokenUser" } as Express.User;
+              isSessionAuth = true;
+              console.log(`User authenticated via token for user ID: ${userId}`);
+            }
+          }
+        } catch (error) {
+          console.error("Token authentication error:", error);
+        }
+      }
+    }
+  }
+  
   console.log(`
 ===== Auth Check =====
 Path: ${req.path}
 Method: ${req.method}
 Session ID: ${req.sessionID}
-Is Authenticated: ${req.isAuthenticated()}
+Has Auth Header: ${!!req.headers.authorization}
+Is Authenticated: ${isSessionAuth}
 User: ${req.user ? JSON.stringify({ id: req.user.id, username: req.user.username }) : "null"}
 ====================
   `);
   
-  if (req.isAuthenticated() && req.user) {
-    console.log(`User authorized: ${req.user.username}. Proceeding to route handler.`);
+  if (isSessionAuth) {
+    console.log(`User authorized: ${req.user!.username || req.user!.id}. Proceeding to route handler.`);
     return next();
   }
   
@@ -46,13 +77,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
       isAuthenticated: req.isAuthenticated(),
       hasUser: !!req.user,
       cookies: req.headers.cookie,
+      hasAuthHeader: !!req.headers.authorization
     });
     
     res.json({
       sessionActive: !!req.sessionID,
       isAuthenticated: req.isAuthenticated(),
       hasUser: !!req.user,
-      cookiesPresent: !!req.headers.cookie
+      cookiesPresent: !!req.headers.cookie,
+      hasAuthHeader: !!req.headers.authorization
+    });
+  });
+  
+  // Debug endpoint to check token authentication
+  app.get("/api/token-check", (req, res) => {
+    const authHeader = req.headers.authorization;
+    let tokenInfo = { present: false };
+    
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.substring(7); // Remove 'Bearer ' prefix
+      console.log("Token received:", token);
+      
+      // Parse token parts
+      if (token.startsWith('user-')) {
+        const parts = token.split('-');
+        tokenInfo = {
+          present: true,
+          format: "user-id-timestamp",
+          userIdPresent: parts.length >= 2,
+          timestampPresent: parts.length >= 3,
+          userId: parts.length >= 2 ? parseInt(parts[1]) : null,
+          isValidUserId: parts.length >= 2 ? !isNaN(parseInt(parts[1])) : false,
+          timestamp: parts.length >= 3 ? parts[2] : null
+        };
+      } else {
+        tokenInfo = {
+          present: true,
+          format: "unknown"
+        };
+      }
+    }
+    
+    res.json({
+      token: tokenInfo,
+      headers: {
+        authorizationPresent: !!req.headers.authorization,
+        cookies: !!req.headers.cookie
+      }
     });
   });
   // Projects routes

@@ -197,7 +197,42 @@ Session: ${req.session ? "Exists" : "Missing"}
   app.get("/api/user", (req, res) => {
     console.log("GET /api/user - Session ID:", req.sessionID, "Is authenticated:", req.isAuthenticated());
     
+    // Check for token-based auth if session auth fails
     if (!req.isAuthenticated()) {
+      const authHeader = req.headers.authorization;
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        const token = authHeader.substring(7);
+        
+        // Simple token validation 
+        if (token && token.startsWith('user-')) {
+          try {
+            // Extract user ID from token - format is user-{userId}-{timestamp}
+            const parts = token.split('-');
+            if (parts.length >= 2) {
+              const userId = parseInt(parts[1]);
+              if (!isNaN(userId)) {
+                // Get user from storage
+                storage.getUser(userId).then(user => {
+                  if (user) {
+                    console.log("User authenticated via token:", user.username);
+                    return res.json({ id: user.id, username: user.username, email: user.email });
+                  } else {
+                    console.log("Token user not found");
+                    return res.status(401).json({ message: "Not authenticated" });
+                  }
+                }).catch(err => {
+                  console.error("Error authenticating via token:", err);
+                  return res.status(401).json({ message: "Not authenticated" });
+                });
+                return; // Early return to avoid the rest of the function
+              }
+            }
+          } catch (error) {
+            console.error("Token authentication error:", error);
+          }
+        }
+      }
+      
       console.log("User not authenticated");
       return res.status(401).json({ message: "Not authenticated" });
     }
