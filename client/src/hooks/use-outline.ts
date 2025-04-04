@@ -58,10 +58,23 @@ export const useUpdateOutlineItem = () => {
       order?: number,
       isCompleted?: boolean
     }) => {
-      const res = await apiRequest('PUT', `/api/outline/${id}`, data);
-      return res.json();
+      try {
+        const res = await apiRequest('PUT', `/api/outline/${id}`, data);
+        const jsonData = await res.json();
+        return { success: true, data: jsonData };
+      } catch (error) {
+        console.error("Error updating outline item:", error);
+        return { success: false, error, id };
+      }
     },
-    onSuccess: (data) => {
+    onSuccess: (result) => {
+      if (!result.success) {
+        console.error("Update operation was not successful:", result.error);
+        return;
+      }
+      
+      const data = result.data;
+      
       // Use queryClient.setQueryData to update the cached item without triggering a full refetch
       const outlineItems = queryClient.getQueryData<OutlineItem[]>([`/api/projects/${data.projectId}/outline`]);
       
@@ -86,10 +99,20 @@ export const useUpdateOutlineItem = () => {
 export const useDeleteOutlineItem = () => {
   return useMutation({
     mutationFn: async ({ id, projectId }: { id: number | string, projectId: number | string }) => {
-      const res = await apiRequest('DELETE', `/api/outline/${id}`, undefined);
-      return { id, projectId };
+      try {
+        const res = await apiRequest('DELETE', `/api/outline/${id}`, undefined);
+        return { id, projectId, success: true };
+      } catch (error) {
+        console.error("Error deleting outline item:", error);
+        return { id, projectId, success: false, error };
+      }
     },
     onSuccess: (data) => {
+      if (!data.success) {
+        console.error("Delete operation was not successful:", data.error);
+        return;
+      }
+      
       // Update the cache directly without triggering a refetch
       const outlineItems = queryClient.getQueryData<OutlineItem[]>([`/api/projects/${data.projectId}/outline`]);
       
