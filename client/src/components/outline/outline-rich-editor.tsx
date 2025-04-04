@@ -92,27 +92,29 @@ export default function OutlineRichEditor({ item, projectId }: OutlineRichEditor
     
     // Always update the content when item changes to ensure consistency
     if (editor && editor.isEditable) {
-      const currentContent = editor.getHTML();
       // Store editor state before update
       const isFocused = editor.isFocused; 
       const scrollPosition = window.scrollY;
       
-      // Force update editor content to match the current item
-      // This is critical to prevent content bleeding between items
-      if (item.content) {
-        editor.commands.setContent(item.content);
-      } else {
-        editor.commands.setContent('<p>Start writing here...</p>');
-      }
-        
-      // If editor was focused, restore focus after a short delay
-      // to ensure the DOM has been fully updated
-      if (isFocused) {
-        setTimeout(() => {
-          editor.commands.focus();
-          window.scrollTo(0, scrollPosition);
-        }, 50); // Increased timeout for more reliability
-      }
+      // Completely destroy and rebuild editor state to prevent content bleeding
+      // First, we'll update the content after a small delay to ensure clean transition
+      setTimeout(() => {
+        // Force update editor content to match the current item
+        if (item.content) {
+          editor.commands.setContent(item.content);
+        } else {
+          editor.commands.setContent('<p>Start writing here...</p>');
+        }
+          
+        // If editor was focused, restore focus after a short delay
+        // to ensure the DOM has been fully updated
+        if (isFocused) {
+          setTimeout(() => {
+            editor.commands.focus();
+            window.scrollTo(0, scrollPosition);
+          }, 100);
+        }
+      }, 50);
     }
   }, [item.id, editor]); // Only depend on item.id not the entire item to prevent unnecessary re-renders
   

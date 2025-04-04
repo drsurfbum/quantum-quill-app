@@ -92,7 +92,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Debug endpoint to check token authentication
   app.get("/api/token-check", (req, res) => {
     const authHeader = req.headers.authorization;
-    let tokenInfo = { present: false };
+    let tokenInfo: {
+      present: boolean;
+      format?: string;
+      userIdPresent?: boolean;
+      timestampPresent?: boolean;
+      userId?: number | null;
+      isValidUserId?: boolean;
+      timestamp?: string | null;
+    } = { present: false };
     
     if (authHeader && authHeader.startsWith('Bearer ')) {
       const token = authHeader.substring(7); // Remove 'Bearer ' prefix

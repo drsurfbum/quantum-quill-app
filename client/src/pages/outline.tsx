@@ -124,8 +124,12 @@ export default function Outline() {
           // Delay selecting the new item to allow the UI to update
           // This prevents "flashing" where item opens and closes quickly
           setTimeout(() => {
+            // Expand the new item and make sure it's visible
+            setOutlineItemExpanded(newItem.id, true);
+            
+            // Also select the item to open it in the editor
             setSelectedItemId(newItem.id);
-          }, 100);
+          }, 200); // Increased delay for better reliability
         },
         onError: (error) => {
           console.error("Create error:", error);

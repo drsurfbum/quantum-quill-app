@@ -52,7 +52,12 @@ export default function OutlineItem({
     if (level === 0 && !isOutlineItemExpanded(item.id)) {
       setOutlineItemExpanded(item.id, true);
     }
-  }, [item.id, level, setOutlineItemExpanded, isOutlineItemExpanded]);
+    
+    // Ensure expanded state persists for selected items
+    if (selectedItemId === item.id && !isOutlineItemExpanded(item.id)) {
+      setOutlineItemExpanded(item.id, true);
+    }
+  }, [item.id, level, selectedItemId, setOutlineItemExpanded, isOutlineItemExpanded]);
   
   const { mutate: deleteItem } = useDeleteOutlineItem();
   const { mutate: updateItem } = useUpdateOutlineItem();
