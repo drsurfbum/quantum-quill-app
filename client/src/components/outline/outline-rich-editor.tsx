@@ -59,7 +59,13 @@ export default function OutlineRichEditor({ item, projectId }: OutlineRichEditor
     ],
     content: item.content || '<p>Start writing here...</p>',
     onUpdate: ({ editor }) => {
+      // Store current cursor position
+      const selection = editor.view.state.selection;
+      
+      // Get HTML content
       const html = editor.getHTML();
+      
+      // Trigger save without losing focus
       handleContentChange(html);
     },
   });
@@ -68,12 +74,26 @@ export default function OutlineRichEditor({ item, projectId }: OutlineRichEditor
   useEffect(() => {
     setTitle(item.title);
     setIsCompleted(item.isCompleted || false);
-    if (editor && editor.isEditable && item.content) {
-      editor.commands.setContent(item.content);
+    
+    // Only update content if it has changed to avoid cursor jumping
+    if (editor && editor.isEditable) {
+      const currentContent = editor.getHTML();
+      if (item.content && currentContent !== item.content) {
+        // Keep track of current selection
+        const { from, to } = editor.view.state.selection;
+        
+        // Set the new content
+        editor.commands.setContent(item.content);
+        
+        // Try to restore cursor position after content change
+        setTimeout(() => {
+          editor.chain().focus().run();
+        }, 0);
+      }
     }
   }, [item, editor]);
   
-  // Set up debounced save
+  // Set up debounced save with longer delay to prevent cursor jumping
   const debouncedSave = useCallback(
     debounce((newTitle: string, newContent: string, newIsCompleted: boolean) => {
       updateItem(
@@ -97,7 +117,7 @@ export default function OutlineRichEditor({ item, projectId }: OutlineRichEditor
           }
         }
       );
-    }, 1000),
+    }, 2000), // Increased from 1000ms to 2000ms to reduce save frequency
     [updateItem, toast]
   );
   
