@@ -22,6 +22,7 @@ export async function apiRequest(
 ): Promise<Response> {
   console.log(`Making ${method} request to ${url}`);
   
+  // Use SameSite=Lax to match server configuration
   const res = await fetch(url, {
     method,
     headers: data ? { 
@@ -29,6 +30,7 @@ export async function apiRequest(
     } : {},
     body: data ? JSON.stringify(data) : undefined,
     credentials: "include", // This is crucial for cookies
+    mode: "same-origin", // Ensures same-origin requests which helps with cookie handling
   });
 
   console.log(`Response status: ${res.status} for ${method} ${url}`);
@@ -36,6 +38,10 @@ export async function apiRequest(
   // Debug cookies
   const cookies = document.cookie;
   console.log(`Current cookies: ${cookies}`);
+  
+  if (!res.ok && res.status === 401) {
+    console.log("Authentication error: User not authenticated");
+  }
   
   await throwIfResNotOk(res);
   return res;
@@ -51,6 +57,7 @@ export const getQueryFn: <T>(options: {
     
     const res = await fetch(queryKey[0] as string, {
       credentials: "include",
+      mode: "same-origin", // Ensures same-origin requests for cookie handling
     });
 
     console.log(`Response status: ${res.status} for GET ${queryKey[0]}`);

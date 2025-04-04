@@ -38,6 +38,23 @@ User: ${req.user ? JSON.stringify({ id: req.user.id, username: req.user.username
 export async function registerRoutes(app: Express): Promise<Server> {
   // Set up authentication routes and middleware
   setupAuth(app);
+  
+  // Debug endpoint to check session status
+  app.get("/api/session-check", (req, res) => {
+    console.log("Session check:", {
+      sessionID: req.sessionID,
+      isAuthenticated: req.isAuthenticated(),
+      hasUser: !!req.user,
+      cookies: req.headers.cookie,
+    });
+    
+    res.json({
+      sessionActive: !!req.sessionID,
+      isAuthenticated: req.isAuthenticated(),
+      hasUser: !!req.user,
+      cookiesPresent: !!req.headers.cookie
+    });
+  });
   // Projects routes
   app.get("/api/projects", isAuthenticated, async (req: Request, res: Response) => {
     const userId = req.user!.id;

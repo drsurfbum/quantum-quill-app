@@ -47,13 +47,13 @@ export function setupAuth(app: Express) {
     resave: true, 
     saveUninitialized: true,
     store: storage.sessionStore,
-    name: 'quantum_sid', // Renamed to avoid issues with dots
+    name: 'quill_sid', // Renamed to avoid potential name conflicts
     cookie: {
       // In Replit environment, secure must be false
       secure: false,
       maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
       httpOnly: true,
-      // No sameSite setting to use default
+      sameSite: 'lax', // Specific sameSite setting to ensure cookies work across sites
       path: '/'
     }
   };
@@ -173,10 +173,11 @@ Session: ${req.session ? "Exists" : "Missing"}
         `);
         
         // Add session cookie directly for clarity
-        res.cookie('quantum_sid', req.sessionID, {
+        res.cookie('quill_sid', req.sessionID, {
           httpOnly: true,
           secure: false,
           maxAge: 1000 * 60 * 60 * 24 * 7,
+          sameSite: 'lax',
           path: '/'
         });
         
