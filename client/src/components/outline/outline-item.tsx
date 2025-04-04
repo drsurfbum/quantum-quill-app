@@ -66,20 +66,31 @@ export default function OutlineItem({
   
   const handleDelete = () => {
     if (confirm("Are you sure you want to delete this outline item and all its children?")) {
+      // If this was the selected item, deselect it before deleting to prevent UI issues
+      if (selectedItemId === item.id) {
+        onSelectItem(0);
+      }
+      
       deleteItem(
         { id: item.id, projectId },
         {
-          onSuccess: () => {
+          onSuccess: (result) => {
+            if (!result.success) {
+              toast({
+                title: "Error deleting item",
+                description: "There was an error deleting the outline item.",
+                variant: "destructive"
+              });
+              return;
+            }
+            
             toast({
               title: "Item deleted",
               description: "The outline item has been deleted."
             });
-            // If this was the selected item, deselect it
-            if (selectedItemId === item.id) {
-              onSelectItem(0);
-            }
           },
-          onError: () => {
+          onError: (error) => {
+            console.error("Delete error:", error);
             toast({
               title: "Error deleting item",
               description: "There was an error deleting the outline item.",
@@ -95,14 +106,24 @@ export default function OutlineItem({
     updateItem(
       { id: item.id, title: newTitle },
       {
-        onSuccess: () => {
+        onSuccess: (result) => {
+          if (!result.success) {
+            toast({
+              title: "Error renaming item",
+              description: "There was an error renaming the outline item.",
+              variant: "destructive"
+            });
+            return;
+          }
+          
           toast({
             title: "Item renamed",
             description: "The outline item has been renamed."
           });
           setIsEditDialogOpen(false);
         },
-        onError: () => {
+        onError: (error) => {
+          console.error("Rename error:", error);
           toast({
             title: "Error renaming item",
             description: "There was an error renaming the outline item.",

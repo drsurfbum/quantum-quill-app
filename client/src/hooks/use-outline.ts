@@ -2,6 +2,33 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { type OutlineItem } from "@shared/schema";
 
+// Define result types for better type safety
+export type OutlineItemSuccess = {
+  success: true;
+  data: OutlineItem;
+};
+
+export type OutlineItemError = {
+  success: false;
+  error: unknown;
+  projectId?: number;
+  id?: number | string;
+};
+
+export type OutlineItemResult = OutlineItemSuccess | OutlineItemError;
+
+// Special type for delete operation
+export type DeleteOutlineItemSuccess = {
+  success: true;
+  data: {
+    id: number | string;
+    projectId: number | string;
+    [key: string]: any;
+  };
+};
+
+export type DeleteOutlineItemResult = DeleteOutlineItemSuccess | OutlineItemError;
+
 // Get all outline items for a project
 export const useOutlineItems = (projectId: string | number) => {
   return useQuery<OutlineItem[]>({
@@ -20,25 +47,41 @@ export const useOutlineItem = (itemId: string | number) => {
 
 // Create a new outline item
 export const useCreateOutlineItem = () => {
-  return useMutation({
-    mutationFn: async (data: { 
-      title: string, 
-      content?: string, 
-      projectId: number, 
-      parentId: number | null,
-      order: number,
-      isCompleted?: boolean
-    }) => {
-      const res = await apiRequest('POST', '/api/outline', data);
-      return res.json();
+  return useMutation<OutlineItemResult, Error, { 
+    title: string, 
+    content?: string, 
+    projectId: number, 
+    parentId: number | null,
+    order: number,
+    isCompleted?: boolean
+  }>({
+    mutationFn: async (data) => {
+      try {
+        const res = await apiRequest('POST', '/api/outline', data);
+        const jsonData = await res.json();
+        return { success: true, data: jsonData } as OutlineItemSuccess;
+      } catch (error) {
+        console.error("Error creating outline item:", error);
+        return { success: false, error, projectId: data.projectId } as OutlineItemError;
+      }
     },
-    onSuccess: (data) => {
+    onSuccess: (result) => {
+      if (!result.success) {
+        console.error("Create operation was not successful:", result.error);
+        return;
+      }
+      
+      const data = result.data;
+      
       // Use queryClient.setQueryData to update the cached items without triggering a full refetch
       const outlineItems = queryClient.getQueryData<OutlineItem[]>([`/api/projects/${data.projectId}/outline`]);
       
       if (outlineItems) {
         // Add the new item to the cached data
         queryClient.setQueryData([`/api/projects/${data.projectId}/outline`], [...outlineItems, data]);
+        
+        // Cache the individual item data as well
+        queryClient.setQueryData([`/api/outline/${data.id}`], data);
       } else {
         // Fall back to invalidation if we don't have the data cached
         queryClient.invalidateQueries({ queryKey: [`/api/projects/${data.projectId}/outline`] });
@@ -49,22 +92,22 @@ export const useCreateOutlineItem = () => {
 
 // Update an outline item
 export const useUpdateOutlineItem = () => {
-  return useMutation({
-    mutationFn: async ({ id, ...data }: { 
-      id: number | string,
-      title?: string, 
-      content?: string,
-      parentId?: number | null,
-      order?: number,
-      isCompleted?: boolean
-    }) => {
+  return useMutation<OutlineItemResult, Error, { 
+    id: number | string,
+    title?: string, 
+    content?: string,
+    parentId?: number | null,
+    order?: number,
+    isCompleted?: boolean
+  }>({
+    mutationFn: async ({ id, ...data }) => {
       try {
         const res = await apiRequest('PUT', `/api/outline/${id}`, data);
         const jsonData = await res.json();
-        return { success: true, data: jsonData };
+        return { success: true, data: jsonData } as OutlineItemSuccess;
       } catch (error) {
         console.error("Error updating outline item:", error);
-        return { success: false, error, id };
+        return { success: false, error, id } as OutlineItemError;
       }
     },
     onSuccess: (result) => {
@@ -97,21 +140,31 @@ export const useUpdateOutlineItem = () => {
 
 // Delete an outline item
 export const useDeleteOutlineItem = () => {
-  return useMutation({
-    mutationFn: async ({ id, projectId }: { id: number | string, projectId: number | string }) => {
+  return useMutation<DeleteOutlineItemResult, Error, { id: number | string, projectId: number | string }>({
+    mutationFn: async ({ id, projectId }) => {
       try {
         const res = await apiRequest('DELETE', `/api/outline/${id}`, undefined);
-        return { id, projectId, success: true };
+        return { 
+          success: true, 
+          data: { id, projectId } 
+        } as DeleteOutlineItemSuccess;
       } catch (error) {
         console.error("Error deleting outline item:", error);
-        return { id, projectId, success: false, error };
+        return { 
+          success: false, 
+          error, 
+          id, 
+          projectId 
+        } as OutlineItemError;
       }
     },
-    onSuccess: (data) => {
-      if (!data.success) {
-        console.error("Delete operation was not successful:", data.error);
+    onSuccess: (result) => {
+      if (!result.success) {
+        console.error("Delete operation was not successful:", result.error);
         return;
       }
+      
+      const data = result.data;
       
       // Update the cache directly without triggering a refetch
       const outlineItems = queryClient.getQueryData<OutlineItem[]>([`/api/projects/${data.projectId}/outline`]);

@@ -94,13 +94,24 @@ export default function Outline() {
         order: maxOrder + 1
       },
       {
-        onSuccess: (data) => {
+        onSuccess: (result) => {
+          if (!result.success) {
+            toast({
+              title: "Error creating section",
+              description: "There was an error creating your outline section. Please try again.",
+              variant: "destructive"
+            });
+            return;
+          }
+          
+          const newItem = result.data;
+          
           // Select the new item
-          setSelectedItemId(data.id);
+          setSelectedItemId(newItem.id);
           
           // If the item has a parent, ensure the parent stays expanded
-          if (data.parentId) {
-            setOutlineItemExpanded(data.parentId, true);
+          if (newItem.parentId) {
+            setOutlineItemExpanded(newItem.parentId, true);
           }
           
           toast({
@@ -108,7 +119,8 @@ export default function Outline() {
             description: "New outline section has been created."
           });
         },
-        onError: () => {
+        onError: (error) => {
+          console.error("Create error:", error);
           toast({
             title: "Error creating section",
             description: "There was an error creating your outline section. Please try again.",
