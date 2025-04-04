@@ -17,6 +17,9 @@ interface AppState {
   
   // Cache of last viewed items to prevent re-fetching
   lastViewedPlotStructure: number | null;
+  
+  // UI state persistence
+  expandedOutlineItems: Record<number, boolean>;
 }
 
 // Define the shape of our context
@@ -40,6 +43,10 @@ interface AppStateContextType {
   
   // Helpers
   setLastViewedPlotStructure: (id: number | null) => void;
+  
+  // UI state persistence
+  setOutlineItemExpanded: (itemId: number, isExpanded: boolean) => void;
+  isOutlineItemExpanded: (itemId: number) => boolean;
 }
 
 // Create the context with a default value
@@ -55,6 +62,7 @@ const initialState: AppState = {
   isCreateProjectModalOpen: false,
   isCreatePlotStructureModalOpen: false,
   lastViewedPlotStructure: null,
+  expandedOutlineItems: {},
 };
 
 // Provider component
@@ -105,6 +113,21 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     setState(prev => ({ ...prev, lastViewedPlotStructure: id }));
   };
   
+  // UI state persistence
+  const setOutlineItemExpanded = (itemId: number, isExpanded: boolean) => {
+    setState(prev => ({
+      ...prev,
+      expandedOutlineItems: {
+        ...prev.expandedOutlineItems,
+        [itemId]: isExpanded
+      }
+    }));
+  };
+  
+  const isOutlineItemExpanded = (itemId: number): boolean => {
+    return !!state.expandedOutlineItems[itemId];
+  };
+  
   // Create the value object
   const value = {
     state,
@@ -118,6 +141,8 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     openCreatePlotStructureModal,
     closeCreatePlotStructureModal,
     setLastViewedPlotStructure,
+    setOutlineItemExpanded,
+    isOutlineItemExpanded,
   };
   
   return (

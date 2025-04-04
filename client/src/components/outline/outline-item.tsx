@@ -8,9 +8,10 @@ import {
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useDeleteOutlineItem, useUpdateOutlineItem } from "@/hooks/use-outline";
 import { useToast } from "@/hooks/use-toast";
+import { useAppState } from "@/contexts/app-state-context";
 import {
   Dialog,
   DialogContent,
@@ -41,7 +42,8 @@ export default function OutlineItem({
   level = 0 
 }: OutlineItemProps) {
   const { toast } = useToast();
-  const [isExpanded, setIsExpanded] = useState(false);
+  const { setOutlineItemExpanded, isOutlineItemExpanded } = useAppState();
+  const isExpanded = isOutlineItemExpanded(item.id);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [newTitle, setNewTitle] = useState(item.title);
   
@@ -117,7 +119,7 @@ export default function OutlineItem({
             variant="ghost" 
             size="icon" 
             className="h-5 w-5"
-            onClick={() => setIsExpanded(!isExpanded)}
+            onClick={() => setOutlineItemExpanded(item.id, !isExpanded)}
             style={{ visibility: hasChildren ? 'visible' : 'hidden' }}
           >
             {isExpanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
