@@ -47,6 +47,13 @@ export default function OutlineItem({
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [newTitle, setNewTitle] = useState(item.title);
   
+  // By default, expand the first level items
+  useEffect(() => {
+    if (level === 0 && !isOutlineItemExpanded(item.id)) {
+      setOutlineItemExpanded(item.id, true);
+    }
+  }, [item.id, level, setOutlineItemExpanded, isOutlineItemExpanded]);
+  
   const { mutate: deleteItem } = useDeleteOutlineItem();
   const { mutate: updateItem } = useUpdateOutlineItem();
   

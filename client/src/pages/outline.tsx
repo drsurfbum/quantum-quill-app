@@ -10,12 +10,13 @@ import { cn } from "@/lib/utils";
 import { Edit3, Grid, ListTree, BookOpen } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useOutlineItems, useCreateOutlineItem } from "@/hooks/use-outline";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import OutlineItem from "@/components/outline/outline-item";
 import OutlineEditor from "@/components/outline/outline-editor";
 import OutlineRichEditor from "@/components/outline/outline-rich-editor";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useAppState } from "@/contexts/app-state-context";
 
 export default function Outline() {
   const { id } = useParams();
@@ -47,10 +48,42 @@ export default function Outline() {
   // Find selected item
   const selectedItem = outlineItems.find(item => item.id === selectedItemId);
   
+  // Access app state context directly
+  const { setOutlineItemExpanded } = useAppState();
+  
+  // Ensure parent items of selected item remain expanded
+  const ensureParentsExpanded = useCallback((item: { id: number, parentId: number | null }) => {
+    if (!item || !item.parentId) return;
+    
+    // Find the parent item
+    const parentItem = outlineItems.find(i => i.id === item.parentId);
+    if (parentItem) {
+      // Expand the parent
+      setOutlineItemExpanded(parentItem.id, true);
+      
+      // Recursively ensure grandparents are expanded too
+      if (parentItem.parentId) {
+        ensureParentsExpanded(parentItem);
+      }
+    }
+  }, [outlineItems, setOutlineItemExpanded]);
+  
+  // When selected item changes, ensure its parents are expanded
+  useEffect(() => {
+    if (selectedItem && outlineItems.length > 0) {
+      ensureParentsExpanded(selectedItem);
+    }
+  }, [selectedItemId, outlineItems, ensureParentsExpanded, selectedItem]);
+  
   const handleCreateItem = (parentId: number | null = null) => {
     const maxOrder = parentId 
       ? Math.max(0, ...outlineItems.filter(item => item.parentId === parentId).map(item => item.order))
       : Math.max(0, ...rootItems.map(item => item.order));
+    
+    // If creating under a parent, make sure parent is expanded
+    if (parentId) {
+      setOutlineItemExpanded(parentId, true);
+    }
     
     createOutlineItem(
       {
@@ -62,7 +95,14 @@ export default function Outline() {
       },
       {
         onSuccess: (data) => {
+          // Select the new item
           setSelectedItemId(data.id);
+          
+          // If the item has a parent, ensure the parent stays expanded
+          if (data.parentId) {
+            setOutlineItemExpanded(data.parentId, true);
+          }
+          
           toast({
             title: "Section created",
             description: "New outline section has been created."

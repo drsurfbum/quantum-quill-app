@@ -79,16 +79,23 @@ export default function OutlineRichEditor({ item, projectId }: OutlineRichEditor
     if (editor && editor.isEditable) {
       const currentContent = editor.getHTML();
       if (item.content && currentContent !== item.content) {
-        // Keep track of current selection
-        const { from, to } = editor.view.state.selection;
+        // Store current selection and cursor position
+        const selection = editor.view.state.selection;
+        const isFocused = editor.isFocused;
+        const scrollPosition = window.scrollY;
         
-        // Set the new content
+        // Set new content
         editor.commands.setContent(item.content);
         
-        // Try to restore cursor position after content change
-        setTimeout(() => {
-          editor.chain().focus().run();
-        }, 0);
+        // If editor was focused, restore focus
+        if (isFocused) {
+          // Delay to ensure the DOM has been updated
+          setTimeout(() => {
+            editor.commands.focus('end');
+            // Try to maintain scroll position
+            window.scrollTo(0, scrollPosition);
+          }, 10);
+        }
       }
     }
   }, [item, editor]);

@@ -33,7 +33,16 @@ export const useCreateOutlineItem = () => {
       return res.json();
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: [`/api/projects/${data.projectId}/outline`] });
+      // Use queryClient.setQueryData to update the cached items without triggering a full refetch
+      const outlineItems = queryClient.getQueryData<OutlineItem[]>([`/api/projects/${data.projectId}/outline`]);
+      
+      if (outlineItems) {
+        // Add the new item to the cached data
+        queryClient.setQueryData([`/api/projects/${data.projectId}/outline`], [...outlineItems, data]);
+      } else {
+        // Fall back to invalidation if we don't have the data cached
+        queryClient.invalidateQueries({ queryKey: [`/api/projects/${data.projectId}/outline`] });
+      }
     }
   });
 };
@@ -53,8 +62,22 @@ export const useUpdateOutlineItem = () => {
       return res.json();
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: [`/api/outline/${data.id}`] });
-      queryClient.invalidateQueries({ queryKey: [`/api/projects/${data.projectId}/outline`] });
+      // Use queryClient.setQueryData to update the cached item without triggering a full refetch
+      const outlineItems = queryClient.getQueryData<OutlineItem[]>([`/api/projects/${data.projectId}/outline`]);
+      
+      if (outlineItems) {
+        // Update the specific item without triggering a full refetch
+        const updatedItems = outlineItems.map(item => 
+          item.id === data.id ? { ...item, ...data } : item
+        );
+        
+        queryClient.setQueryData([`/api/projects/${data.projectId}/outline`], updatedItems);
+        queryClient.setQueryData([`/api/outline/${data.id}`], data);
+      } else {
+        // Fall back to invalidation only if we don't have the data cached
+        queryClient.invalidateQueries({ queryKey: [`/api/outline/${data.id}`] });
+        queryClient.invalidateQueries({ queryKey: [`/api/projects/${data.projectId}/outline`] });
+      }
     }
   });
 };
@@ -67,7 +90,34 @@ export const useDeleteOutlineItem = () => {
       return { id, projectId };
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: [`/api/projects/${data.projectId}/outline`] });
+      // Update the cache directly without triggering a refetch
+      const outlineItems = queryClient.getQueryData<OutlineItem[]>([`/api/projects/${data.projectId}/outline`]);
+      
+      if (outlineItems) {
+        // Remove the deleted item and all its children
+        const deletedItemIds = new Set<number | string>();
+        
+        // Find the item and all its children
+        const findItemsToDelete = (parentId: number | string) => {
+          outlineItems.forEach(item => {
+            if (item.id === parentId || item.parentId === parentId) {
+              deletedItemIds.add(item.id);
+              // Recursively find children's children
+              findItemsToDelete(item.id);
+            }
+          });
+        };
+        
+        findItemsToDelete(data.id);
+        
+        // Filter out the deleted items
+        const filteredItems = outlineItems.filter(item => !deletedItemIds.has(item.id));
+        
+        queryClient.setQueryData([`/api/projects/${data.projectId}/outline`], filteredItems);
+      } else {
+        // Fall back to invalidation if we don't have the data cached
+        queryClient.invalidateQueries({ queryKey: [`/api/projects/${data.projectId}/outline`] });
+      }
     }
   });
 };
