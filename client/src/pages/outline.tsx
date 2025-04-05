@@ -121,24 +121,42 @@ export default function Outline() {
             description: "New outline section has been created."
           });
           
-          // Use a more robust approach for selecting and expanding new items
-          // First set expanded state immediately
+          // Enhanced approach for new item creation and selection
+          
+          // Step 1: Mark expanded immediately
           setOutlineItemExpanded(newItem.id, true);
           
-          // Wait for UI to update before selecting (50ms)
+          // Step 2: Use a longer first delay to ensure the DOM is fully updated
           setTimeout(() => {
-            // Force expanded state again to ensure it stays expanded
+            // Force expanded one more time before selecting
             setOutlineItemExpanded(newItem.id, true);
             
-            // Select the item to open it in the editor
-            setSelectedItemId(newItem.id);
+            // Add attribute for scrolling
+            const items = document.querySelectorAll('.outline-item');
+            items.forEach(item => {
+              if (item.getAttribute('data-item-id') === String(newItem.id)) {
+                item.setAttribute('data-newly-created', 'true');
+              }
+            });
             
-            // Finally, after another delay to ensure everything is fully rendered,
-            // force the expanded state one more time for stability
+            // Wait before selecting to ensure UI is ready
             setTimeout(() => {
-              setOutlineItemExpanded(newItem.id, true);
-            }, 150);
-          }, 150); // Increased first delay for better reliability
+              // Finally select the item
+              setSelectedItemId(newItem.id);
+              
+              // After selection, one more delay to ensure continued expansion
+              setTimeout(() => {
+                // Force expanded state one final time
+                setOutlineItemExpanded(newItem.id, true);
+                
+                // Try to scroll the new item into view
+                const newlyCreated = document.querySelector('[data-newly-created="true"]');
+                if (newlyCreated) {
+                  newlyCreated.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+              }, 200);
+            }, 200);
+          }, 300); // Increase first delay substantially
         },
         onError: (error) => {
           console.error("Create error:", error);

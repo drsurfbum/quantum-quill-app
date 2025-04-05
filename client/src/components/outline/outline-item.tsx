@@ -59,30 +59,38 @@ export default function OutlineItem({
     }
   }, [item.id, level, selectedItemId, setOutlineItemExpanded, isOutlineItemExpanded]);
   
-  // Listen for custom events to force expand sections
+  // Use a more robust approach to handle expansion
   useEffect(() => {
-    const handleEnsureExpanded = (e: CustomEvent) => {
-      if (e.detail && e.detail.itemId === item.id) {
-        // Force expand this item
-        setOutlineItemExpanded(item.id, true);
+    // If this is the selected item, always keep it expanded
+    if (selectedItemId === item.id) {
+      setOutlineItemExpanded(item.id, true);
+      
+      // If this item has a parent, expand up the chain for visibility
+      if (item.parentId !== null) {
+        // Find parent items to expand
+        let currentParentId = item.parentId;
+        const toExpand = new Set<number>();
         
-        // If this item has a parent, we need to force expand that too
-        if (item.parentId) {
-          // We'll create a new event to bubble up to the parent
-          const parentEvent = new CustomEvent('ensure-outline-expanded', { 
-            detail: { itemId: item.parentId }
-          });
-          window.dispatchEvent(parentEvent);
+        // Add the parent ID to expand
+        while (currentParentId !== null) {
+          toExpand.add(currentParentId);
+          
+          // Find the parent item
+          const parentItem = items.find(i => i.id === currentParentId);
+          if (parentItem && parentItem.parentId !== null) {
+            currentParentId = parentItem.parentId;
+          } else {
+            currentParentId = null;
+          }
         }
+        
+        // Expand all parents in the chain
+        toExpand.forEach(id => {
+          setOutlineItemExpanded(id, true);
+        });
       }
-    };
-    
-    window.addEventListener('ensure-outline-expanded', handleEnsureExpanded as EventListener);
-    
-    return () => {
-      window.removeEventListener('ensure-outline-expanded', handleEnsureExpanded as EventListener);
-    };
-  }, [item.id, item.parentId, setOutlineItemExpanded]);
+    }
+  }, [selectedItemId, item.id, item.parentId, items, setOutlineItemExpanded]);
   
   const { mutate: deleteItem } = useDeleteOutlineItem();
   const { mutate: updateItem } = useUpdateOutlineItem();
@@ -166,7 +174,7 @@ export default function OutlineItem({
   
   return (
     <>
-      <div className="outline-item">
+      <div className="outline-item" data-item-id={item.id}>
         <div 
           className={cn(
             "flex items-center rounded-md p-1 hover:bg-neutral-100 dark:hover:bg-neutral-800 group",
