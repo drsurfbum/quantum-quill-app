@@ -118,6 +118,44 @@ export default function OutlineRichEditor({ item, projectId }: OutlineRichEditor
     }
   }, [item.id, editor]); // Only depend on item.id not the entire item to prevent unnecessary re-renders
   
+  // When item changes, immediately reapply the expanded state to keep the item visible
+  useEffect(() => {
+    // Ensure the outline item remains expanded in the sidebar
+    if (item && item.id) {
+      const parentId = item.parentId;
+      
+      // Immediately set this item as expanded
+      setTimeout(() => {
+        // This needs to happen outside the current render cycle
+        const event = new CustomEvent('ensure-outline-expanded', { 
+          detail: { itemId: item.id }
+        });
+        window.dispatchEvent(event);
+      }, 10);
+    }
+  }, [item.id]);
+  
+  // Add a listener for the custom event to ensure sections stay expanded
+  useEffect(() => {
+    // Listen for events to keep items expanded
+    const handleKeepExpanded = (e: CustomEvent) => {
+      if (e.detail && e.detail.itemId === item.id) {
+        // Force focus on the editor
+        if (editor) {
+          setTimeout(() => {
+            editor.commands.focus();
+          }, 10);
+        }
+      }
+    };
+    
+    window.addEventListener('ensure-outline-expanded', handleKeepExpanded as EventListener);
+    
+    return () => {
+      window.removeEventListener('ensure-outline-expanded', handleKeepExpanded as EventListener);
+    };
+  }, [editor, item.id]);
+  
   // Set up debounced save with longer delay to prevent cursor jumping
   const debouncedSave = useCallback(
     debounce((newTitle: string, newContent: string, newIsCompleted: boolean) => {

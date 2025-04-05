@@ -121,15 +121,24 @@ export default function Outline() {
             description: "New outline section has been created."
           });
           
-          // Delay selecting the new item to allow the UI to update
-          // This prevents "flashing" where item opens and closes quickly
+          // Use a more robust approach for selecting and expanding new items
+          // First set expanded state immediately
+          setOutlineItemExpanded(newItem.id, true);
+          
+          // Wait for UI to update before selecting (50ms)
           setTimeout(() => {
-            // Expand the new item and make sure it's visible
+            // Force expanded state again to ensure it stays expanded
             setOutlineItemExpanded(newItem.id, true);
             
-            // Also select the item to open it in the editor
+            // Select the item to open it in the editor
             setSelectedItemId(newItem.id);
-          }, 200); // Increased delay for better reliability
+            
+            // Finally, after another delay to ensure everything is fully rendered,
+            // force the expanded state one more time for stability
+            setTimeout(() => {
+              setOutlineItemExpanded(newItem.id, true);
+            }, 150);
+          }, 150); // Increased first delay for better reliability
         },
         onError: (error) => {
           console.error("Create error:", error);

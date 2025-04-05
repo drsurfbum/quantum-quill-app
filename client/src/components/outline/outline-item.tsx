@@ -59,6 +59,31 @@ export default function OutlineItem({
     }
   }, [item.id, level, selectedItemId, setOutlineItemExpanded, isOutlineItemExpanded]);
   
+  // Listen for custom events to force expand sections
+  useEffect(() => {
+    const handleEnsureExpanded = (e: CustomEvent) => {
+      if (e.detail && e.detail.itemId === item.id) {
+        // Force expand this item
+        setOutlineItemExpanded(item.id, true);
+        
+        // If this item has a parent, we need to force expand that too
+        if (item.parentId) {
+          // We'll create a new event to bubble up to the parent
+          const parentEvent = new CustomEvent('ensure-outline-expanded', { 
+            detail: { itemId: item.parentId }
+          });
+          window.dispatchEvent(parentEvent);
+        }
+      }
+    };
+    
+    window.addEventListener('ensure-outline-expanded', handleEnsureExpanded as EventListener);
+    
+    return () => {
+      window.removeEventListener('ensure-outline-expanded', handleEnsureExpanded as EventListener);
+    };
+  }, [item.id, item.parentId, setOutlineItemExpanded]);
+  
   const { mutate: deleteItem } = useDeleteOutlineItem();
   const { mutate: updateItem } = useUpdateOutlineItem();
   
@@ -162,15 +187,22 @@ export default function OutlineItem({
             className="flex-grow cursor-pointer truncate px-1 py-0.5 text-sm flex items-center"
             style={{ paddingLeft: hasChildren ? '0' : '20px' }}
             onClick={() => {
+              // Always force expand the item when it's clicked
+              setOutlineItemExpanded(item.id, true);
+              
               // Clear current selection first to prevent content bleeding
               if (selectedItemId && selectedItemId !== item.id) {
                 onSelectItem(null);
                 // Then select this item after a short delay to ensure clean transition
                 setTimeout(() => {
                   onSelectItem(item.id);
+                  // Double-ensure expanded state
+                  setOutlineItemExpanded(item.id, true);
                 }, 50);
               } else {
                 onSelectItem(item.id);
+                // Double-ensure expanded state
+                setOutlineItemExpanded(item.id, true);
               }
             }}
           >
