@@ -120,18 +120,19 @@ export default function OutlineItem({
         { id: item.id, projectId },
         {
           onSuccess: () => {
-            // Silently refresh the data 
+            // Quietly refresh the data - no need for toast notification
             queryClient.invalidateQueries({ queryKey: [`/api/projects/${projectId}/outline`] });
           },
           onError: (error) => {
-            console.error("Delete error:", error);
+            // Only show toast for actual errors
             toast({
               title: "Error deleting item",
               description: "There was an error deleting the outline item.",
               variant: "destructive"
             });
+            // We already logged the error in the hook, no need to log it again
             
-            // If deletion failed, refresh the data to restore any incorrectly removed items
+            // If deletion failed, refresh the data to ensure UI is consistent
             queryClient.invalidateQueries({ queryKey: [`/api/projects/${projectId}/outline`] });
           }
         }

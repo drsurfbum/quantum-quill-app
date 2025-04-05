@@ -148,18 +148,20 @@ export const useDeleteOutlineItem = () => {
         if (!res.ok) {
           throw new Error(`Delete request failed with status ${res.status}`);
         }
+        
+        // 204 status means success with no content - no need to parse JSON
         return { 
           success: true, 
           data: { id, projectId } 
         } as DeleteOutlineItemSuccess;
       } catch (error) {
-        console.error("Error deleting outline item:", error);
-        return { 
-          success: false, 
-          error, 
-          id, 
-          projectId 
-        } as OutlineItemError;
+        // Only log and return an error for actual errors, not for success cases
+        if (error instanceof Error) {
+          console.error("Error deleting outline item:", error.message);
+        } else {
+          console.error("Unknown error deleting outline item");
+        }
+        throw error; // Let the onError handler deal with this
       }
     },
     onSuccess: (result) => {
