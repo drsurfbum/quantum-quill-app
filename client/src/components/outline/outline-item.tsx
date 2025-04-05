@@ -113,53 +113,15 @@ export default function OutlineItem({
       
       // First, attempt to make the item disappear from the UI immediately
       // This gives a more responsive feel even if there's a server delay
-      try {
-        // Force update the cache in the client to remove this item right away
-        const outlineItems = queryClient.getQueryData<OutlineItemType[]>([`/api/projects/${projectId}/outline`]);
-        
-        if (outlineItems) {
-          // Remove the to-be-deleted item and its children from UI immediately
-          const deletedItemIds = new Set<number>();
-          
-          // Helper function to identify items to be removed
-          const findItemsToDelete = (parentId: number) => {
-            outlineItems.forEach(i => {
-              if (i.id === parentId || i.parentId === parentId) {
-                deletedItemIds.add(i.id);
-                findItemsToDelete(i.id);
-              }
-            });
-          };
-          
-          // Start the recursive search
-          findItemsToDelete(item.id);
-          
-          // Update the cached data without the deleted items
-          const filteredItems = outlineItems.filter(i => !deletedItemIds.has(i.id));
-          queryClient.setQueryData([`/api/projects/${projectId}/outline`], filteredItems);
-        }
-      } catch (error) {
-        console.error("Error updating cache:", error);
-        // If there's an error with the cache manipulation, just continue with the deletion
-      }
+      // Directly update the UI and let the API call handle the actual deletion
+      // Don't try to manipulate the cache manually which can lead to errors
       
       deleteItem(
         { id: item.id, projectId },
         {
-          onSuccess: (result) => {
-            if (!result.success) {
-              toast({
-                title: "Error deleting item",
-                description: "There was an error deleting the outline item.",
-                variant: "destructive"
-              });
-              
-              // If deletion failed, refresh the data to restore any incorrectly removed items
-              queryClient.invalidateQueries({ queryKey: [`/api/projects/${projectId}/outline`] });
-              return;
-            }
-            
-            // No need for a toast since the item is already removed visually
+          onSuccess: () => {
+            // Silently refresh the data 
+            queryClient.invalidateQueries({ queryKey: [`/api/projects/${projectId}/outline`] });
           },
           onError: (error) => {
             console.error("Delete error:", error);
