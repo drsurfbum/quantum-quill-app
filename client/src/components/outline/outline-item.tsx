@@ -12,6 +12,7 @@ import { useState, useEffect } from "react";
 import { useDeleteOutlineItem, useUpdateOutlineItem } from "@/hooks/use-outline";
 import { useToast } from "@/hooks/use-toast";
 import { useAppState } from "@/contexts/app-state-context";
+import { queryClient } from "@/lib/queryClient";
 import {
   Dialog,
   DialogContent,
@@ -80,7 +81,8 @@ export default function OutlineItem({
           if (parentItem && parentItem.parentId !== null) {
             currentParentId = parentItem.parentId;
           } else {
-            currentParentId = null;
+            // Break the loop
+            break;
           }
         }
         
@@ -109,6 +111,38 @@ export default function OutlineItem({
         onSelectItem(null);
       }
       
+      // First, attempt to make the item disappear from the UI immediately
+      // This gives a more responsive feel even if there's a server delay
+      try {
+        // Force update the cache in the client to remove this item right away
+        const outlineItems = queryClient.getQueryData<OutlineItemType[]>([`/api/projects/${projectId}/outline`]);
+        
+        if (outlineItems) {
+          // Remove the to-be-deleted item and its children from UI immediately
+          const deletedItemIds = new Set<number>();
+          
+          // Helper function to identify items to be removed
+          const findItemsToDelete = (parentId: number) => {
+            outlineItems.forEach(i => {
+              if (i.id === parentId || i.parentId === parentId) {
+                deletedItemIds.add(i.id);
+                findItemsToDelete(i.id);
+              }
+            });
+          };
+          
+          // Start the recursive search
+          findItemsToDelete(item.id);
+          
+          // Update the cached data without the deleted items
+          const filteredItems = outlineItems.filter(i => !deletedItemIds.has(i.id));
+          queryClient.setQueryData([`/api/projects/${projectId}/outline`], filteredItems);
+        }
+      } catch (error) {
+        console.error("Error updating cache:", error);
+        // If there's an error with the cache manipulation, just continue with the deletion
+      }
+      
       deleteItem(
         { id: item.id, projectId },
         {
@@ -119,13 +153,13 @@ export default function OutlineItem({
                 description: "There was an error deleting the outline item.",
                 variant: "destructive"
               });
+              
+              // If deletion failed, refresh the data to restore any incorrectly removed items
+              queryClient.invalidateQueries({ queryKey: [`/api/projects/${projectId}/outline`] });
               return;
             }
             
-            toast({
-              title: "Item deleted",
-              description: "The outline item has been deleted."
-            });
+            // No need for a toast since the item is already removed visually
           },
           onError: (error) => {
             console.error("Delete error:", error);
@@ -134,6 +168,9 @@ export default function OutlineItem({
               description: "There was an error deleting the outline item.",
               variant: "destructive"
             });
+            
+            // If deletion failed, refresh the data to restore any incorrectly removed items
+            queryClient.invalidateQueries({ queryKey: [`/api/projects/${projectId}/outline`] });
           }
         }
       );

@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { Edit3, Grid, ListTree, BookOpen } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useOutlineItems, useCreateOutlineItem } from "@/hooks/use-outline";
+import { queryClient } from "@/lib/queryClient";
 import { useState, useEffect, useCallback } from "react";
 import OutlineItem from "@/components/outline/outline-item";
 import OutlineEditor from "@/components/outline/outline-editor";
@@ -116,54 +117,26 @@ export default function Outline() {
             setOutlineItemExpanded(newItem.parentId, true);
           }
           
-          // Use a single toast with short duration to avoid interfering with selection
-          toast({
-            title: "Section created",
-            description: "New outline section has been created.",
-            duration: 2000 // Short duration
-          });
+          // No success toast to avoid UI interference with selection
           
-          // Enhanced approach with staggered timing for more reliable selection
+          // Simplify approach to avoid timing issues
           
-          // Step 1: Mark expanded immediately
-          setOutlineItemExpanded(newItem.id, true);
+          // Immediate action: trigger a cache invalidation so we get fresh data
+          queryClient.invalidateQueries({ queryKey: [`/api/projects/${id}/outline`] });
           
-          // Step 2: Wait for DOM to update
+          // Use a much simpler approach that skips DOM manipulation
           setTimeout(() => {
-            // Force expanded again
+            // Directly set selected item without complex interim steps
+            setSelectedItemId(newItem.id);
+            
+            // Force expanded state
             setOutlineItemExpanded(newItem.id, true);
             
-            // Add attribute for scrolling
-            const items = document.querySelectorAll('.outline-item');
-            items.forEach(item => {
-              if (item.getAttribute('data-item-id') === String(newItem.id)) {
-                item.setAttribute('data-newly-created', 'true');
-              }
-            });
-            
-            // Step 3: Select item after DOM has updated
-            setTimeout(() => {
-              // Finally select the item
-              setSelectedItemId(newItem.id);
-              
-              // Step 4: Ensure expansion after selection 
-              setTimeout(() => {
-                // Force expanded state one final time
-                setOutlineItemExpanded(newItem.id, true);
-                
-                // Try to scroll the new item into view
-                const newlyCreated = document.querySelector('[data-newly-created="true"]');
-                if (newlyCreated) {
-                  newlyCreated.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                }
-                
-                // Step 5: One final check to ensure everything stays expanded
-                setTimeout(() => {
-                  setOutlineItemExpanded(newItem.id, true);
-                }, 500);
-              }, 200);
-            }, 300);
-          }, 400); // Longer initial delay for more reliable DOM updates
+            // If it has a parent, expand that too
+            if (newItem.parentId) {
+              setOutlineItemExpanded(newItem.parentId, true);
+            }
+          }, 300);
         },
         onError: (error) => {
           console.error("Create error:", error);
