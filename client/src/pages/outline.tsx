@@ -116,19 +116,21 @@ export default function Outline() {
             setOutlineItemExpanded(newItem.parentId, true);
           }
           
+          // Use a single toast with short duration to avoid interfering with selection
           toast({
             title: "Section created",
-            description: "New outline section has been created."
+            description: "New outline section has been created.",
+            duration: 2000 // Short duration
           });
           
-          // Enhanced approach for new item creation and selection
+          // Enhanced approach with staggered timing for more reliable selection
           
           // Step 1: Mark expanded immediately
           setOutlineItemExpanded(newItem.id, true);
           
-          // Step 2: Use a longer first delay to ensure the DOM is fully updated
+          // Step 2: Wait for DOM to update
           setTimeout(() => {
-            // Force expanded one more time before selecting
+            // Force expanded again
             setOutlineItemExpanded(newItem.id, true);
             
             // Add attribute for scrolling
@@ -139,12 +141,12 @@ export default function Outline() {
               }
             });
             
-            // Wait before selecting to ensure UI is ready
+            // Step 3: Select item after DOM has updated
             setTimeout(() => {
               // Finally select the item
               setSelectedItemId(newItem.id);
               
-              // After selection, one more delay to ensure continued expansion
+              // Step 4: Ensure expansion after selection 
               setTimeout(() => {
                 // Force expanded state one final time
                 setOutlineItemExpanded(newItem.id, true);
@@ -154,9 +156,14 @@ export default function Outline() {
                 if (newlyCreated) {
                   newlyCreated.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                 }
+                
+                // Step 5: One final check to ensure everything stays expanded
+                setTimeout(() => {
+                  setOutlineItemExpanded(newItem.id, true);
+                }, 500);
               }, 200);
-            }, 200);
-          }, 300); // Increase first delay substantially
+            }, 300);
+          }, 400); // Longer initial delay for more reliable DOM updates
         },
         onError: (error) => {
           console.error("Create error:", error);

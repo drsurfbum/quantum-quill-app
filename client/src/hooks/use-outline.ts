@@ -144,6 +144,10 @@ export const useDeleteOutlineItem = () => {
     mutationFn: async ({ id, projectId }) => {
       try {
         const res = await apiRequest('DELETE', `/api/outline/${id}`, undefined);
+        // Handle non-success status codes
+        if (!res.ok) {
+          throw new Error(`Delete request failed with status ${res.status}`);
+        }
         return { 
           success: true, 
           data: { id, projectId } 
