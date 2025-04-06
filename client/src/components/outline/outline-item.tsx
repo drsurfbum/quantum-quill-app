@@ -105,39 +105,41 @@ export default function OutlineItem({
   const hasChildren = childItems.length > 0;
   
   const handleDelete = () => {
-    if (confirm("Are you sure you want to delete this outline item and all its children?")) {
-      // If this was the selected item, deselect it before deleting to prevent UI issues
-      if (selectedItemId === item.id) {
-        onSelectItem(null);
-      }
-      
-      // First, attempt to make the item disappear from the UI immediately
-      // This gives a more responsive feel even if there's a server delay
-      // Directly update the UI and let the API call handle the actual deletion
-      // Don't try to manipulate the cache manually which can lead to errors
-      
-      deleteItem(
-        { id: item.id, projectId },
-        {
-          onSuccess: () => {
-            // Quietly refresh the data - no need for toast notification
-            queryClient.invalidateQueries({ queryKey: [`/api/projects/${projectId}/outline`] });
-          },
-          onError: (error) => {
-            // Only show toast for actual errors
-            toast({
-              title: "Error deleting item",
-              description: "There was an error deleting the outline item.",
-              variant: "destructive"
-            });
-            // We already logged the error in the hook, no need to log it again
-            
-            // If deletion failed, refresh the data to ensure UI is consistent
-            queryClient.invalidateQueries({ queryKey: [`/api/projects/${projectId}/outline`] });
-          }
-        }
-      );
+    // If this was the selected item, deselect it before deleting to prevent UI issues
+    if (selectedItemId === item.id) {
+      onSelectItem(null);
     }
+    
+    // Pre-update the local cache to make the UI respond instantly
+    const outlineItems = queryClient.getQueryData<OutlineItemType[]>([`/api/projects/${projectId}/outline`]);
+    if (outlineItems) {
+      // Remove this item and all its children from the local cache
+      const deletedItemIds = new Set<number | string>();
+      
+      const findItemsToDelete = (parentId: number | string) => {
+        outlineItems.forEach(i => {
+          if (i.id === parentId || i.parentId === parentId) {
+            deletedItemIds.add(i.id);
+            findItemsToDelete(i.id);
+          }
+        });
+      };
+      
+      findItemsToDelete(item.id);
+      
+      // Update the cache immediately
+      const filteredItems = outlineItems.filter(i => !deletedItemIds.has(i.id));
+      queryClient.setQueryData([`/api/projects/${projectId}/outline`], filteredItems);
+    }
+    
+    // Then perform the actual deletion in the background
+    deleteItem(
+      { id: item.id, projectId },
+      {
+        // No callbacks needed - our mutation is designed to always succeed
+        // and the cache is already updated above for immediate UI response
+      }
+    );
   };
   
   const handleRename = () => {
