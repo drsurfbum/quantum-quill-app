@@ -45,14 +45,14 @@ const SECTION_EXAMPLES: Record<string, string> = {
   "take": "Luke loses Obi-Wan but gains new allies and responsibilities in the fight against the Empire.",
   "return": "Luke returns to the Rebel base with the Death Star plans and his new understanding of the Force.",
   "change": "Luke is no longer a farm boy but a hero of the Rebellion with a new purpose.",
-  
+
   // Freytag's Pyramid
   "exposition": "Harry Potter lives under the stairs at his aunt and uncle's house, unaware of his magical heritage.",
   "rising_action": "Harry attends Hogwarts, makes friends, and faces increasingly dangerous situations.",
   "climax": "Harry confronts Voldemort in the Chamber of Secrets, destroying the diary and saving Ginny.",
   "falling_action": "The truth about Tom Riddle is revealed, and Harry returns to normal school life.",
   "resolution": "Harry returns to the Dursleys, but with the knowledge that he belongs in the wizarding world.",
-  
+
   // Three Act Structure
   "act1_setup": "We meet John McClane, a New York cop heading to LA to reconcile with his estranged wife at her company's Christmas party.",
   "act1_inciting_incident": "Terrorists take over the building, and John is the only one who escapes, finding himself alone and outgunned.",
@@ -77,7 +77,7 @@ const SECTION_EXAMPLES: Record<string, string> = {
   "road_back": "Frodo and Sam separate from the others, taking their own path toward Mordor.",
   "resurrection": "Frodo resists the temptation to use the Ring despite growing danger and its increasing hold over him.",
   "return_with_elixir": "Frodo has changed from a carefree hobbit to a determined Ring-bearer, carrying hope for all of Middle-earth.",
-  
+
   // Fichtean Curve (The Hunger Games)
   "introduction": "Katniss Everdeen hunts to provide for her family in the impoverished District 12.",
   "crisis_1": "Katniss's sister Prim is selected for the Hunger Games, prompting Katniss to volunteer in her place.",
@@ -87,7 +87,7 @@ const SECTION_EXAMPLES: Record<string, string> = {
   "final_crisis": "The Gamemakers revert to the original rules, forcing Katniss to make an impossible choice.",
   "fichtean_climax": "Katniss and Peeta threaten double suicide with poisonous berries, forcing the Gamemakers to declare them both winners.",
   "brief_resolution": "Katniss and Peeta return to District 12 as victors, but have unknowingly sparked rebellion.",
-  
+
   // Save the Cat Beat Sheet (Spider-Man: Into the Spider-Verse)
   "opening_image": "Miles Morales is an ordinary teenager trying to find his place between his home life in Brooklyn and his new elite school.",
   "theme_stated": "Miles's father tells him to always do his best and live up to his potential.",
@@ -104,7 +104,7 @@ const SECTION_EXAMPLES: Record<string, string> = {
   "break_into_three": "Miles fully embraces his powers, creates his own suit, and breaks free to help the others.",
   "finale": "Miles masters his abilities, defeats Kingpin, and sends the other Spider-People home while taking up the mantle of his world's Spider-Man.",
   "final_image": "Miles swings confidently through New York as its new protector, having found his place and purpose.",
-  
+
   // Seven-Point Story Structure (The Lion, the Witch and the Wardrobe)
   "hook": "The Pevensie children are sent to the English countryside during World War II and discover a wardrobe in Professor Kirke's house.",
   "plot_turn_1": "Lucy enters the wardrobe and discovers Narnia, meeting Mr. Tumnus, though her siblings don't believe her at first.",
@@ -125,12 +125,12 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
   const [activeSection, setActiveSection] = useState<string | null>(null);
   const [editedContent, setEditedContent] = useState<Record<string, string>>({});
   const [saveStatus, setSaveStatus] = useState<Record<string, 'saved' | 'typing' | 'saving'>>({});
-  
+
   // Fetch data without toast
   const { data: structure, isLoading: isLoadingStructure } = usePlotStructure(structureId);
   const { data: sections = [], isLoading: isLoadingSections } = usePlotStructureSections(structureId);
   const { updateSection, isLoading: isSaving } = usePlotStructureActions();
-  
+
   // Sort sections by order - recalculate only when sections change
   const sortedSections = [...sections].sort((a, b) => a.order - b.order);
 
@@ -151,18 +151,18 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
       return prev;
     });
   }, []);
-  
+
   // Set active section to first section when data is loaded
   useEffect(() => {
     if (sortedSections.length > 0 && !activeSection) {
       setActiveSection(sortedSections[0].sectionKey);
     }
   }, [sortedSections, activeSection]);
-  
+
   // Get current active section data
   const activeSectionData = activeSection ? 
     sortedSections.find(s => s.sectionKey === activeSection) : null;
-    
+
   // Initialize content for active section when it changes
   useEffect(() => {
     if (activeSectionData && !editedContent[activeSectionData.sectionKey]) {
@@ -173,17 +173,17 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
   // Navigate between sections
   const navigateToSection = (direction: 'next' | 'prev') => {
     if (sortedSections.length === 0 || !activeSection) return;
-    
+
     const currentIndex = sortedSections.findIndex(section => section.sectionKey === activeSection);
     if (currentIndex === -1) return;
-    
+
     let newIndex;
     if (direction === 'next') {
       newIndex = (currentIndex + 1) % sortedSections.length;
     } else {
       newIndex = (currentIndex - 1 + sortedSections.length) % sortedSections.length;
     }
-    
+
     setActiveSection(sortedSections[newIndex].sectionKey);
   };
 
@@ -191,7 +191,7 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
   const debouncedSave = useCallback(
     debounce((sectionId: number, sectionKey: string, content: string) => {
       setSaveStatus(prev => ({ ...prev, [sectionKey]: 'saving' }));
-      
+
       updateSection(
         { id: sectionId, data: { content } },
         {
@@ -218,10 +218,10 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
   const saveSection = (section: PlotStructureSection) => {
     const currentSection = section.sectionKey;
     const content = editedContent[currentSection];
-    
+
     if (content !== undefined) {
       setSaveStatus(prev => ({ ...prev, [currentSection]: 'saving' }));
-      
+
       updateSection(
         { id: section.id, data: { content } },
         {
@@ -251,7 +251,7 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
       </div>
     );
   }
-  
+
   // Not found state
   if (!structure) {
     return (
@@ -263,7 +263,7 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
       </Alert>
     );
   }
-  
+
   return (
     <div className="flex flex-col h-full bg-background">
       <div className="border-b p-4 flex justify-between items-center bg-card">
@@ -287,15 +287,15 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
             <TabsTrigger value="overview">Overview</TabsTrigger>
           </TabsList>
         </div>
-        
+
         <TabsContent value="editor" className="flex-1 flex flex-col p-0">
           {sortedSections.length === 0 ? (
             <div className="p-4 text-center">
               <p className="text-muted-foreground">No sections found for this plot structure.</p>
             </div>
           ) : (
-            <ResizablePanelGroup direction="horizontal" className="flex-1">
-              <ResizablePanel defaultSize={30} minSize={20} maxSize={40} className="h-full">
+            <ResizablePanelGroup direction="horizontal" className="flex-1 overflow-hidden">
+              <ResizablePanel defaultSize={30} minSize={20} maxSize={40} className="h-full overflow-hidden">
                 <div className="h-full flex flex-col">
                   <div className="flex-shrink-0 flex items-center justify-between border-b p-2 bg-muted/30">
                     <Button
@@ -306,7 +306,7 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
                     >
                       <ChevronLeft className="h-4 w-4 mr-1" /> Previous
                     </Button>
-                    
+
                     <Button
                       variant="ghost"
                       size="sm"
@@ -316,8 +316,8 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
                       Next <ChevronRight className="h-4 w-4 ml-1" />
                     </Button>
                   </div>
-                
-                  <ScrollArea className="flex-grow h-[calc(100%-40px)]">
+
+                  <div className="flex-1 h-[calc(100%-40px)] overflow-y-auto">
                     <div className="p-2">
                       {sortedSections.map((section) => (
                         <Button
@@ -330,80 +330,79 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
                         </Button>
                       ))}
                     </div>
-                  </ScrollArea>
+                  </div>
                 </div>
               </ResizablePanel>
-              
+
               <ResizableHandle withHandle />
-            
+
               <ResizablePanel defaultSize={70} className="h-full focus-visible:outline-none">
-                <div className="h-full flex flex-col">
-                  {activeSectionData ? (
-                    <div className="h-full flex flex-col p-4">
-                      <div className="pb-4">
-                        <h3 className="text-lg font-semibold mb-3">
-                          {activeSectionData.title}
-                        </h3>
-                        
-                        <div className="mb-4 text-sm bg-muted/20 p-3 rounded-md border">
-                          <p className="text-muted-foreground">
-                            <strong>Example:</strong> {' '}
-                            {SECTION_EXAMPLES[activeSectionData.sectionKey] || 
-                             "Create your story content for this section."}
-                          </p>
+                <ScrollArea className="h-full">
+                  <div className="flex flex-col p-4">
+                    {activeSectionData ? (
+                      <div className="flex flex-col">
+                        <div className="pb-4">
+                          <h3 className="text-lg font-semibold mb-3">
+                            {activeSectionData.title}
+                          </h3>
+
+                          <div className="mb-4 text-sm bg-muted/20 p-3 rounded-md border">
+                            <p className="text-muted-foreground">
+                              <strong>Example:</strong> {' '}
+                              {SECTION_EXAMPLES[activeSectionData.sectionKey] || 
+                               "Create your story content for this section."}
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                      
-                      <div className="flex-1 flex flex-col">
-                        <div className="flex flex-col h-full">
-                          {/* Initialize content using useEffect instead of in render */}
-                          <Textarea
-                            value={editedContent[activeSectionData.sectionKey] || ''}
-                            onChange={(e) => handleContentChange(
-                              activeSectionData.sectionKey,
-                              e.target.value,
-                              activeSectionData.id
-                            )}
-                            className="flex-1 min-h-[200px] resize-none"
-                            placeholder={`Write your content for ${activeSectionData.title} here...`}
-                          />
-                          
-                          <div className="flex items-center justify-between mt-4">
-                            <span className={`text-xs px-2 py-0.5 rounded-full ${
-                              saveStatus[activeSectionData.sectionKey] === 'saved' 
-                                ? 'bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400' 
-                                : saveStatus[activeSectionData.sectionKey] === 'typing'
-                                ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400' 
-                                : 'bg-yellow-50 text-yellow-600 dark:bg-yellow-900/20 dark:text-yellow-400'
-                            }`}>
-                              {saveStatus[activeSectionData.sectionKey] === 'saved' 
-                                ? 'Saved' 
-                                : saveStatus[activeSectionData.sectionKey] === 'typing' 
-                                ? 'Typing...' 
-                                : 'Saving...'}
-                            </span>
-                            
-                            <div className="flex space-x-2">
-                              <Button
-                                size="sm"
-                                onClick={() => saveSection(activeSectionData)}
-                                disabled={isSaving}
-                              >
-                                <Save className="h-4 w-4 mr-1" /> Save
-                              </Button>
+
+                        <div className="flex-1 flex flex-col">
+                          <div className="flex flex-col h-full">
+                            <Textarea
+                              value={editedContent[activeSectionData.sectionKey] || ''}
+                              onChange={(e) => handleContentChange(
+                                activeSectionData.sectionKey,
+                                e.target.value,
+                                activeSectionData.id
+                              )}
+                              className="flex-1 min-h-[200px] resize-none"
+                              placeholder={`Write your content for ${activeSectionData.title} here...`}
+                            />
+
+                            <div className="flex items-center justify-between mt-4">
+                              <span className={`text-xs px-2 py-0.5 rounded-full ${
+                                saveStatus[activeSectionData.sectionKey] === 'saved' 
+                                  ? 'bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400' 
+                                  : saveStatus[activeSectionData.sectionKey] === 'typing'
+                                  ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400' 
+                                  : 'bg-yellow-50 text-yellow-600 dark:bg-yellow-900/20 dark:text-yellow-400'
+                              }`}>
+                                {saveStatus[activeSectionData.sectionKey] === 'saved' 
+                                  ? 'Saved' 
+                                  : saveStatus[activeSectionData.sectionKey] === 'typing' 
+                                  ? 'Typing...' 
+                                  : 'Saving...'}
+                              </span>
+
+                              <div className="flex space-x-2">
+                                <Button
+                                  size="sm"
+                                  onClick={() => saveSection(activeSectionData)}
+                                  disabled={isSaving}
+                                >
+                                  <Save className="h-4 w-4 mr-1" /> Save
+                                </Button>
+                              </div>
                             </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  ) : (
-                    <div className="h-full flex items-center justify-center">
-                      <p className="text-muted-foreground">
-                        Select a section from the sidebar to begin editing.
-                      </p>
-                    </div>
-                  )}
-                </div>
+                    ) : (
+                      <div className="flex items-center justify-center h-full">
+                        <p className="text-muted-foreground">Select a section to begin editing</p>
+                      </div>
+                    )}
+                  </div>
+                </ScrollArea>
               </ResizablePanel>
             </ResizablePanelGroup>
           )}
