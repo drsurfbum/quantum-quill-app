@@ -296,8 +296,8 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
           ) : (
             <ResizablePanelGroup direction="horizontal" className="flex-1">
               <ResizablePanel defaultSize={30} minSize={20} maxSize={40} className="h-full">
-                <div className="flex h-full flex-col overflow-hidden">
-                  <div className="flex items-center justify-between border-b p-2 bg-muted/30">
+                <div className="h-full flex flex-col">
+                  <div className="flex-shrink-0 flex items-center justify-between border-b p-2 bg-muted/30">
                     <Button
                       variant="ghost"
                       size="sm"
@@ -317,20 +317,19 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
                     </Button>
                   </div>
                 
-                  <ScrollArea className="flex-1 h-[calc(100%-40px)]">
-                    <div className="p-2">
-                      {sortedSections.map((section) => (
-                        <Button
-                          key={section.id}
-                          variant={activeSection === section.sectionKey ? "default" : "ghost"}
-                          className="w-full justify-start mb-1 text-left"
-                          onClick={() => setActiveSection(section.sectionKey)}
-                        >
-                          <span className="truncate">{section.title}</span>
-                        </Button>
-                      ))}
-                    </div>
-                  </ScrollArea>
+                  {/* Using a fixed height div with standard overflow for testing */}
+                  <div className="overflow-y-auto p-2" style={{ height: 'calc(100% - 40px)' }}>
+                    {sortedSections.map((section) => (
+                      <Button
+                        key={section.id}
+                        variant={activeSection === section.sectionKey ? "default" : "ghost"}
+                        className="w-full justify-start mb-1 text-left"
+                        onClick={() => setActiveSection(section.sectionKey)}
+                      >
+                        <span className="truncate">{section.title}</span>
+                      </Button>
+                    ))}
+                  </div>
                 </div>
               </ResizablePanel>
               
