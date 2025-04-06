@@ -85,7 +85,7 @@ const SECTION_EXAMPLES: Record<string, string> = {
   "crisis_3": "In the arena, Katniss faces immediate threats from other tributes and environmental dangers.",
   "crisis_4": "The Gamemakers change rules midway, allowing district partners to win together, complicating Katniss's relationship with Peeta.",
   "final_crisis": "The Gamemakers revert to the original rules, forcing Katniss to make an impossible choice.",
-  "climax": "Katniss and Peeta threaten double suicide with poisonous berries, forcing the Gamemakers to declare them both winners.",
+  "fichtean_climax": "Katniss and Peeta threaten double suicide with poisonous berries, forcing the Gamemakers to declare them both winners.",
   "brief_resolution": "Katniss and Peeta return to District 12 as victors, but have unknowingly sparked rebellion.",
   
   // Save the Cat Beat Sheet (Spider-Man: Into the Spider-Verse)
@@ -109,10 +109,10 @@ const SECTION_EXAMPLES: Record<string, string> = {
   "hook": "The Pevensie children are sent to the English countryside during World War II and discover a wardrobe in Professor Kirke's house.",
   "plot_turn_1": "Lucy enters the wardrobe and discovers Narnia, meeting Mr. Tumnus, though her siblings don't believe her at first.",
   "pinch_1": "Edmund follows Lucy into Narnia and meets the White Witch, who tempts him with Turkish Delight and manipulates him.",
-  "midpoint": "All four children enter Narnia together and learn from the Beavers about Aslan and the prophecy that they will become kings and queens.",
+  "narnia_midpoint": "All four children enter Narnia together and learn from the Beavers about Aslan and the prophecy that they will become kings and queens.",
   "pinch_2": "Edmund betrays his siblings to the White Witch, and Aslan offers himself in Edmund's place to satisfy the Deep Magic.",
   "plot_turn_2": "Aslan is resurrected due to the Deeper Magic, giving the children hope and the key to defeating the Witch.",
-  "resolution": "The children lead Aslan's army to victory over the White Witch, and they are crowned kings and queens of Narnia."
+  "narnia_resolution": "The children lead Aslan's army to victory over the White Witch, and they are crowned kings and queens of Narnia."
 };
 
 interface PlotStructureViewProps {
@@ -296,7 +296,7 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
           ) : (
             <ResizablePanelGroup direction="horizontal" className="flex-1">
               <ResizablePanel defaultSize={30} minSize={20} maxSize={40} className="h-full">
-                <div className="flex h-full flex-col">
+                <div className="flex h-full flex-col overflow-hidden">
                   <div className="flex items-center justify-between border-b p-2 bg-muted/30">
                     <Button
                       variant="ghost"
@@ -317,7 +317,7 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
                     </Button>
                   </div>
                 
-                  <ScrollArea className="flex-1">
+                  <ScrollArea className="flex-1 h-[calc(100%-40px)]">
                     <div className="p-2">
                       {sortedSections.map((section) => (
                         <Button
@@ -326,7 +326,7 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
                           className="w-full justify-start mb-1 text-left"
                           onClick={() => setActiveSection(section.sectionKey)}
                         >
-                          {section.title}
+                          <span className="truncate">{section.title}</span>
                         </Button>
                       ))}
                     </div>
