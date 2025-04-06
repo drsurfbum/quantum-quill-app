@@ -48,21 +48,71 @@ const SECTION_EXAMPLES: Record<string, string> = {
   
   // Freytag's Pyramid
   "exposition": "Harry Potter lives under the stairs at his aunt and uncle's house, unaware of his magical heritage.",
-  "incitingIncident": "Harry receives a letter from Hogwarts, revealing his true identity as a wizard.",
-  "risingAction": "Harry attends Hogwarts, makes friends, and faces increasingly dangerous situations.",
+  "rising_action": "Harry attends Hogwarts, makes friends, and faces increasingly dangerous situations.",
   "climax": "Harry confronts Voldemort in the Chamber of Secrets, destroying the diary and saving Ginny.",
-  "fallingAction": "The truth about Tom Riddle is revealed, and Harry returns to normal school life.",
+  "falling_action": "The truth about Tom Riddle is revealed, and Harry returns to normal school life.",
   "resolution": "Harry returns to the Dursleys, but with the knowledge that he belongs in the wizarding world.",
   
   // Three Act Structure
-  "act1Setup": "We meet John McClane, a New York cop heading to LA to reconcile with his estranged wife at her company's Christmas party.",
-  "act1Inciting": "Terrorists take over the building, and John is the only one who escapes, finding himself alone and outgunned.",
-  "act1ToPart2": "John decides to fight back and alert the authorities, beginning his one-man war against the terrorists.",
-  "act2Rising": "John faces increasingly difficult obstacles, kills some terrorists, and makes contact with a police officer outside.",
-  "act2Midpoint": "John discovers the terrorists are actually sophisticated thieves planning to steal $640 million in bearer bonds.",
-  "act2ToAct3": "The terrorists discover John's identity and take his wife hostage, raising the personal stakes.",
-  "act3Climax": "John confronts Hans Gruber in a final showdown, saving his wife and stopping the heist.",
-  "act3Resolution": "John and his wife reconcile as the authorities take control of the situation.",
+  "act1_setup": "We meet John McClane, a New York cop heading to LA to reconcile with his estranged wife at her company's Christmas party.",
+  "act1_inciting_incident": "Terrorists take over the building, and John is the only one who escapes, finding himself alone and outgunned.",
+  "act1_turning_point": "John decides to fight back and alert the authorities, beginning his one-man war against the terrorists.",
+  "act2_confrontation": "John faces increasingly difficult obstacles, kills some terrorists, and makes contact with a police officer outside.",
+  "act2_midpoint": "John discovers the terrorists are actually sophisticated thieves planning to steal $640 million in bearer bonds.",
+  "act2_turning_point": "The terrorists discover John's identity and take his wife hostage, raising the personal stakes.",
+  "act3_resolution": "John confronts Hans Gruber in a final showdown, saving his wife and stopping the heist.",
+  "act3_climax": "John and his wife reconcile as the authorities take control of the situation.",
+  "act3_denouement": "John and his wife leave together as the situation is resolved.",
+
+  // Hero's Journey (The Fellowship of the Ring)
+  "ordinary_world": "Frodo Baggins lives a peaceful life in the Shire, enjoying the comforts of Bag End.",
+  "call_to_adventure": "Gandalf reveals the truth about the One Ring and the danger it poses to Middle-earth.",
+  "refusal_of_call": "Frodo is reluctant to leave the Shire but accepts that he must protect his home and friends.",
+  "meeting_the_mentor": "Gandalf guides Frodo on his journey and explains the history of the Ring.",
+  "crossing_threshold": "Frodo leaves the Shire with Sam, crossing into the wider world beyond their home.",
+  "tests_allies_enemies": "Frodo meets allies at the Council of Elrond and forms the Fellowship, while being pursued by Ringwraiths.",
+  "approach_inmost_cave": "The Fellowship journeys through the Mines of Moria, facing increasing danger and darkness.",
+  "ordeal": "The Fellowship fights the Balrog, resulting in Gandalf's apparent death and fracturing of the group.",
+  "reward": "Frodo continues his journey with renewed purpose and deeper understanding of the Ring's power.",
+  "road_back": "Frodo and Sam separate from the others, taking their own path toward Mordor.",
+  "resurrection": "Frodo resists the temptation to use the Ring despite growing danger and its increasing hold over him.",
+  "return_with_elixir": "Frodo has changed from a carefree hobbit to a determined Ring-bearer, carrying hope for all of Middle-earth.",
+  
+  // Fichtean Curve (The Hunger Games)
+  "introduction": "Katniss Everdeen hunts to provide for her family in the impoverished District 12.",
+  "crisis_1": "Katniss's sister Prim is selected for the Hunger Games, prompting Katniss to volunteer in her place.",
+  "crisis_2": "Katniss must navigate the Capitol's politics and public appearances before entering the arena.",
+  "crisis_3": "In the arena, Katniss faces immediate threats from other tributes and environmental dangers.",
+  "crisis_4": "The Gamemakers change rules midway, allowing district partners to win together, complicating Katniss's relationship with Peeta.",
+  "final_crisis": "The Gamemakers revert to the original rules, forcing Katniss to make an impossible choice.",
+  "climax": "Katniss and Peeta threaten double suicide with poisonous berries, forcing the Gamemakers to declare them both winners.",
+  "brief_resolution": "Katniss and Peeta return to District 12 as victors, but have unknowingly sparked rebellion.",
+  
+  // Save the Cat Beat Sheet (Spider-Man: Into the Spider-Verse)
+  "opening_image": "Miles Morales is an ordinary teenager trying to find his place between his home life in Brooklyn and his new elite school.",
+  "theme_stated": "Miles's father tells him to always do his best and live up to his potential.",
+  "setup": "Miles struggles with fitting in at school while maintaining a relationship with his Uncle Aaron, who his father disapproves of.",
+  "catalyst": "Miles is bitten by a radioactive spider and witnesses Spider-Man's death at the hands of Kingpin.",
+  "debate": "Miles discovers his new powers but doesn't know how to control them or if he should take up the Spider-Man mantle.",
+  "break_into_two": "Miles meets Peter B. Parker and other Spider-People from different dimensions, thrust into a larger multiverse conflict.",
+  "b_story": "Miles develops a friendship with Gwen Stacy and the other Spider-People, learning what it means to be a hero.",
+  "fun_and_games": "Miles trains with Peter while trying to hide his powers from his family and adjust to his new abilities.",
+  "midpoint": "Miles discovers his unique power of invisibility and bio-electric blasts, giving him an advantage.",
+  "bad_guys_close_in": "Kingpin's scientists activate the collider again, and Miles's uncle is revealed to be the Prowler, hunting the Spider-People.",
+  "all_is_lost": "Miles is overwhelmed by responsibility and failure when his Uncle Aaron dies, and the other Spider-People don't believe he's ready.",
+  "dark_night_of_soul": "Miles returns home dejected, where his father unknowingly gives him encouragement through the door.",
+  "break_into_three": "Miles fully embraces his powers, creates his own suit, and breaks free to help the others.",
+  "finale": "Miles masters his abilities, defeats Kingpin, and sends the other Spider-People home while taking up the mantle of his world's Spider-Man.",
+  "final_image": "Miles swings confidently through New York as its new protector, having found his place and purpose.",
+  
+  // Seven-Point Story Structure (The Lion, the Witch and the Wardrobe)
+  "hook": "The Pevensie children are sent to the English countryside during World War II and discover a wardrobe in Professor Kirke's house.",
+  "plot_turn_1": "Lucy enters the wardrobe and discovers Narnia, meeting Mr. Tumnus, though her siblings don't believe her at first.",
+  "pinch_1": "Edmund follows Lucy into Narnia and meets the White Witch, who tempts him with Turkish Delight and manipulates him.",
+  "midpoint": "All four children enter Narnia together and learn from the Beavers about Aslan and the prophecy that they will become kings and queens.",
+  "pinch_2": "Edmund betrays his siblings to the White Witch, and Aslan offers himself in Edmund's place to satisfy the Deep Magic.",
+  "plot_turn_2": "Aslan is resurrected due to the Deeper Magic, giving the children hope and the key to defeating the Witch.",
+  "resolution": "The children lead Aslan's army to victory over the White Witch, and they are crowned kings and queens of Narnia."
 };
 
 interface PlotStructureViewProps {
