@@ -129,7 +129,7 @@ interface PlotStructureViewProps {
 export default function PlotStructureView({ structureId, onClose }: PlotStructureViewProps) {
   const { data: structure, isLoading: structureLoading, error: structureError } = usePlotStructure(structureId);
   const { data: sections, isLoading: sectionsLoading, error: sectionsError } = usePlotStructureSections(structureId);
-  const { updatePlotStructureSectionMutation } = usePlotStructureActions();
+  const { updateSection } = usePlotStructureActions();
   
   const [activeSection, setActiveSection] = useState<string | null>(null);
   const [editedContent, setEditedContent] = useState<Record<string, string>>({});
@@ -170,8 +170,8 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
   // Save section content with debounce
   const debouncedSave = useCallback(
     debounce((sectionKey: string, content: string, sectionId: number) => {
-      updatePlotStructureSectionMutation.mutate(
-        { id: sectionId, content },
+      updateSection(
+        { id: sectionId, data: { content } },
         {
           onSuccess: () => {
             setSaveStatus(prev => ({ ...prev, [sectionKey]: 'saved' }));
@@ -183,7 +183,7 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
         }
       );
     }, 1500),
-    [updatePlotStructureSectionMutation]
+    [updateSection]
   );
   
   // Handle content changes
@@ -210,10 +210,10 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
     setIsSaving(true);
     setSaveStatus(prev => ({ ...prev, [section.sectionKey]: 'saving' }));
     
-    updatePlotStructureSectionMutation.mutate(
+    updateSection(
       { 
         id: section.id, 
-        content: editedContent[section.sectionKey] || ''
+        data: { content: editedContent[section.sectionKey] || '' }
       },
       {
         onSuccess: () => {
@@ -295,114 +295,108 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
               <p className="text-muted-foreground">No sections found for this plot structure.</p>
             </div>
           ) : (
-            <ResizablePanelGroup direction="horizontal" className="flex-1 overflow-hidden">
-              <ResizablePanel defaultSize={30} minSize={20} maxSize={40} className="min-h-0 overflow-hidden">
-                <div className="flex flex-col h-full">
-                  <div className="flex-shrink-0 flex items-center justify-between border-b p-2 bg-muted/30">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => navigateToSection('prev')}
-                      disabled={!activeSection}
-                    >
-                      <ChevronLeft className="h-4 w-4 mr-1" /> Previous
-                    </Button>
+            <ResizablePanelGroup direction="horizontal" className="flex-1 overflow-hidden h-[calc(100vh-200px)]">
+              <ResizablePanel defaultSize={30} minSize={20} maxSize={40} className="flex flex-col overflow-hidden">
+                <div className="flex-shrink-0 flex items-center justify-between border-b p-2 bg-muted/30">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => navigateToSection('prev')}
+                    disabled={!activeSection}
+                  >
+                    <ChevronLeft className="h-4 w-4 mr-1" /> Previous
+                  </Button>
 
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => navigateToSection('next')}
-                      disabled={!activeSection}
-                    >
-                      Next <ChevronRight className="h-4 w-4 ml-1" />
-                    </Button>
-                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => navigateToSection('next')}
+                    disabled={!activeSection}
+                  >
+                    Next <ChevronRight className="h-4 w-4 ml-1" />
+                  </Button>
+                </div>
 
-                  <div className="overflow-y-auto flex-1">
-                    <div className="p-2">
-                      {sortedSections.map((section) => (
-                        <Button
-                          key={section.id}
-                          variant={activeSection === section.sectionKey ? "default" : "ghost"}
-                          className="w-full justify-start mb-1 text-left"
-                          onClick={() => setActiveSection(section.sectionKey)}
-                        >
-                          <span className="truncate">{section.title}</span>
-                        </Button>
-                      ))}
-                    </div>
-                  </div>
+                <div className="flex-1 overflow-y-auto py-1">
+                  {sortedSections.map((section) => (
+                    <Button
+                      key={section.id}
+                      variant={activeSection === section.sectionKey ? "default" : "ghost"}
+                      className="w-full justify-start mb-1 text-left px-2"
+                      onClick={() => setActiveSection(section.sectionKey)}
+                    >
+                      <span className="truncate">{section.title}</span>
+                    </Button>
+                  ))}
                 </div>
               </ResizablePanel>
 
               <ResizableHandle withHandle />
 
-              <ResizablePanel defaultSize={70} className="min-h-0 overflow-hidden focus-visible:outline-none">
-                <div className="h-full overflow-y-auto">
-                  <div className="flex flex-col p-4">
-                    {activeSectionData ? (
-                      <div className="flex flex-col">
-                        <div className="pb-4">
-                          <h3 className="text-lg font-semibold mb-3">
-                            {activeSectionData.title}
-                          </h3>
+              <ResizablePanel defaultSize={70} className="flex flex-col overflow-hidden">
+                <div className="flex-1 overflow-y-auto p-4">
+                  {activeSectionData ? (
+                    <div className="flex flex-col">
+                      <div className="pb-4">
+                        <h3 className="text-lg font-semibold mb-3">
+                          {activeSectionData.title}
+                        </h3>
 
-                          <div className="mb-4 text-sm bg-muted/20 p-3 rounded-md border">
-                            <p className="text-muted-foreground">
-                              <strong>Example:</strong> {' '}
-                              {SECTION_EXAMPLES[activeSectionData.sectionKey] || 
-                               "Create your story content for this section."}
-                            </p>
-                          </div>
+                        <div className="mb-4 text-sm bg-muted/20 p-3 rounded-md border">
+                          <p className="text-muted-foreground">
+                            <strong>Example:</strong> {' '}
+                            {SECTION_EXAMPLES[activeSectionData.sectionKey] || 
+                             "Create your story content for this section."}
+                          </p>
                         </div>
+                      </div>
 
-                        <div className="flex-1 flex flex-col">
-                          <div className="flex flex-col h-full">
-                            <Textarea
-                              value={editedContent[activeSectionData.sectionKey] || ''}
-                              onChange={(e) => handleContentChange(
-                                activeSectionData.sectionKey,
-                                e.target.value,
-                                activeSectionData.id
-                              )}
-                              className="flex-1 min-h-[200px] resize-none"
-                              placeholder={`Write your content for ${activeSectionData.title} here...`}
-                            />
+                      <div className="flex-1 flex flex-col">
+                        <div className="flex flex-col h-full">
+                          <Textarea
+                            value={editedContent[activeSectionData.sectionKey] || ''}
+                            onChange={(e) => handleContentChange(
+                              activeSectionData.sectionKey,
+                              e.target.value,
+                              activeSectionData.id
+                            )}
+                            className="flex-1 min-h-[200px] resize-none"
+                            placeholder={`Write your content for ${activeSectionData.title} here...`}
+                          />
 
-                            <div className="flex items-center justify-between mt-4">
-                              <span className={`text-xs px-2 py-0.5 rounded-full ${
-                                saveStatus[activeSectionData.sectionKey] === 'saved' 
-                                  ? 'bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400' 
-                                  : saveStatus[activeSectionData.sectionKey] === 'typing'
-                                  ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400' 
-                                  : 'bg-yellow-50 text-yellow-600 dark:bg-yellow-900/20 dark:text-yellow-400'
-                              }`}>
-                                {saveStatus[activeSectionData.sectionKey] === 'saved' 
-                                  ? 'Saved' 
-                                  : saveStatus[activeSectionData.sectionKey] === 'typing' 
-                                  ? 'Typing...' 
-                                  : 'Saving...'}
-                              </span>
+                          <div className="flex items-center justify-between mt-4">
+                            <span className={`text-xs px-2 py-0.5 rounded-full ${
+                              saveStatus[activeSectionData.sectionKey] === 'saved' 
+                                ? 'bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400' 
+                                : saveStatus[activeSectionData.sectionKey] === 'typing'
+                                ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400' 
+                                : 'bg-yellow-50 text-yellow-600 dark:bg-yellow-900/20 dark:text-yellow-400'
+                            }`}>
+                              {saveStatus[activeSectionData.sectionKey] === 'saved' 
+                                ? 'Saved' 
+                                : saveStatus[activeSectionData.sectionKey] === 'typing' 
+                                ? 'Typing...' 
+                                : 'Saving...'}
+                            </span>
 
-                              <div className="flex space-x-2">
-                                <Button
-                                  size="sm"
-                                  onClick={() => saveSection(activeSectionData)}
-                                  disabled={isSaving}
-                                >
-                                  <Save className="h-4 w-4 mr-1" /> Save
-                                </Button>
-                              </div>
+                            <div className="flex space-x-2">
+                              <Button
+                                size="sm"
+                                onClick={() => saveSection(activeSectionData)}
+                                disabled={isSaving}
+                              >
+                                <Save className="h-4 w-4 mr-1" /> Save
+                              </Button>
                             </div>
                           </div>
                         </div>
                       </div>
-                    ) : (
-                      <div className="flex items-center justify-center h-full">
-                        <p className="text-muted-foreground">Select a section to begin editing</p>
-                      </div>
-                    )}
-                  </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center h-full">
+                      <p className="text-muted-foreground">Select a section to begin editing</p>
+                    </div>
+                  )}
                 </div>
               </ResizablePanel>
             </ResizablePanelGroup>
