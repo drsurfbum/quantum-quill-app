@@ -38,81 +38,87 @@ import { ResizablePanel, ResizablePanelGroup, ResizableHandle } from "@/componen
 const SECTION_EXAMPLES: Record<string, string> = {
   // Dan Harmon's Story Circle
   "you": "Luke Skywalker lives a simple life on Tatooine with his aunt and uncle.",
-  "need": "Princess Leia's message asks for help, and Obi-Wan invites Luke to learn the ways of the Force.",
-  "go": "Luke leaves his home planet on the Millennium Falcon after stormtroopers kill his family.",
-  "search": "Luke rescues the princess from the Death Star and learns more about his abilities.",
-  "find": "Luke discovers he can use the Force and decides to join the Rebellion.",
-  "take": "Luke loses Obi-Wan but gains new allies and responsibilities in the fight against the Empire.",
-  "return": "Luke returns to the Rebel base with the Death Star plans and his new understanding of the Force.",
-  "change": "Luke is no longer a farm boy but a hero of the Rebellion with a new purpose.",
-
+  "need": "Luke discovers a message from Princess Leia in R2-D2 and realizes there's a bigger world out there.",
+  "go": "Luke leaves Tatooine with Obi-Wan to deliver the Death Star plans to the Rebellion.",
+  "search": "Luke meets Han Solo, rescues Princess Leia, and discovers more about the Force.",
+  "find": "Luke witnesses Obi-Wan's death and commits to learning the ways of the Force.",
+  "take": "Luke joins the Rebellion and volunteers to attack the Death Star.",
+  "return": "Luke leads the attack on the Death Star, using his new skills and insights.",
+  "change": "Luke destroys the Death Star, becomes a hero of the Rebellion, and begins his journey as a Jedi.",
+  
+  // Hero's Journey
+  "ordinary_world": "Frodo lives a peaceful life in the Shire, unaware of the wider conflicts in Middle-earth.",
+  "call_to_adventure": "Gandalf reveals the truth about the One Ring and the threat of Sauron to Frodo.",
+  "refusal_of_the_call": "Frodo initially hesitates, wishing the Ring had never come to him.",
+  "meeting_the_mentor": "Gandalf guides Frodo, explaining the history of the Ring and the necessity of its destruction.",
+  "crossing_the_threshold": "Frodo leaves the Shire with Sam, crossing into the wider world beyond his familiar boundaries.",
+  "tests_allies_enemies": "The hobbits meet Aragorn, face the Nazgûl at Weathertop, and form the Fellowship in Rivendell.",
+  "approach_to_the_inmost_cave": "The Fellowship journeys through Moria, facing darkness and danger.",
+  "the_ordeal": "The Fellowship battles in Moria, loses Gandalf, and breaks apart as Boromir tries to take the Ring.",
+  "reward_seizing_the_sword": "Frodo gains clarity about his mission and decides to continue alone (with Sam).",
+  "the_road_back": "Frodo and Sam navigate toward Mordor, guided by Gollum.",
+  "resurrection": "In the Tower of Cirith Ungol, Frodo nearly loses everything but is rescued by Sam.",
+  "return_with_the_elixir": "After destroying the Ring, Frodo returns to the Shire, but is forever changed by his journey.",
+  
   // Freytag's Pyramid
-  "exposition": "Harry Potter lives under the stairs at his aunt and uncle's house, unaware of his magical heritage.",
-  "rising_action": "Harry attends Hogwarts, makes friends, and faces increasingly dangerous situations.",
-  "climax": "Harry confronts Voldemort in the Chamber of Secrets, destroying the diary and saving Ginny.",
-  "falling_action": "The truth about Tom Riddle is revealed, and Harry returns to normal school life.",
-  "resolution": "Harry returns to the Dursleys, but with the knowledge that he belongs in the wizarding world.",
-
-  // Three Act Structure
-  "act1_setup": "We meet John McClane, a New York cop heading to LA to reconcile with his estranged wife at her company's Christmas party.",
-  "act1_inciting_incident": "Terrorists take over the building, and John is the only one who escapes, finding himself alone and outgunned.",
-  "act1_turning_point": "John decides to fight back and alert the authorities, beginning his one-man war against the terrorists.",
-  "act2_confrontation": "John faces increasingly difficult obstacles, kills some terrorists, and makes contact with a police officer outside.",
-  "act2_midpoint": "John discovers the terrorists are actually sophisticated thieves planning to steal $640 million in bearer bonds.",
-  "act2_turning_point": "The terrorists discover John's identity and take his wife hostage, raising the personal stakes.",
-  "act3_resolution": "John confronts Hans Gruber in a final showdown, saving his wife and stopping the heist.",
-  "act3_climax": "John and his wife reconcile as the authorities take control of the situation.",
-  "act3_denouement": "John and his wife leave together as the situation is resolved.",
-
-  // Hero's Journey (The Fellowship of the Ring)
-  "ordinary_world": "Frodo Baggins lives a peaceful life in the Shire, enjoying the comforts of Bag End.",
-  "call_to_adventure": "Gandalf reveals the truth about the One Ring and the danger it poses to Middle-earth.",
-  "refusal_of_call": "Frodo is reluctant to leave the Shire but accepts that he must protect his home and friends.",
-  "meeting_the_mentor": "Gandalf guides Frodo on his journey and explains the history of the Ring.",
-  "crossing_threshold": "Frodo leaves the Shire with Sam, crossing into the wider world beyond their home.",
-  "tests_allies_enemies": "Frodo meets allies at the Council of Elrond and forms the Fellowship, while being pursued by Ringwraiths.",
-  "approach_inmost_cave": "The Fellowship journeys through the Mines of Moria, facing increasing danger and darkness.",
-  "ordeal": "The Fellowship fights the Balrog, resulting in Gandalf's apparent death and fracturing of the group.",
-  "reward": "Frodo continues his journey with renewed purpose and deeper understanding of the Ring's power.",
-  "road_back": "Frodo and Sam separate from the others, taking their own path toward Mordor.",
-  "resurrection": "Frodo resists the temptation to use the Ring despite growing danger and its increasing hold over him.",
-  "return_with_elixir": "Frodo has changed from a carefree hobbit to a determined Ring-bearer, carrying hope for all of Middle-earth.",
-
-  // Fichtean Curve (The Hunger Games)
-  "introduction": "Katniss Everdeen hunts to provide for her family in the impoverished District 12.",
-  "crisis_1": "Katniss's sister Prim is selected for the Hunger Games, prompting Katniss to volunteer in her place.",
-  "crisis_2": "Katniss must navigate the Capitol's politics and public appearances before entering the arena.",
-  "crisis_3": "In the arena, Katniss faces immediate threats from other tributes and environmental dangers.",
-  "crisis_4": "The Gamemakers change rules midway, allowing district partners to win together, complicating Katniss's relationship with Peeta.",
-  "final_crisis": "The Gamemakers revert to the original rules, forcing Katniss to make an impossible choice.",
-  "fichtean_climax": "Katniss and Peeta threaten double suicide with poisonous berries, forcing the Gamemakers to declare them both winners.",
-  "brief_resolution": "Katniss and Peeta return to District 12 as victors, but have unknowingly sparked rebellion.",
-
-  // Save the Cat Beat Sheet (Spider-Man: Into the Spider-Verse)
-  "opening_image": "Miles Morales is an ordinary teenager trying to find his place between his home life in Brooklyn and his new elite school.",
-  "theme_stated": "Miles's father tells him to always do his best and live up to his potential.",
-  "setup": "Miles struggles with fitting in at school while maintaining a relationship with his Uncle Aaron, who his father disapproves of.",
-  "catalyst": "Miles is bitten by a radioactive spider and witnesses Spider-Man's death at the hands of Kingpin.",
-  "debate": "Miles discovers his new powers but doesn't know how to control them or if he should take up the Spider-Man mantle.",
-  "break_into_two": "Miles meets Peter B. Parker and other Spider-People from different dimensions, thrust into a larger multiverse conflict.",
-  "b_story": "Miles develops a friendship with Gwen Stacy and the other Spider-People, learning what it means to be a hero.",
-  "fun_and_games": "Miles trains with Peter while trying to hide his powers from his family and adjust to his new abilities.",
-  "midpoint": "Miles discovers his unique power of invisibility and bio-electric blasts, giving him an advantage.",
-  "bad_guys_close_in": "Kingpin's scientists activate the collider again, and Miles's uncle is revealed to be the Prowler, hunting the Spider-People.",
-  "all_is_lost": "Miles is overwhelmed by responsibility and failure when his Uncle Aaron dies, and the other Spider-People don't believe he's ready.",
-  "dark_night_of_soul": "Miles returns home dejected, where his father unknowingly gives him encouragement through the door.",
-  "break_into_three": "Miles fully embraces his powers, creates his own suit, and breaks free to help the others.",
-  "finale": "Miles masters his abilities, defeats Kingpin, and sends the other Spider-People home while taking up the mantle of his world's Spider-Man.",
-  "final_image": "Miles swings confidently through New York as its new protector, having found his place and purpose.",
-
-  // Seven-Point Story Structure (The Lion, the Witch and the Wardrobe)
-  "hook": "The Pevensie children are sent to the English countryside during World War II and discover a wardrobe in Professor Kirke's house.",
-  "plot_turn_1": "Lucy enters the wardrobe and discovers Narnia, meeting Mr. Tumnus, though her siblings don't believe her at first.",
-  "pinch_1": "Edmund follows Lucy into Narnia and meets the White Witch, who tempts him with Turkish Delight and manipulates him.",
-  "narnia_midpoint": "All four children enter Narnia together and learn from the Beavers about Aslan and the prophecy that they will become kings and queens.",
-  "pinch_2": "Edmund betrays his siblings to the White Witch, and Aslan offers himself in Edmund's place to satisfy the Deep Magic.",
-  "plot_turn_2": "Aslan is resurrected due to the Deeper Magic, giving the children hope and the key to defeating the Witch.",
-  "narnia_resolution": "The children lead Aslan's army to victory over the White Witch, and they are crowned kings and queens of Narnia."
+  "exposition": "Gatsby's lavish parties and mysterious background are introduced through Nick Carraway's perspective.",
+  "rising_action": "Nick meets Gatsby, learns of his love for Daisy, and helps arrange their reunion.",
+  "climax": "The confrontation at the Plaza Hotel where Gatsby's past is revealed and Tom exposes him.",
+  "falling_action": "Daisy kills Myrtle in a car accident while driving Gatsby's car, leading to misunderstandings.",
+  "resolution": "Gatsby is murdered by Wilson, and only Nick attends his funeral, reflecting on the emptiness of the American Dream.",
+  
+  // Save the Cat
+  "opening_image": "Andy Dufresne, a successful banker, sits expressionless in his car outside his wife's lover's house.",
+  "theme_stated": "Red states 'Hope is a good thing, maybe the best of things, and no good thing ever dies.'",
+  "setup": "Andy is wrongfully convicted of murdering his wife and her lover and sentenced to life in Shawshank Prison.",
+  "catalyst": "Andy asks Red to procure a rock hammer, supposedly for his hobby of collecting rocks.",
+  "debate": "Andy struggles to adapt to prison life, is beaten by guards and abused by the 'Sisters.'",
+  "break_into_two": "Andy befriends Red and begins to use his banking skills to help the guards and the warden.",
+  "b_story": "Andy's friendship with Red deepens, and he starts building a library for the prisoners.",
+  "fun_and_games": "Andy becomes valuable to the prison staff for his financial expertise, gaining privileges and respect.",
+  "midpoint": "Andy plays Mozart over the prison PA system, giving inmates a moment of beauty and freedom.",
+  "bad_guys_close_in": "Tommy Williams arrives and reveals information that could prove Andy's innocence.",
+  "all_is_lost": "Warden Norton has Tommy killed to prevent Andy's exoneration and puts Andy in solitary confinement.",
+  "dark_night_of_the_soul": "Andy appears to be broken after his time in solitary and asks Red for a length of rope.",
+  "break_into_three": "The next morning, Andy is missing from his cell.",
+  "finale": "It's revealed that Andy spent 19 years tunneling to freedom and escaped through the prison sewage system.",
+  "final_image": "Red finds Andy on a beach in Zihuatanejo, fulfilling their shared dream of freedom and reunion.",
+  
+  // Three-Act Structure
+  "act_one_setup": "Clarice Starling, an FBI trainee, is assigned to interview Dr. Hannibal Lecter, hoping he can provide insight into an active serial killer case.",
+  "act_one_inciting_incident": "Lecter offers cryptic clues about the serial killer 'Buffalo Bill' in exchange for personal information about Clarice.",
+  "act_one_plot_point_one": "A new victim is kidnapped (Catherine Martin, a senator's daughter), raising the stakes and creating urgency.",
+  "act_two_rising_action": "Clarice builds a complex relationship with Lecter while trying to decode his clues to find Buffalo Bill.",
+  "act_two_midpoint": "Lecter escapes custody in a brutally violent fashion, eliminating Clarice's direct access to him.",
+  "act_two_plot_point_two": "Clarice decodes Lecter's final messages and realizes Buffalo Bill knew his first victim personally.",
+  "act_three_crisis": "Following her insights, Clarice tracks down Buffalo Bill's house and confronts him alone, without backup.",
+  "act_three_climax": "In a tense confrontation in the dark, Clarice manages to kill Buffalo Bill and rescue his captive.",
+  "act_three_resolution": "Clarice graduates from the FBI Academy with honors, and receives a disturbing congratulatory call from Lecter.",
+  
+  // Seven-Point Story Structure
+  "hook": "Katniss Everdeen lives in a dystopian future where she hunts to provide for her family in the impoverished District 12.",
+  "plot_turn_1": "Katniss volunteers for the Hunger Games to save her sister Prim from certain death.",
+  "pinch_point_1": "Katniss realizes the full brutality of the Games when the tributes begin killing each other in the arena.",
+  "midpoint": "Katniss allies with Rue, showing compassion and humanity in contrast to the Capitol's cruelty.",
+  "pinch_point_2": "The Gamemakers announce two tributes from the same district can win, giving Katniss hope she and Peeta might both survive.",
+  "plot_turn_2": "Katniss and Peeta decide to commit suicide together rather than kill each other when the rule is revoked.",
+  "resolution": "The Gamemakers relent to avoid having no victor, allowing both to live, but Katniss has unknowingly sparked rebellion.",
+  
+  // Kishōtenketsu
+  "ki": "Chihiro and her parents stumble upon what seems to be an abandoned theme park while moving to their new home.",
+  "shō": "The parents are transformed into pigs after eating food meant for spirits, and Chihiro discovers she's trapped in a spirit world.",
+  "ten": "Chihiro must work in a bathhouse for spirits, facing numerous supernatural challenges while trying to save her parents and remember her true name.",
+  "ketsu": "Chihiro successfully frees herself and her parents by remembering who she is and showing compassion to others, returning to the human world changed by her experience.",
+  
+  // Story Circle
+  "comfort_zone": "Neo lives a double life as a programmer by day and hacker by night, feeling something is wrong with the world.",
+  "desire": "Neo wants to know what the Matrix is and follows the white rabbit to find answers.",
+  "unfamiliar_situation": "Neo meets Trinity and Morpheus, who offers him the truth via the red pill.",
+  "adaptation": "Neo learns about the real world, trains in combat, and begins to understand his potential as 'The One.'",
+  "getting_what_they_wanted": "Neo rescues Morpheus from the Agents, demonstrating extraordinary abilities within the Matrix.",
+  "paying_the_price": "Neo faces Agent Smith alone and is seemingly killed in the confrontation.",
+  "returning_to_familiar_situation": "Neo resurrects within the Matrix, now fully believing in his powers as The One.",
+  "changed": "Neo defeats Agent Smith, establishes himself as The One, and promises to show people the truth about their world."
 };
 
 interface PlotStructureViewProps {
@@ -121,173 +127,168 @@ interface PlotStructureViewProps {
 }
 
 export default function PlotStructureView({ structureId, onClose }: PlotStructureViewProps) {
-  // Simple state management
+  const { data: structure, isLoading: structureLoading, error: structureError } = usePlotStructure(structureId);
+  const { data: sections, isLoading: sectionsLoading, error: sectionsError } = usePlotStructureSections(structureId);
+  const { updatePlotStructureSectionMutation } = usePlotStructureActions();
+  
   const [activeSection, setActiveSection] = useState<string | null>(null);
   const [editedContent, setEditedContent] = useState<Record<string, string>>({});
-  const [saveStatus, setSaveStatus] = useState<Record<string, 'saved' | 'typing' | 'saving'>>({});
-
-  // Fetch data without toast
-  const { data: structure, isLoading: isLoadingStructure } = usePlotStructure(structureId);
-  const { data: sections = [], isLoading: isLoadingSections } = usePlotStructureSections(structureId);
-  const { updateSection, isLoading: isSaving } = usePlotStructureActions();
-
-  // Sort sections by order - recalculate only when sections change
-  const sortedSections = [...sections].sort((a, b) => a.order - b.order);
-
-  // Initialize content for editing
-  const initializeContent = useCallback((sectionKey: string, content: string | null) => {
-    setEditedContent(prev => {
-      // Only update if the key doesn't exist to prevent unnecessary re-renders
-      if (!prev[sectionKey]) {
-        return { ...prev, [sectionKey]: content || '' };
-      }
-      return prev;
-    });
-    setSaveStatus(prev => {
-      // Only update if the key doesn't exist
-      if (!prev[sectionKey]) {
-        return { ...prev, [sectionKey]: 'saved' };
-      }
-      return prev;
-    });
-  }, []);
-
-  // Set active section to first section when data is loaded
+  const [saveStatus, setSaveStatus] = useState<Record<string, 'saved' | 'saving' | 'typing'>>({});
+  const [isSaving, setIsSaving] = useState(false);
+  
+  // Sort sections by order and get the first one
+  const sortedSections = sections ? [...sections].sort((a, b) => a.order - b.order) : [];
+  
+  // Set initial active section when data loads
   useEffect(() => {
     if (sortedSections.length > 0 && !activeSection) {
       setActiveSection(sortedSections[0].sectionKey);
     }
   }, [sortedSections, activeSection]);
-
-  // Get current active section data
-  const activeSectionData = activeSection ? 
-    sortedSections.find(s => s.sectionKey === activeSection) : null;
-
-  // Initialize content for active section when it changes
+  
+  // Initialize edited content from sections
   useEffect(() => {
-    if (activeSectionData && !editedContent[activeSectionData.sectionKey]) {
-      initializeContent(activeSectionData.sectionKey, activeSectionData.content);
+    if (sections) {
+      const initialContent: Record<string, string> = {};
+      const initialStatus: Record<string, 'saved' | 'saving' | 'typing'> = {};
+      
+      sections.forEach(section => {
+        initialContent[section.sectionKey] = section.content || '';
+        initialStatus[section.sectionKey] = 'saved';
+      });
+      
+      setEditedContent(initialContent);
+      setSaveStatus(initialStatus);
     }
-  }, [activeSectionData, initializeContent, editedContent]);
-
-  // Navigate between sections
-  const navigateToSection = (direction: 'next' | 'prev') => {
-    if (sortedSections.length === 0 || !activeSection) return;
-
-    const currentIndex = sortedSections.findIndex(section => section.sectionKey === activeSection);
-    if (currentIndex === -1) return;
-
-    let newIndex;
-    if (direction === 'next') {
-      newIndex = (currentIndex + 1) % sortedSections.length;
-    } else {
-      newIndex = (currentIndex - 1 + sortedSections.length) % sortedSections.length;
-    }
-
-    setActiveSection(sortedSections[newIndex].sectionKey);
-  };
-
-  // Handle content change with debounced autosave
+  }, [sections]);
+  
+  // Find the active section data
+  const activeSectionData = activeSection
+    ? sortedSections.find(s => s.sectionKey === activeSection)
+    : null;
+    
+  // Save section content with debounce
   const debouncedSave = useCallback(
-    debounce((sectionId: number, sectionKey: string, content: string) => {
-      setSaveStatus(prev => ({ ...prev, [sectionKey]: 'saving' }));
-
-      updateSection(
-        { id: sectionId, data: { content } },
+    debounce((sectionKey: string, content: string, sectionId: number) => {
+      updatePlotStructureSectionMutation.mutate(
+        { id: sectionId, content },
         {
           onSuccess: () => {
             setSaveStatus(prev => ({ ...prev, [sectionKey]: 'saved' }));
           },
           onError: () => {
-            setSaveStatus(prev => ({ ...prev, [sectionKey]: 'saved' }));
+            // If error, revert to 'typing' so user knows to try again
+            setSaveStatus(prev => ({ ...prev, [sectionKey]: 'typing' }));
           }
         }
       );
-    }, 2000),
-    [updateSection]
+    }, 1500),
+    [updatePlotStructureSectionMutation]
   );
-
-  // Handle content change
+  
+  // Handle content changes
   const handleContentChange = (sectionKey: string, content: string, sectionId: number) => {
     setEditedContent(prev => ({ ...prev, [sectionKey]: content }));
     setSaveStatus(prev => ({ ...prev, [sectionKey]: 'typing' }));
-    debouncedSave(sectionId, sectionKey, content);
+    
+    // Set status to 'saving' after a short delay
+    setTimeout(() => {
+      setSaveStatus(prev => {
+        // Only change to saving if still typing (user hasn't made more changes)
+        if (prev[sectionKey] === 'typing') {
+          return { ...prev, [sectionKey]: 'saving' };
+        }
+        return prev;
+      });
+    }, 500);
+    
+    debouncedSave(sectionKey, content, sectionId);
   };
-
+  
   // Manual save function
   const saveSection = (section: PlotStructureSection) => {
-    const currentSection = section.sectionKey;
-    const content = editedContent[currentSection];
-
-    if (content !== undefined) {
-      setSaveStatus(prev => ({ ...prev, [currentSection]: 'saving' }));
-
-      updateSection(
-        { id: section.id, data: { content } },
-        {
-          onSuccess: () => {
-            setSaveStatus(prev => ({ ...prev, [currentSection]: 'saved' }));
-          },
-          onError: () => {
-            setSaveStatus(prev => ({ ...prev, [currentSection]: 'saved' }));
-          }
+    setIsSaving(true);
+    setSaveStatus(prev => ({ ...prev, [section.sectionKey]: 'saving' }));
+    
+    updatePlotStructureSectionMutation.mutate(
+      { 
+        id: section.id, 
+        content: editedContent[section.sectionKey] || ''
+      },
+      {
+        onSuccess: () => {
+          setSaveStatus(prev => ({ ...prev, [section.sectionKey]: 'saved' }));
+          setIsSaving(false);
+        },
+        onError: () => {
+          setSaveStatus(prev => ({ ...prev, [section.sectionKey]: 'typing' }));
+          setIsSaving(false);
         }
-      );
+      }
+    );
+  };
+  
+  // Navigate between sections
+  const navigateToSection = (direction: 'next' | 'prev') => {
+    if (!activeSection || sortedSections.length === 0) return;
+    
+    const currentIndex = sortedSections.findIndex(s => s.sectionKey === activeSection);
+    if (currentIndex === -1) return;
+    
+    if (direction === 'next' && currentIndex < sortedSections.length - 1) {
+      setActiveSection(sortedSections[currentIndex + 1].sectionKey);
+    } else if (direction === 'prev' && currentIndex > 0) {
+      setActiveSection(sortedSections[currentIndex - 1].sectionKey);
     }
   };
-
+  
   // Loading state
-  if (isLoadingStructure || isLoadingSections) {
+  if (structureLoading || sectionsLoading) {
     return (
-      <div className="p-4 space-y-4">
-        <Skeleton className="h-8 w-64" />
-        <Skeleton className="h-4 w-full" />
-        <div className="space-y-4 mt-6">
-          <Skeleton className="h-6 w-48" />
-          <Skeleton className="h-20 w-full" />
-          <Skeleton className="h-6 w-32" />
-          <Skeleton className="h-20 w-full" />
+      <div className="p-4">
+        <Skeleton className="h-8 w-3/4 mb-4" />
+        <Skeleton className="h-4 w-1/2 mb-8" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-64 w-full" />
         </div>
       </div>
     );
   }
-
-  // Not found state
-  if (!structure) {
+  
+  // Error state
+  if (structureError || sectionsError || !structure) {
     return (
-      <Alert className="m-4">
-        <AlertCircle className="h-4 w-4" />
-        <AlertDescription>
-          The selected plot structure could not be found.
-        </AlertDescription>
-      </Alert>
+      <div className="p-4">
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Failed to load plot structure data. Please try again later.
+          </AlertDescription>
+        </Alert>
+      </div>
     );
   }
-
+  
   return (
-    <div className="flex flex-col h-full bg-background">
-      <div className="border-b p-4 flex justify-between items-center bg-card">
-        <div>
-          <h2 className="text-xl font-bold">{structure.name}</h2>
-          {structure.description && (
-            <p className="text-sm text-muted-foreground">{structure.description}</p>
-          )}
-        </div>
+    <div className="h-full flex flex-col">
+      <div className="flex items-center justify-between p-4 border-b">
+        <h2 className="text-xl font-semibold">{structure.name}</h2>
         {onClose && (
           <Button variant="ghost" size="icon" onClick={onClose}>
             <X className="h-4 w-4" />
           </Button>
         )}
       </div>
-
+      
       <Tabs defaultValue="editor" className="flex-1 flex flex-col">
-        <div className="border-b px-4 bg-card">
+        <div className="border-b px-4">
           <TabsList>
             <TabsTrigger value="editor">Editor</TabsTrigger>
             <TabsTrigger value="overview">Overview</TabsTrigger>
           </TabsList>
         </div>
-
+        
         <TabsContent value="editor" className="flex-1 flex flex-col p-0">
           {sortedSections.length === 0 ? (
             <div className="p-4 text-center">
@@ -295,8 +296,8 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
             </div>
           ) : (
             <ResizablePanelGroup direction="horizontal" className="flex-1 overflow-hidden">
-              <ResizablePanel defaultSize={30} minSize={20} maxSize={40} className="h-full overflow-hidden">
-                <div className="h-full flex flex-col">
+              <ResizablePanel defaultSize={30} minSize={20} maxSize={40} className="min-h-0 overflow-hidden">
+                <div className="flex flex-col h-full">
                   <div className="flex-shrink-0 flex items-center justify-between border-b p-2 bg-muted/30">
                     <Button
                       variant="ghost"
@@ -317,7 +318,7 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
                     </Button>
                   </div>
 
-                  <div className="flex-1 h-[calc(100%-40px)] overflow-y-auto">
+                  <div className="overflow-y-auto flex-1">
                     <div className="p-2">
                       {sortedSections.map((section) => (
                         <Button
@@ -336,8 +337,8 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
 
               <ResizableHandle withHandle />
 
-              <ResizablePanel defaultSize={70} className="h-full focus-visible:outline-none">
-                <ScrollArea className="h-full">
+              <ResizablePanel defaultSize={70} className="min-h-0 overflow-hidden focus-visible:outline-none">
+                <div className="h-full overflow-y-auto">
                   <div className="flex flex-col p-4">
                     {activeSectionData ? (
                       <div className="flex flex-col">
@@ -402,7 +403,7 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
                       </div>
                     )}
                   </div>
-                </ScrollArea>
+                </div>
               </ResizablePanel>
             </ResizablePanelGroup>
           )}
