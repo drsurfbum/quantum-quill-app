@@ -118,7 +118,7 @@ export default function OutlineItem({
       
       const findItemsToDelete = (parentId: number | string) => {
         outlineItems.forEach(i => {
-          if (i.id === parentId || i.parentId === parentId) {
+          if ((i.id === parentId || i.parentId === parentId) && !deletedItemIds.has(i.id)) {
             deletedItemIds.add(i.id);
             findItemsToDelete(i.id);
           }
