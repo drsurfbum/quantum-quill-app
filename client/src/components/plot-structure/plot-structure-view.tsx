@@ -317,19 +317,20 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
                     </Button>
                   </div>
                 
-                  {/* Using a fixed height div with standard overflow for testing */}
-                  <div className="overflow-y-auto p-2" style={{ height: 'calc(100% - 40px)' }}>
-                    {sortedSections.map((section) => (
-                      <Button
-                        key={section.id}
-                        variant={activeSection === section.sectionKey ? "default" : "ghost"}
-                        className="w-full justify-start mb-1 text-left"
-                        onClick={() => setActiveSection(section.sectionKey)}
-                      >
-                        <span className="truncate">{section.title}</span>
-                      </Button>
-                    ))}
-                  </div>
+                  <ScrollArea className="flex-grow h-[calc(100%-40px)]">
+                    <div className="p-2">
+                      {sortedSections.map((section) => (
+                        <Button
+                          key={section.id}
+                          variant={activeSection === section.sectionKey ? "default" : "ghost"}
+                          className="w-full justify-start mb-1 text-left"
+                          onClick={() => setActiveSection(section.sectionKey)}
+                        >
+                          <span className="truncate">{section.title}</span>
+                        </Button>
+                      ))}
+                    </div>
+                  </ScrollArea>
                 </div>
               </ResizablePanel>
               
