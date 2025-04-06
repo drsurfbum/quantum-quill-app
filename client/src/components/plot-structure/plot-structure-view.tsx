@@ -32,20 +32,9 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { PlotStructureSection } from '@shared/schema';
-import { ResizablePanel, ResizablePanelGroup, ResizableHandle } from "@/components/ui/resizable";
 
 // Define section examples for different story structures
 const SECTION_EXAMPLES: Record<string, string> = {
-  // Dan Harmon's Story Circle
-  "you": "Luke Skywalker lives a simple life on Tatooine with his aunt and uncle.",
-  "need": "Luke discovers a message from Princess Leia in R2-D2 and realizes there's a bigger world out there.",
-  "go": "Luke leaves Tatooine with Obi-Wan to deliver the Death Star plans to the Rebellion.",
-  "search": "Luke meets Han Solo, rescues Princess Leia, and discovers more about the Force.",
-  "find": "Luke witnesses Obi-Wan's death and commits to learning the ways of the Force.",
-  "take": "Luke joins the Rebellion and volunteers to attack the Death Star.",
-  "return": "Luke leads the attack on the Death Star, using his new skills and insights.",
-  "change": "Luke destroys the Death Star, becomes a hero of the Rebellion, and begins his journey as a Jedi.",
-  
   // Hero's Journey
   "ordinary_world": "Frodo lives a peaceful life in the Shire, unaware of the wider conflicts in Middle-earth.",
   "call_to_adventure": "Gandalf reveals the truth about the One Ring and the threat of Sauron to Frodo.",
@@ -60,65 +49,15 @@ const SECTION_EXAMPLES: Record<string, string> = {
   "resurrection": "In the Tower of Cirith Ungol, Frodo nearly loses everything but is rescued by Sam.",
   "return_with_the_elixir": "After destroying the Ring, Frodo returns to the Shire, but is forever changed by his journey.",
   
-  // Freytag's Pyramid
-  "exposition": "Gatsby's lavish parties and mysterious background are introduced through Nick Carraway's perspective.",
-  "rising_action": "Nick meets Gatsby, learns of his love for Daisy, and helps arrange their reunion.",
-  "climax": "The confrontation at the Plaza Hotel where Gatsby's past is revealed and Tom exposes him.",
-  "falling_action": "Daisy kills Myrtle in a car accident while driving Gatsby's car, leading to misunderstandings.",
-  "resolution": "Gatsby is murdered by Wilson, and only Nick attends his funeral, reflecting on the emptiness of the American Dream.",
-  
-  // Save the Cat
-  "opening_image": "Andy Dufresne, a successful banker, sits expressionless in his car outside his wife's lover's house.",
-  "theme_stated": "Red states 'Hope is a good thing, maybe the best of things, and no good thing ever dies.'",
-  "setup": "Andy is wrongfully convicted of murdering his wife and her lover and sentenced to life in Shawshank Prison.",
-  "catalyst": "Andy asks Red to procure a rock hammer, supposedly for his hobby of collecting rocks.",
-  "debate": "Andy struggles to adapt to prison life, is beaten by guards and abused by the 'Sisters.'",
-  "break_into_two": "Andy befriends Red and begins to use his banking skills to help the guards and the warden.",
-  "b_story": "Andy's friendship with Red deepens, and he starts building a library for the prisoners.",
-  "fun_and_games": "Andy becomes valuable to the prison staff for his financial expertise, gaining privileges and respect.",
-  "midpoint": "Andy plays Mozart over the prison PA system, giving inmates a moment of beauty and freedom.",
-  "bad_guys_close_in": "Tommy Williams arrives and reveals information that could prove Andy's innocence.",
-  "all_is_lost": "Warden Norton has Tommy killed to prevent Andy's exoneration and puts Andy in solitary confinement.",
-  "dark_night_of_the_soul": "Andy appears to be broken after his time in solitary and asks Red for a length of rope.",
-  "break_into_three": "The next morning, Andy is missing from his cell.",
-  "finale": "It's revealed that Andy spent 19 years tunneling to freedom and escaped through the prison sewage system.",
-  "final_image": "Red finds Andy on a beach in Zihuatanejo, fulfilling their shared dream of freedom and reunion.",
-  
-  // Three-Act Structure
-  "act_one_setup": "Clarice Starling, an FBI trainee, is assigned to interview Dr. Hannibal Lecter, hoping he can provide insight into an active serial killer case.",
-  "act_one_inciting_incident": "Lecter offers cryptic clues about the serial killer 'Buffalo Bill' in exchange for personal information about Clarice.",
-  "act_one_plot_point_one": "A new victim is kidnapped (Catherine Martin, a senator's daughter), raising the stakes and creating urgency.",
-  "act_two_rising_action": "Clarice builds a complex relationship with Lecter while trying to decode his clues to find Buffalo Bill.",
-  "act_two_midpoint": "Lecter escapes custody in a brutally violent fashion, eliminating Clarice's direct access to him.",
-  "act_two_plot_point_two": "Clarice decodes Lecter's final messages and realizes Buffalo Bill knew his first victim personally.",
-  "act_three_crisis": "Following her insights, Clarice tracks down Buffalo Bill's house and confronts him alone, without backup.",
-  "act_three_climax": "In a tense confrontation in the dark, Clarice manages to kill Buffalo Bill and rescue his captive.",
-  "act_three_resolution": "Clarice graduates from the FBI Academy with honors, and receives a disturbing congratulatory call from Lecter.",
-  
-  // Seven-Point Story Structure
-  "hook": "Katniss Everdeen lives in a dystopian future where she hunts to provide for her family in the impoverished District 12.",
-  "plot_turn_1": "Katniss volunteers for the Hunger Games to save her sister Prim from certain death.",
-  "pinch_point_1": "Katniss realizes the full brutality of the Games when the tributes begin killing each other in the arena.",
-  "midpoint": "Katniss allies with Rue, showing compassion and humanity in contrast to the Capitol's cruelty.",
-  "pinch_point_2": "The Gamemakers announce two tributes from the same district can win, giving Katniss hope she and Peeta might both survive.",
-  "plot_turn_2": "Katniss and Peeta decide to commit suicide together rather than kill each other when the rule is revoked.",
-  "resolution": "The Gamemakers relent to avoid having no victor, allowing both to live, but Katniss has unknowingly sparked rebellion.",
-  
-  // Kishōtenketsu
-  "ki": "Chihiro and her parents stumble upon what seems to be an abandoned theme park while moving to their new home.",
-  "shō": "The parents are transformed into pigs after eating food meant for spirits, and Chihiro discovers she's trapped in a spirit world.",
-  "ten": "Chihiro must work in a bathhouse for spirits, facing numerous supernatural challenges while trying to save her parents and remember her true name.",
-  "ketsu": "Chihiro successfully frees herself and her parents by remembering who she is and showing compassion to others, returning to the human world changed by her experience.",
-  
-  // Story Circle
-  "comfort_zone": "Neo lives a double life as a programmer by day and hacker by night, feeling something is wrong with the world.",
-  "desire": "Neo wants to know what the Matrix is and follows the white rabbit to find answers.",
-  "unfamiliar_situation": "Neo meets Trinity and Morpheus, who offers him the truth via the red pill.",
-  "adaptation": "Neo learns about the real world, trains in combat, and begins to understand his potential as 'The One.'",
-  "getting_what_they_wanted": "Neo rescues Morpheus from the Agents, demonstrating extraordinary abilities within the Matrix.",
-  "paying_the_price": "Neo faces Agent Smith alone and is seemingly killed in the confrontation.",
-  "returning_to_familiar_situation": "Neo resurrects within the Matrix, now fully believing in his powers as The One.",
-  "changed": "Neo defeats Agent Smith, establishes himself as The One, and promises to show people the truth about their world."
+  // Dan Harmon's Story Circle
+  "you": "Luke Skywalker lives a simple life on Tatooine with his aunt and uncle.",
+  "need": "Luke discovers a message from Princess Leia in R2-D2 and realizes there's a bigger world out there.",
+  "go": "Luke leaves Tatooine with Obi-Wan to deliver the Death Star plans to the Rebellion.",
+  "search": "Luke meets Han Solo, rescues Princess Leia, and discovers more about the Force.",
+  "find": "Luke witnesses Obi-Wan's death and commits to learning the ways of the Force.",
+  "take": "Luke joins the Rebellion and volunteers to attack the Death Star.",
+  "return": "Luke leads the attack on the Death Star, using his new skills and insights.",
+  "change": "Luke destroys the Death Star, becomes a hero of the Rebellion, and begins his journey as a Jedi.",
 };
 
 interface PlotStructureViewProps {
@@ -289,14 +228,15 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
           </TabsList>
         </div>
         
-        <TabsContent value="editor" className="flex-1 flex flex-col p-0">
+        <TabsContent value="editor" className="flex-1 p-0">
           {sortedSections.length === 0 ? (
             <div className="p-4 text-center">
               <p className="text-muted-foreground">No sections found for this plot structure.</p>
             </div>
           ) : (
-            <ResizablePanelGroup direction="horizontal" className="flex-1 overflow-hidden h-[calc(100vh-200px)]">
-              <ResizablePanel defaultSize={30} minSize={20} maxSize={40} className="flex flex-col overflow-hidden">
+            <div className="flex h-[calc(100vh-180px)]">
+              {/* Left sidebar with sections list */}
+              <div className="w-1/3 border-r flex flex-col" style={{ maxHeight: '100%' }}>
                 <div className="flex-shrink-0 flex items-center justify-between border-b p-2 bg-muted/30">
                   <Button
                     variant="ghost"
@@ -316,8 +256,8 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
                     Next <ChevronRight className="h-4 w-4 ml-1" />
                   </Button>
                 </div>
-
-                <div className="flex-1 overflow-y-auto py-1">
+                
+                <div className="overflow-y-auto flex-1" style={{ height: 'calc(100% - 40px)' }}>
                   {sortedSections.map((section) => (
                     <Button
                       key={section.id}
@@ -329,77 +269,74 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
                     </Button>
                   ))}
                 </div>
-              </ResizablePanel>
+              </div>
+              
+              {/* Main content area */}
+              <div className="w-2/3 overflow-y-auto p-4">
+                {activeSectionData ? (
+                  <div className="flex flex-col h-full">
+                    <div className="pb-4">
+                      <h3 className="text-lg font-semibold mb-3">
+                        {activeSectionData.title}
+                      </h3>
 
-              <ResizableHandle withHandle />
-
-              <ResizablePanel defaultSize={70} className="flex flex-col overflow-hidden">
-                <div className="flex-1 overflow-y-auto p-4">
-                  {activeSectionData ? (
-                    <div className="flex flex-col">
-                      <div className="pb-4">
-                        <h3 className="text-lg font-semibold mb-3">
-                          {activeSectionData.title}
-                        </h3>
-
-                        <div className="mb-4 text-sm bg-muted/20 p-3 rounded-md border">
-                          <p className="text-muted-foreground">
-                            <strong>Example:</strong> {' '}
-                            {SECTION_EXAMPLES[activeSectionData.sectionKey] || 
-                             "Create your story content for this section."}
-                          </p>
-                        </div>
+                      <div className="mb-4 text-sm bg-muted/20 p-3 rounded-md border">
+                        <p className="text-muted-foreground">
+                          <strong>Example:</strong> {' '}
+                          {SECTION_EXAMPLES[activeSectionData.sectionKey] || 
+                           "Create your story content for this section."}
+                        </p>
                       </div>
+                    </div>
 
-                      <div className="flex-1 flex flex-col">
-                        <div className="flex flex-col h-full">
-                          <Textarea
-                            value={editedContent[activeSectionData.sectionKey] || ''}
-                            onChange={(e) => handleContentChange(
-                              activeSectionData.sectionKey,
-                              e.target.value,
-                              activeSectionData.id
-                            )}
-                            className="flex-1 min-h-[200px] resize-none"
-                            placeholder={`Write your content for ${activeSectionData.title} here...`}
-                          />
+                    <div className="flex-1 flex flex-col">
+                      <div className="flex flex-col h-full">
+                        <Textarea
+                          value={editedContent[activeSectionData.sectionKey] || ''}
+                          onChange={(e) => handleContentChange(
+                            activeSectionData.sectionKey,
+                            e.target.value,
+                            activeSectionData.id
+                          )}
+                          className="flex-1 min-h-[300px] resize-none"
+                          placeholder={`Write your content for ${activeSectionData.title} here...`}
+                        />
 
-                          <div className="flex items-center justify-between mt-4">
-                            <span className={`text-xs px-2 py-0.5 rounded-full ${
-                              saveStatus[activeSectionData.sectionKey] === 'saved' 
-                                ? 'bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400' 
-                                : saveStatus[activeSectionData.sectionKey] === 'typing'
-                                ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400' 
-                                : 'bg-yellow-50 text-yellow-600 dark:bg-yellow-900/20 dark:text-yellow-400'
-                            }`}>
-                              {saveStatus[activeSectionData.sectionKey] === 'saved' 
-                                ? 'Saved' 
-                                : saveStatus[activeSectionData.sectionKey] === 'typing' 
-                                ? 'Typing...' 
-                                : 'Saving...'}
-                            </span>
+                        <div className="flex items-center justify-between mt-4">
+                          <span className={`text-xs px-2 py-0.5 rounded-full ${
+                            saveStatus[activeSectionData.sectionKey] === 'saved' 
+                              ? 'bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400' 
+                              : saveStatus[activeSectionData.sectionKey] === 'typing'
+                              ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400' 
+                              : 'bg-yellow-50 text-yellow-600 dark:bg-yellow-900/20 dark:text-yellow-400'
+                          }`}>
+                            {saveStatus[activeSectionData.sectionKey] === 'saved' 
+                              ? 'Saved' 
+                              : saveStatus[activeSectionData.sectionKey] === 'typing' 
+                              ? 'Typing...' 
+                              : 'Saving...'}
+                          </span>
 
-                            <div className="flex space-x-2">
-                              <Button
-                                size="sm"
-                                onClick={() => saveSection(activeSectionData)}
-                                disabled={isSaving}
-                              >
-                                <Save className="h-4 w-4 mr-1" /> Save
-                              </Button>
-                            </div>
+                          <div className="flex space-x-2">
+                            <Button
+                              size="sm"
+                              onClick={() => saveSection(activeSectionData)}
+                              disabled={isSaving}
+                            >
+                              <Save className="h-4 w-4 mr-1" /> Save
+                            </Button>
                           </div>
                         </div>
                       </div>
                     </div>
-                  ) : (
-                    <div className="flex items-center justify-center h-full">
-                      <p className="text-muted-foreground">Select a section to begin editing</p>
-                    </div>
-                  )}
-                </div>
-              </ResizablePanel>
-            </ResizablePanelGroup>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center h-full">
+                    <p className="text-muted-foreground">Select a section to begin editing</p>
+                  </div>
+                )}
+              </div>
+            </div>
           )}
         </TabsContent>
 
