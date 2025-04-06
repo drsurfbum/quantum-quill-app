@@ -296,7 +296,7 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
           ) : (
             <ResizablePanelGroup direction="horizontal" className="flex-1">
               <ResizablePanel defaultSize={30} minSize={20} maxSize={40} className="h-full">
-                <div className="flex h-full flex-col overflow-hidden">
+                <div className="flex h-full flex-col">
                   <div className="flex items-center justify-between border-b p-2 bg-muted/30">
                     <Button
                       variant="ghost"
@@ -317,7 +317,7 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
                     </Button>
                   </div>
                 
-                  <ScrollArea className="flex-1 h-[calc(100%-40px)]">
+                  <div className="overflow-y-auto flex-1" style={{ maxHeight: 'calc(100% - 40px)' }}>
                     <div className="p-2">
                       {sortedSections.map((section) => (
                         <Button
@@ -330,7 +330,7 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
                         </Button>
                       ))}
                     </div>
-                  </ScrollArea>
+                  </div>
                 </div>
               </ResizablePanel>
               
