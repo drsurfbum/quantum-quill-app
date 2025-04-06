@@ -295,41 +295,39 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
             </div>
           ) : (
             <ResizablePanelGroup direction="horizontal" className="flex-1">
-              <ResizablePanel defaultSize={30} minSize={20} maxSize={40} className="h-full">
-                <div className="flex h-full flex-col">
-                  <div className="flex items-center justify-between border-b p-2 bg-muted/30">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => navigateToSection('prev')}
-                      disabled={!activeSection}
-                    >
-                      <ChevronLeft className="h-4 w-4 mr-1" /> Previous
-                    </Button>
-                    
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => navigateToSection('next')}
-                      disabled={!activeSection}
-                    >
-                      Next <ChevronRight className="h-4 w-4 ml-1" />
-                    </Button>
-                  </div>
-                
-                  <div className="overflow-y-auto flex-1" style={{ maxHeight: 'calc(100% - 40px)' }}>
-                    <div className="p-2">
-                      {sortedSections.map((section) => (
-                        <Button
-                          key={section.id}
-                          variant={activeSection === section.sectionKey ? "default" : "ghost"}
-                          className="w-full justify-start mb-1 text-left"
-                          onClick={() => setActiveSection(section.sectionKey)}
-                        >
-                          <span className="truncate">{section.title}</span>
-                        </Button>
-                      ))}
-                    </div>
+              <ResizablePanel defaultSize={30} minSize={20} maxSize={40} className="h-full flex flex-col">
+                <div className="flex-shrink-0 flex items-center justify-between border-b p-2 bg-muted/30">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => navigateToSection('prev')}
+                    disabled={!activeSection}
+                  >
+                    <ChevronLeft className="h-4 w-4 mr-1" /> Previous
+                  </Button>
+                  
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => navigateToSection('next')}
+                    disabled={!activeSection}
+                  >
+                    Next <ChevronRight className="h-4 w-4 ml-1" />
+                  </Button>
+                </div>
+              
+                <div className="flex-1 overflow-y-auto min-h-0">
+                  <div className="p-2">
+                    {sortedSections.map((section) => (
+                      <Button
+                        key={section.id}
+                        variant={activeSection === section.sectionKey ? "default" : "ghost"}
+                        className="w-full justify-start mb-1 text-left"
+                        onClick={() => setActiveSection(section.sectionKey)}
+                      >
+                        <span className="truncate">{section.title}</span>
+                      </Button>
+                    ))}
                   </div>
                 </div>
               </ResizablePanel>
