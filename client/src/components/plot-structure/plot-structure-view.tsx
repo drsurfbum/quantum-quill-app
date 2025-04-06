@@ -257,84 +257,90 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
                   </Button>
                 </div>
                 
-                <div className="overflow-y-auto flex-1" style={{ height: 'calc(100% - 40px)' }}>
-                  {sortedSections.map((section) => (
-                    <Button
-                      key={section.id}
-                      variant={activeSection === section.sectionKey ? "default" : "ghost"}
-                      className="w-full justify-start mb-1 text-left px-2"
-                      onClick={() => setActiveSection(section.sectionKey)}
-                    >
-                      <span className="truncate">{section.title}</span>
-                    </Button>
-                  ))}
-                </div>
+                <ScrollArea className="flex-1" style={{ height: 'calc(100% - 40px)' }}>
+                  <div className="pr-3 py-1">
+                    {sortedSections.map((section) => (
+                      <Button
+                        key={section.id}
+                        variant={activeSection === section.sectionKey ? "default" : "ghost"}
+                        className="w-full justify-start mb-1 text-left px-2"
+                        onClick={() => setActiveSection(section.sectionKey)}
+                      >
+                        <span className="truncate">{section.title}</span>
+                      </Button>
+                    ))}
+                  </div>
+                </ScrollArea>
               </div>
               
               {/* Main content area */}
-              <div className="w-2/3 overflow-y-auto p-4">
-                {activeSectionData ? (
-                  <div className="flex flex-col h-full">
-                    <div className="pb-4">
-                      <h3 className="text-lg font-semibold mb-3">
-                        {activeSectionData.title}
-                      </h3>
-
-                      <div className="mb-4 text-sm bg-muted/20 p-3 rounded-md border">
-                        <p className="text-muted-foreground">
-                          <strong>Example:</strong> {' '}
-                          {SECTION_EXAMPLES[activeSectionData.sectionKey] || 
-                           "Create your story content for this section."}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex-1 flex flex-col">
+              <div className="w-2/3 flex flex-col">
+                <ScrollArea className="h-full">
+                  <div className="p-4">
+                    {activeSectionData ? (
                       <div className="flex flex-col h-full">
-                        <Textarea
-                          value={editedContent[activeSectionData.sectionKey] || ''}
-                          onChange={(e) => handleContentChange(
-                            activeSectionData.sectionKey,
-                            e.target.value,
-                            activeSectionData.id
-                          )}
-                          className="flex-1 min-h-[300px] resize-none"
-                          placeholder={`Write your content for ${activeSectionData.title} here...`}
-                        />
+                        <div className="pb-4">
+                          <h3 className="text-lg font-semibold mb-3">
+                            {activeSectionData.title}
+                          </h3>
 
-                        <div className="flex items-center justify-between mt-4">
-                          <span className={`text-xs px-2 py-0.5 rounded-full ${
-                            saveStatus[activeSectionData.sectionKey] === 'saved' 
-                              ? 'bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400' 
-                              : saveStatus[activeSectionData.sectionKey] === 'typing'
-                              ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400' 
-                              : 'bg-yellow-50 text-yellow-600 dark:bg-yellow-900/20 dark:text-yellow-400'
-                          }`}>
-                            {saveStatus[activeSectionData.sectionKey] === 'saved' 
-                              ? 'Saved' 
-                              : saveStatus[activeSectionData.sectionKey] === 'typing' 
-                              ? 'Typing...' 
-                              : 'Saving...'}
-                          </span>
+                          <div className="mb-4 text-sm bg-muted/20 p-3 rounded-md border">
+                            <p className="text-muted-foreground">
+                              <strong>Example:</strong> {' '}
+                              {SECTION_EXAMPLES[activeSectionData.sectionKey] || 
+                               "Create your story content for this section."}
+                            </p>
+                          </div>
+                        </div>
 
-                          <div className="flex space-x-2">
-                            <Button
-                              size="sm"
-                              onClick={() => saveSection(activeSectionData)}
-                              disabled={isSaving}
-                            >
-                              <Save className="h-4 w-4 mr-1" /> Save
-                            </Button>
+                        <div className="flex-1 flex flex-col">
+                          <div className="flex flex-col h-full">
+                            <Textarea
+                              value={editedContent[activeSectionData.sectionKey] || ''}
+                              onChange={(e) => handleContentChange(
+                                activeSectionData.sectionKey,
+                                e.target.value,
+                                activeSectionData.id
+                              )}
+                              className="flex-1 min-h-[300px] resize-none"
+                              placeholder={`Write your content for ${activeSectionData.title} here...`}
+                            />
+
+                            <div className="flex items-center justify-between mt-4">
+                              <span className={`text-xs px-2 py-0.5 rounded-full ${
+                                saveStatus[activeSectionData.sectionKey] === 'saved' 
+                                  ? 'bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400' 
+                                  : saveStatus[activeSectionData.sectionKey] === 'typing'
+                                  ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400' 
+                                  : 'bg-yellow-50 text-yellow-600 dark:bg-yellow-900/20 dark:text-yellow-400'
+                              }`}>
+                                {saveStatus[activeSectionData.sectionKey] === 'saved' 
+                                  ? 'Saved' 
+                                  : saveStatus[activeSectionData.sectionKey] === 'typing' 
+                                  ? 'Typing...' 
+                                  : 'Saving...'}
+                              </span>
+
+                              <div className="flex space-x-2">
+                                <Button
+                                  size="sm"
+                                  onClick={() => saveSection(activeSectionData)}
+                                  disabled={isSaving}
+                                >
+                                  <Save className="h-4 w-4 mr-1" /> Save
+                                </Button>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
+                    ) : (
+                      <div className="flex items-center justify-center h-full">
+                        <p className="text-muted-foreground">Select a section to begin editing</p>
+                      </div>
+                    )}
                   </div>
-                ) : (
-                  <div className="flex items-center justify-center h-full">
-                    <p className="text-muted-foreground">Select a section to begin editing</p>
-                  </div>
-                )}
+                </ScrollArea>
               </div>
             </div>
           )}
