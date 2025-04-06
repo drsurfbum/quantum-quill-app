@@ -48,7 +48,7 @@ const SECTION_EXAMPLES: Record<string, string> = {
   "the_road_back": "Frodo and Sam navigate toward Mordor, guided by Gollum.",
   "resurrection": "In the Tower of Cirith Ungol, Frodo nearly loses everything but is rescued by Sam.",
   "return_with_the_elixir": "After destroying the Ring, Frodo returns to the Shire, but is forever changed by his journey.",
-  
+
   // Dan Harmon's Story Circle
   "you": "Luke Skywalker lives a simple life on Tatooine with his aunt and uncle.",
   "need": "Luke discovers a message from Princess Leia in R2-D2 and realizes there's a bigger world out there.",
@@ -69,43 +69,43 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
   const { data: structure, isLoading: structureLoading, error: structureError } = usePlotStructure(structureId);
   const { data: sections, isLoading: sectionsLoading, error: sectionsError } = usePlotStructureSections(structureId);
   const { updateSection } = usePlotStructureActions();
-  
+
   const [activeSection, setActiveSection] = useState<string | null>(null);
   const [editedContent, setEditedContent] = useState<Record<string, string>>({});
   const [saveStatus, setSaveStatus] = useState<Record<string, 'saved' | 'saving' | 'typing'>>({});
   const [isSaving, setIsSaving] = useState(false);
-  
+
   // Sort sections by order and get the first one
   const sortedSections = sections ? [...sections].sort((a, b) => a.order - b.order) : [];
-  
+
   // Set initial active section when data loads
   useEffect(() => {
     if (sortedSections.length > 0 && !activeSection) {
       setActiveSection(sortedSections[0].sectionKey);
     }
   }, [sortedSections, activeSection]);
-  
+
   // Initialize edited content from sections
   useEffect(() => {
     if (sections) {
       const initialContent: Record<string, string> = {};
       const initialStatus: Record<string, 'saved' | 'saving' | 'typing'> = {};
-      
+
       sections.forEach(section => {
         initialContent[section.sectionKey] = section.content || '';
         initialStatus[section.sectionKey] = 'saved';
       });
-      
+
       setEditedContent(initialContent);
       setSaveStatus(initialStatus);
     }
   }, [sections]);
-  
+
   // Find the active section data
   const activeSectionData = activeSection
     ? sortedSections.find(s => s.sectionKey === activeSection)
     : null;
-    
+
   // Save section content with debounce
   const debouncedSave = useCallback(
     debounce((sectionKey: string, content: string, sectionId: number) => {
@@ -124,12 +124,12 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
     }, 1500),
     [updateSection]
   );
-  
+
   // Handle content changes
   const handleContentChange = (sectionKey: string, content: string, sectionId: number) => {
     setEditedContent(prev => ({ ...prev, [sectionKey]: content }));
     setSaveStatus(prev => ({ ...prev, [sectionKey]: 'typing' }));
-    
+
     // Set status to 'saving' after a short delay
     setTimeout(() => {
       setSaveStatus(prev => {
@@ -140,15 +140,15 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
         return prev;
       });
     }, 500);
-    
+
     debouncedSave(sectionKey, content, sectionId);
   };
-  
+
   // Manual save function
   const saveSection = (section: PlotStructureSection) => {
     setIsSaving(true);
     setSaveStatus(prev => ({ ...prev, [section.sectionKey]: 'saving' }));
-    
+
     updateSection(
       { 
         id: section.id, 
@@ -166,21 +166,21 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
       }
     );
   };
-  
+
   // Navigate between sections
   const navigateToSection = (direction: 'next' | 'prev') => {
     if (!activeSection || sortedSections.length === 0) return;
-    
+
     const currentIndex = sortedSections.findIndex(s => s.sectionKey === activeSection);
     if (currentIndex === -1) return;
-    
+
     if (direction === 'next' && currentIndex < sortedSections.length - 1) {
       setActiveSection(sortedSections[currentIndex + 1].sectionKey);
     } else if (direction === 'prev' && currentIndex > 0) {
       setActiveSection(sortedSections[currentIndex - 1].sectionKey);
     }
   };
-  
+
   // Loading state
   if (structureLoading || sectionsLoading) {
     return (
@@ -194,7 +194,7 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
       </div>
     );
   }
-  
+
   // Error state
   if (structureError || sectionsError || !structure) {
     return (
@@ -208,7 +208,7 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
       </div>
     );
   }
-  
+
   return (
     <div className="h-full flex flex-col">
       <div className="flex items-center justify-between p-4 border-b">
@@ -219,46 +219,34 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
           </Button>
         )}
       </div>
-      
-      <Tabs defaultValue="editor" className="flex-1 flex flex-col">
-        <div className="border-b px-4">
+
+      <Tabs defaultValue="editor" className="flex-1 flex flex-col min-h-0">
+        <div className="border-b px-4 flex-shrink-0">
           <TabsList>
             <TabsTrigger value="editor">Editor</TabsTrigger>
             <TabsTrigger value="overview">Overview</TabsTrigger>
           </TabsList>
         </div>
-        
-        <TabsContent value="editor" className="flex-1 p-0">
+
+        <TabsContent value="editor" className="flex-1 p-0 h-full">
           {sortedSections.length === 0 ? (
             <div className="p-4 text-center">
               <p className="text-muted-foreground">No sections found for this plot structure.</p>
             </div>
           ) : (
-            <div className="flex h-[calc(100vh-180px)]">
-              {/* Left sidebar with sections list */}
-              <div className="w-1/3 border-r flex flex-col" style={{ maxHeight: '100%' }}>
+            <div className="flex h-full">
+              {/* Left Panel */} 
+              <div className="w-1/3 border-r flex flex-col flex-shrink-0">
                 <div className="flex-shrink-0 flex items-center justify-between border-b p-2 bg-muted/30">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => navigateToSection('prev')}
-                    disabled={!activeSection}
-                  >
+                  <Button variant="ghost" size="sm" onClick={() => navigateToSection('prev')} disabled={!activeSection}>
                     <ChevronLeft className="h-4 w-4 mr-1" /> Previous
                   </Button>
-
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => navigateToSection('next')}
-                    disabled={!activeSection}
-                  >
+                  <Button variant="ghost" size="sm" onClick={() => navigateToSection('next')} disabled={!activeSection}>
                     Next <ChevronRight className="h-4 w-4 ml-1" />
                   </Button>
                 </div>
-                
-                <ScrollArea className="flex-1" style={{ height: 'calc(100% - 40px)' }}>
-                  <div className="pr-3 py-1">
+                <div className="flex-1 overflow-y-auto min-h-0">
+                  <div className="p-2">
                     {sortedSections.map((section) => (
                       <Button
                         key={section.id}
@@ -270,83 +258,60 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
                       </Button>
                     ))}
                   </div>
-                </ScrollArea>
+                </div>
               </div>
-              
-              {/* Main content area */}
-              <div className="w-2/3 flex flex-col">
-                <ScrollArea className="h-full">
-                  <div className="p-4">
-                    {activeSectionData ? (
-                      <div className="flex flex-col h-full">
-                        <div className="pb-4">
-                          <h3 className="text-lg font-semibold mb-3">
-                            {activeSectionData.title}
-                          </h3>
 
-                          <div className="mb-4 text-sm bg-muted/20 p-3 rounded-md border">
-                            <p className="text-muted-foreground">
-                              <strong>Example:</strong> {' '}
-                              {SECTION_EXAMPLES[activeSectionData.sectionKey] || 
-                               "Create your story content for this section."}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="flex-1 flex flex-col">
-                          <div className="flex flex-col h-full">
-                            <Textarea
-                              value={editedContent[activeSectionData.sectionKey] || ''}
-                              onChange={(e) => handleContentChange(
-                                activeSectionData.sectionKey,
-                                e.target.value,
-                                activeSectionData.id
-                              )}
-                              className="flex-1 min-h-[300px] resize-none"
-                              placeholder={`Write your content for ${activeSectionData.title} here...`}
-                            />
-
-                            <div className="flex items-center justify-between mt-4">
-                              <span className={`text-xs px-2 py-0.5 rounded-full ${
-                                saveStatus[activeSectionData.sectionKey] === 'saved' 
-                                  ? 'bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400' 
-                                  : saveStatus[activeSectionData.sectionKey] === 'typing'
-                                  ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400' 
-                                  : 'bg-yellow-50 text-yellow-600 dark:bg-yellow-900/20 dark:text-yellow-400'
-                              }`}>
-                                {saveStatus[activeSectionData.sectionKey] === 'saved' 
-                                  ? 'Saved' 
-                                  : saveStatus[activeSectionData.sectionKey] === 'typing' 
-                                  ? 'Typing...' 
-                                  : 'Saving...'}
-                              </span>
-
-                              <div className="flex space-x-2">
-                                <Button
-                                  size="sm"
-                                  onClick={() => saveSection(activeSectionData)}
-                                  disabled={isSaving}
-                                >
-                                  <Save className="h-4 w-4 mr-1" /> Save
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
+              {/* Right Panel */} 
+              <div className="w-2/3 flex flex-col p-4 overflow-y-auto">
+                {activeSectionData ? (
+                  <>
+                    <div className="pb-4">
+                      <h3 className="text-lg font-semibold mb-3">{activeSectionData.title}</h3>
+                      <div className="mb-4 text-sm bg-muted/20 p-3 rounded-md border">
+                        <p className="text-muted-foreground">
+                          <strong>Example:</strong> {' '}
+                          {SECTION_EXAMPLES[activeSectionData.sectionKey] || "Create your story content for this section."}
+                        </p>
                       </div>
-                    ) : (
-                      <div className="flex items-center justify-center h-full">
-                        <p className="text-muted-foreground">Select a section to begin editing</p>
+                    </div>
+                    <Textarea
+                      value={editedContent[activeSectionData.sectionKey] || ''}
+                      onChange={(e) => handleContentChange(activeSectionData.sectionKey, e.target.value, activeSectionData.id)}
+                      className="min-h-[300px] w-full resize-vertical mb-4"
+                      placeholder={`Write your content for ${activeSectionData.title} here...`}
+                    />
+                    <div className="flex items-center justify-between flex-shrink-0">
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${
+                        saveStatus[activeSectionData.sectionKey] === 'saved' 
+                          ? 'bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400' 
+                          : saveStatus[activeSectionData.sectionKey] === 'typing' 
+                          ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400' 
+                          : 'bg-yellow-50 text-yellow-600 dark:bg-yellow-900/20 dark:text-yellow-400'
+                      }`}>
+                        {saveStatus[activeSectionData.sectionKey] === 'saved' 
+                          ? 'Saved' 
+                          : saveStatus[activeSectionData.sectionKey] === 'typing' 
+                          ? 'Typing...' 
+                          : 'Saving...'}
+                      </span>
+                      <div className="flex space-x-2">
+                        <Button size="sm" onClick={() => saveSection(activeSectionData)} disabled={isSaving}>
+                          <Save className="h-4 w-4 mr-1" /> Save
+                        </Button>
                       </div>
-                    )}
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex items-center justify-center h-full">
+                    <p className="text-muted-foreground">Select a section to begin editing</p>
                   </div>
-                </ScrollArea>
+                )}
               </div>
             </div>
           )}
         </TabsContent>
 
-        <TabsContent value="overview" className="flex-1 p-0">
+        <TabsContent value="overview" className="flex-1 p-0 overflow-hidden">
           <ScrollArea className="h-full p-4">
             <Card className="mb-6">
               <CardHeader>
