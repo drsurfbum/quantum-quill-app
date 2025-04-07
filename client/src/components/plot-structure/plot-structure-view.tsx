@@ -106,7 +106,7 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
     ? sortedSections.find(s => s.sectionKey === activeSection)
     : null;
 
-  // Save section content with debounce
+  // Save section content with increased debounce delay for better typing experience
   const debouncedSave = useCallback(
     debounce((sectionKey: string, content: string, sectionId: number) => {
       updateSection(
@@ -121,7 +121,7 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
           }
         }
       );
-    }, 1500),
+    }, 3000), // Increased to 3 seconds for a much better typing experience
     [updateSection]
   );
 

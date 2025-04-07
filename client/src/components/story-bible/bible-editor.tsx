@@ -44,7 +44,7 @@ export default function BibleEditor({ entry, projectId }: BibleEditorProps) {
     setEntryType(entry.entryType);
   }, [entry]);
   
-  // Set up debounced save
+  // Set up debounced save with increased delay for better typing experience
   const debouncedSave = debounce((newTitle: string, newContent: string, newType: string) => {
     updateEntry(
       { 
@@ -67,7 +67,7 @@ export default function BibleEditor({ entry, projectId }: BibleEditorProps) {
         }
       }
     );
-  }, 1000);
+  }, 3000); // Increased to 3 seconds for a much better typing experience
   
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newTitle = e.target.value;
