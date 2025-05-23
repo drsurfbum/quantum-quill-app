@@ -67,85 +67,45 @@ export default function StoryBible() {
     return matchesType && matchesSearch;
   }).sort((a, b) => a.title.localeCompare(b.title));
   
-  // Entry selection and creation state management - enhanced reliability
-  const previousEntriesRef = useRef<typeof entries>([]);
+  // Simple entry state tracking
   const pendingEntryIdRef = useRef<number | null>(null);
-  const isInitialLoadRef = useRef(true);
-  const selectionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const userManuallySelectedRef = useRef<boolean>(false);
   
-  // Find and track the selected entry with robust fallback mechanism
+  // Only get entry from ID when needed (with stable reference)
   const selectedEntry = useMemo(() => {
-    // Try to find the currently selected entry
-    const foundEntry = entries.find(entry => entry.id === selectedEntryId);
-    
-    // If found, return it
-    if (foundEntry) return foundEntry;
-    
-    // Otherwise, check if we're waiting for a specific entry (new creation)
-    if (pendingEntryIdRef.current) {
-      const pendingEntry = entries.find(entry => entry.id === pendingEntryIdRef.current);
-      if (pendingEntry) return pendingEntry;
+    // First priority: find the selected entry if it exists
+    if (selectedEntryId !== null) {
+      const foundEntry = entries.find(entry => entry.id === selectedEntryId);
+      if (foundEntry) return foundEntry;
     }
     
-    // If no entry is found and we have entries, but nothing is selected,
-    // and this isn't the initial load, don't return anything (maintain empty state)
-    if (entries.length > 0 && selectedEntryId === null && !isInitialLoadRef.current) {
+    // Second priority: if this is a newly created entry, use that
+    if (pendingEntryIdRef.current !== null) {
+      const newEntry = entries.find(entry => entry.id === pendingEntryIdRef.current);
+      if (newEntry) return newEntry;
+    }
+    
+    // If the user has manually selected something before, don't auto-select
+    if (userManuallySelectedRef.current) {
       return null;
     }
     
-    // Fallback to first entry if we have entries
+    // Fallback for initial load: use first entry
     return entries.length > 0 ? entries[0] : null;
   }, [entries, selectedEntryId]);
   
-  // When entries change, check for the pending entry and update selection if needed
+  // One-time initialization effect (runs only on first load)
   useEffect(() => {
-    if (isInitialLoadRef.current && entries.length > 0) {
-      // On initial load, select the first entry if nothing is selected
-      if (selectedEntryId === null) {
-        setSelectedEntryId(entries[0].id);
-      }
-      isInitialLoadRef.current = false;
-      return;
-    }
-    
-    // Skip if entries haven't actually changed
-    if (
-      previousEntriesRef.current.length === entries.length &&
-      !pendingEntryIdRef.current
-    ) {
-      return;
-    }
-    
-    // Update previous entries for future comparisons
-    previousEntriesRef.current = entries;
-    
-    // Check for pending entry (usually from creation)
-    if (pendingEntryIdRef.current) {
-      const pendingEntry = entries.find(e => e.id === pendingEntryIdRef.current);
-      
-      if (pendingEntry) {
-        // Clear any existing selection timer
-        if (selectionTimerRef.current) {
-          clearTimeout(selectionTimerRef.current);
-        }
-        
-        // Set selection with a slight delay to ensure rendering is complete
-        selectionTimerRef.current = setTimeout(() => {
-          setSelectedEntryId(pendingEntry.id);
-          pendingEntryIdRef.current = null;
-          selectionTimerRef.current = null;
-        }, 100);
-      }
-    }
-  }, [entries, selectedEntryId]);
-  
-  // Handle entry creation with guaranteed selection
-  const handleCreateEntry = (entryType: string) => {
-    // Force a selection immediately to initialize the editor state
-    // This ensures the editor component is ready to receive a new entry
-    if (entries.length > 0 && !selectedEntryId) {
+    // Only run once when entries are first loaded
+    if (entries.length > 0 && selectedEntryId === null && !userManuallySelectedRef.current) {
       setSelectedEntryId(entries[0].id);
     }
+  }, [entries.length > 0]);
+  
+  // Handle entry creation with simple, reliable selection
+  const handleCreateEntry = (entryType: string) => {
+    // Mark that we're about to create a new entry
+    userManuallySelectedRef.current = true;
     
     createEntry(
       {
@@ -156,41 +116,19 @@ export default function StoryBible() {
       },
       {
         onSuccess: (data) => {
-          // Double approach to ensure selection
-          // 1. Immediate direct selection
-          setSelectedEntryId(data.id);
-          
-          // 2. Store ID in pending ref as a backup
+          // Store the ID for selection
           pendingEntryIdRef.current = data.id;
           
-          // Set selected type
+          // Set the entry type filter to match the new entry
           setSelectedType(data.entryType);
+          
+          // Set the selection to the new entry
+          setSelectedEntryId(data.id);
           
           toast({
             title: "Entry created",
             description: `New ${data.entryType} has been created.`
           });
-          
-          // Multiple scheduled attempts to ensure selection is applied
-          // First attempt - quick
-          setTimeout(() => {
-            setSelectedEntryId(data.id);
-          }, 100);
-          
-          // Second attempt - medium delay
-          setTimeout(() => {
-            if (pendingEntryIdRef.current === data.id) {
-              setSelectedEntryId(data.id);
-            }
-          }, 300);
-          
-          // Final attempt with longer delay
-          setTimeout(() => {
-            if (pendingEntryIdRef.current === data.id) {
-              setSelectedEntryId(data.id);
-              pendingEntryIdRef.current = null;
-            }
-          }, 700);
         },
         onError: () => {
           toast({
@@ -556,7 +494,14 @@ export default function StoryBible() {
                       key={entry.id}
                       entry={entry}
                       isSelected={entry.id === selectedEntryId}
-                      onClick={() => setSelectedEntryId(entry.id)}
+                      onClick={() => {
+                        // Mark as manually selected to prevent auto-switching
+                        userManuallySelectedRef.current = true;
+                        // Clear any pending entry ID to prevent it from overriding
+                        pendingEntryIdRef.current = null;
+                        // Set the selection
+                        setSelectedEntryId(entry.id);
+                      }}
                     />
                   ))}
                 </div>
