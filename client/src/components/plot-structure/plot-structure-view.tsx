@@ -121,7 +121,7 @@ export default function PlotStructureView({ structureId, onClose }: PlotStructur
           }
         }
       );
-    }, 3000), // Increased to 3 seconds for a much better typing experience
+    }, 5000), // Increased to 5 seconds for an optimal typing experience
     [updateSection]
   );
 

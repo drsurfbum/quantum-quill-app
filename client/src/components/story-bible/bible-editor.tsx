@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Save, Trash2, Users, MapPin, ShoppingBag, Calendar } from "lucide-react";
-import { debounce } from "lodash"; // Using lodash's more efficient debounce
+import { debounce } from "lodash";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,8 +25,8 @@ interface BibleEditorProps {
   projectId: number;
 }
 
-// Use memo to prevent unnecessary re-renders
-const BibleEditor = memo(function MemoizedBibleEditor({ entry, projectId }: BibleEditorProps) {
+// Optimized Bible Editor with memoization to prevent unnecessary re-renders
+const BibleEditor = memo(({ entry, projectId }: BibleEditorProps) => {
   const { toast } = useToast();
   const [title, setTitle] = useState(entry.title);
   const [content, setContent] = useState(entry.content || "");
@@ -38,9 +38,8 @@ const BibleEditor = memo(function MemoizedBibleEditor({ entry, projectId }: Bibl
   const { mutate: updateEntry } = useUpdateStoryBibleEntry();
   const { mutate: deleteEntry } = useDeleteStoryBibleEntry();
   
-  // Reset state when entry changes, but with a slight delay to improve tab switching performance
+  // Reset state when entry changes with a delay for better tab switching performance
   useEffect(() => {
-    // Use a small timeout to defer state updates during tab switching
     const timer = setTimeout(() => {
       setTitle(entry.title);
       setContent(entry.content || "");
@@ -50,10 +49,9 @@ const BibleEditor = memo(function MemoizedBibleEditor({ entry, projectId }: Bibl
     return () => clearTimeout(timer);
   }, [entry]);
   
-  // Create a stable debounced save function with useCallback to prevent recreation on every render
+  // Create a stable debounced save function
   const debouncedSave = useCallback(
     debounce((newTitle: string, newContent: string, newType: string) => {
-      // Only set saving state right before the actual API call
       setSaveStatus('saving');
       
       updateEntry(
@@ -77,32 +75,31 @@ const BibleEditor = memo(function MemoizedBibleEditor({ entry, projectId }: Bibl
           }
         }
       );
-    }, 5000), // Increased to 5 seconds for a much better typing experience
+    }, 5000), // Increased to 5 seconds for better typing performance
     [entry.id, updateEntry, toast]
   );
   
-  // Memoize handler functions so they don't change on every render
+  // Memoized handler functions
   const handleTitleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const newTitle = e.target.value;
     setTitle(newTitle);
-    setSaveStatus('typing'); // Show typing status immediately
+    setSaveStatus('typing');
     debouncedSave(newTitle, content, entryType);
   }, [content, entryType, debouncedSave]);
   
   const handleContentChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newContent = e.target.value;
     setContent(newContent);
-    setSaveStatus('typing'); // Show typing status immediately
+    setSaveStatus('typing');
     debouncedSave(title, newContent, entryType);
   }, [title, entryType, debouncedSave]);
   
   const handleTypeChange = useCallback((newType: string) => {
     setEntryType(newType);
-    setSaveStatus('typing'); // Show typing status immediately
+    setSaveStatus('typing');
     debouncedSave(title, content, newType);
   }, [title, content, debouncedSave]);
   
-  // Manual save button handler - optimize with useCallback
   const handleSave = useCallback(() => {
     setSaveStatus('saving');
     updateEntry(
@@ -132,7 +129,6 @@ const BibleEditor = memo(function MemoizedBibleEditor({ entry, projectId }: Bibl
     );
   }, [entry.id, title, content, entryType, updateEntry, toast]);
   
-  // Delete handler - optimize with useCallback
   const handleDelete = useCallback(() => {
     deleteEntry(
       { id: entry.id, projectId },
@@ -154,9 +150,9 @@ const BibleEditor = memo(function MemoizedBibleEditor({ entry, projectId }: Bibl
         }
       }
     );
-  }, [entry.id, projectId, entryType, deleteEntry, toast, setIsDeleteDialogOpen]);
+  }, [entry.id, projectId, entryType, deleteEntry, toast]);
   
-  // Memoize icon to prevent unnecessary re-renders
+  // Memoized type icon
   const typeIcon = useMemo(() => {
     switch (entryType) {
       case "character":
@@ -171,6 +167,13 @@ const BibleEditor = memo(function MemoizedBibleEditor({ entry, projectId }: Bibl
         return null;
     }
   }, [entryType]);
+  
+  // Memoized status text
+  const statusText = useMemo(() => {
+    if (saveStatus === 'saved') return 'Saved';
+    if (saveStatus === 'typing') return 'Typing...';
+    return 'Saving...';
+  }, [saveStatus]);
   
   return (
     <div className="flex-grow flex flex-col overflow-hidden">
@@ -188,7 +191,7 @@ const BibleEditor = memo(function MemoizedBibleEditor({ entry, projectId }: Bibl
         </div>
         <div className="flex items-center space-x-3">
           <span className="text-xs px-2 py-0.5 bg-success bg-opacity-10 text-success rounded-full">
-            {saveStatus === 'saved' ? 'Saved' : saveStatus === 'typing' ? 'Typing...' : 'Saving...'}
+            {statusText}
           </span>
           <Button
             variant="outline"
@@ -301,4 +304,6 @@ const BibleEditor = memo(function MemoizedBibleEditor({ entry, projectId }: Bibl
       </AlertDialog>
     </div>
   );
-}
+});
+
+export default BibleEditor;
