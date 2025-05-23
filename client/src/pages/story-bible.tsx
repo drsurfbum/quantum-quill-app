@@ -13,7 +13,8 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useStoryBibleEntries, useCreateStoryBibleEntry } from "@/hooks/use-story-bible";
-import { useState, useEffect, useRef } from "react";
+import { StoryBibleEntry } from "@shared/schema";
+import { useState, useEffect, useRef, useMemo } from "react";
 import BibleEntry from "@/components/story-bible/bible-entry";
 import BibleEditor from "@/components/story-bible/bible-editor";
 import { useToast } from "@/hooks/use-toast";
@@ -66,30 +67,79 @@ export default function StoryBible() {
     return matchesType && matchesSearch;
   }).sort((a, b) => a.title.localeCompare(b.title));
   
-  // Entry selection state management with automatic opening
-  // Use a ref to track the most recently created entry to ensure it stays selected
-  const newEntryRef = useRef<number | null>(null);
+  // Entry selection and creation state management - enhanced reliability
+  const previousEntriesRef = useRef<typeof entries>([]);
+  const pendingEntryIdRef = useRef<number | null>(null);
+  const isInitialLoadRef = useRef(true);
+  const selectionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   
-  // Find selected entry with fallback to maintain selection
-  const selectedEntry = entries.find(entry => entry.id === selectedEntryId) || 
-                         (newEntryRef.current && entries.find(entry => entry.id === newEntryRef.current)) || 
-                         null;
-                         
-  // When entries change, ensure the newly created entry stays selected
+  // Find and track the selected entry with robust fallback mechanism
+  const selectedEntry = useMemo(() => {
+    // Try to find the currently selected entry
+    const foundEntry = entries.find(entry => entry.id === selectedEntryId);
+    
+    // If found, return it
+    if (foundEntry) return foundEntry;
+    
+    // Otherwise, check if we're waiting for a specific entry (new creation)
+    if (pendingEntryIdRef.current) {
+      const pendingEntry = entries.find(entry => entry.id === pendingEntryIdRef.current);
+      if (pendingEntry) return pendingEntry;
+    }
+    
+    // If no entry is found and we have entries, but nothing is selected,
+    // and this isn't the initial load, don't return anything (maintain empty state)
+    if (entries.length > 0 && selectedEntryId === null && !isInitialLoadRef.current) {
+      return null;
+    }
+    
+    // Fallback to first entry if we have entries
+    return entries.length > 0 ? entries[0] : null;
+  }, [entries, selectedEntryId]);
+  
+  // When entries change, check for the pending entry and update selection if needed
   useEffect(() => {
-    if (newEntryRef.current) {
-      const newEntry = entries.find(entry => entry.id === newEntryRef.current);
-      if (newEntry) {
-        setSelectedEntryId(newEntry.id);
-        // Reset the ref after ensuring selection
-        setTimeout(() => {
-          newEntryRef.current = null;
-        }, 500);
+    if (isInitialLoadRef.current && entries.length > 0) {
+      // On initial load, select the first entry if nothing is selected
+      if (selectedEntryId === null) {
+        setSelectedEntryId(entries[0].id);
+      }
+      isInitialLoadRef.current = false;
+      return;
+    }
+    
+    // Skip if entries haven't actually changed
+    if (
+      previousEntriesRef.current.length === entries.length &&
+      !pendingEntryIdRef.current
+    ) {
+      return;
+    }
+    
+    // Update previous entries for future comparisons
+    previousEntriesRef.current = entries;
+    
+    // Check for pending entry (usually from creation)
+    if (pendingEntryIdRef.current) {
+      const pendingEntry = entries.find(e => e.id === pendingEntryIdRef.current);
+      
+      if (pendingEntry) {
+        // Clear any existing selection timer
+        if (selectionTimerRef.current) {
+          clearTimeout(selectionTimerRef.current);
+        }
+        
+        // Set selection with a slight delay to ensure rendering is complete
+        selectionTimerRef.current = setTimeout(() => {
+          setSelectedEntryId(pendingEntry.id);
+          pendingEntryIdRef.current = null;
+          selectionTimerRef.current = null;
+        }, 100);
       }
     }
-  }, [entries]);
+  }, [entries, selectedEntryId]);
   
-  // Handle entry creation with improved selection logic
+  // Handle entry creation with enhanced selection persistence
   const handleCreateEntry = (entryType: string) => {
     createEntry(
       {
@@ -100,15 +150,24 @@ export default function StoryBible() {
       },
       {
         onSuccess: (data) => {
-          // Store the new entry ID in the ref for persistent selection
-          newEntryRef.current = data.id;
-          setSelectedEntryId(data.id);
+          // Store ID in the pending ref for reliable selection after data loads
+          pendingEntryIdRef.current = data.id;
+          
+          // Also set selected type immediately
           setSelectedType(data.entryType);
           
           toast({
             title: "Entry created",
             description: `New ${data.entryType} has been created.`
           });
+          
+          // Schedule a backup selection in case the entries effect doesn't catch it
+          setTimeout(() => {
+            if (pendingEntryIdRef.current === data.id) {
+              setSelectedEntryId(data.id);
+              pendingEntryIdRef.current = null;
+            }
+          }, 500);
         },
         onError: () => {
           toast({
