@@ -66,10 +66,30 @@ export default function StoryBible() {
     return matchesType && matchesSearch;
   }).sort((a, b) => a.title.localeCompare(b.title));
   
-  // Find selected entry
-  const selectedEntry = entries.find(entry => entry.id === selectedEntryId);
+  // Entry selection state management with automatic opening
+  // Use a ref to track the most recently created entry to ensure it stays selected
+  const newEntryRef = useRef<number | null>(null);
   
-  // Handle entry creation
+  // Find selected entry with fallback to maintain selection
+  const selectedEntry = entries.find(entry => entry.id === selectedEntryId) || 
+                         (newEntryRef.current && entries.find(entry => entry.id === newEntryRef.current)) || 
+                         null;
+                         
+  // When entries change, ensure the newly created entry stays selected
+  useEffect(() => {
+    if (newEntryRef.current) {
+      const newEntry = entries.find(entry => entry.id === newEntryRef.current);
+      if (newEntry) {
+        setSelectedEntryId(newEntry.id);
+        // Reset the ref after ensuring selection
+        setTimeout(() => {
+          newEntryRef.current = null;
+        }, 500);
+      }
+    }
+  }, [entries]);
+  
+  // Handle entry creation with improved selection logic
   const handleCreateEntry = (entryType: string) => {
     createEntry(
       {
@@ -80,8 +100,11 @@ export default function StoryBible() {
       },
       {
         onSuccess: (data) => {
+          // Store the new entry ID in the ref for persistent selection
+          newEntryRef.current = data.id;
           setSelectedEntryId(data.id);
           setSelectedType(data.entryType);
+          
           toast({
             title: "Entry created",
             description: `New ${data.entryType} has been created.`
