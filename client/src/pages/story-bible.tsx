@@ -139,8 +139,14 @@ export default function StoryBible() {
     }
   }, [entries, selectedEntryId]);
   
-  // Handle entry creation with enhanced selection persistence
+  // Handle entry creation with guaranteed selection
   const handleCreateEntry = (entryType: string) => {
+    // Force a selection immediately to initialize the editor state
+    // This ensures the editor component is ready to receive a new entry
+    if (entries.length > 0 && !selectedEntryId) {
+      setSelectedEntryId(entries[0].id);
+    }
+    
     createEntry(
       {
         title: `New ${entryType}`,
@@ -150,10 +156,14 @@ export default function StoryBible() {
       },
       {
         onSuccess: (data) => {
-          // Store ID in the pending ref for reliable selection after data loads
+          // Double approach to ensure selection
+          // 1. Immediate direct selection
+          setSelectedEntryId(data.id);
+          
+          // 2. Store ID in pending ref as a backup
           pendingEntryIdRef.current = data.id;
           
-          // Also set selected type immediately
+          // Set selected type
           setSelectedType(data.entryType);
           
           toast({
@@ -161,13 +171,26 @@ export default function StoryBible() {
             description: `New ${data.entryType} has been created.`
           });
           
-          // Schedule a backup selection in case the entries effect doesn't catch it
+          // Multiple scheduled attempts to ensure selection is applied
+          // First attempt - quick
+          setTimeout(() => {
+            setSelectedEntryId(data.id);
+          }, 100);
+          
+          // Second attempt - medium delay
+          setTimeout(() => {
+            if (pendingEntryIdRef.current === data.id) {
+              setSelectedEntryId(data.id);
+            }
+          }, 300);
+          
+          // Final attempt with longer delay
           setTimeout(() => {
             if (pendingEntryIdRef.current === data.id) {
               setSelectedEntryId(data.id);
               pendingEntryIdRef.current = null;
             }
-          }, 500);
+          }, 700);
         },
         onError: () => {
           toast({
