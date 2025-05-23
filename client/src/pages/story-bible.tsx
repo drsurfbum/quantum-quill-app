@@ -13,7 +13,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useStoryBibleEntries, useCreateStoryBibleEntry } from "@/hooks/use-story-bible";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import BibleEntry from "@/components/story-bible/bible-entry";
 import BibleEditor from "@/components/story-bible/bible-editor";
 import { useToast } from "@/hooks/use-toast";
