@@ -1,0 +1,66 @@
+// Simple fix for your story bible component
+// Replace your state management section with this:
+
+const [selectedEntryId, setSelectedEntryId] = useState<number | null>(null);
+const [selectedType, setSelectedType] = useState<string>("all");
+const [searchTerm, setSearchTerm] = useState("");
+const [autoSelectDisabled, setAutoSelectDisabled] = useState(false);
+
+// Remove tempSelectedEntry and hasManuallySelected entirely
+
+// Get the selected entry
+const selectedEntry = useMemo(() => {
+  if (selectedEntryId !== null) {
+    return entries.find(entry => entry.id === selectedEntryId) || null;
+  }
+  return null;
+}, [entries, selectedEntryId]);
+
+// Auto-select first entry only once, and only if no manual selection has been made
+useEffect(() => {
+  if (!autoSelectDisabled && entries.length > 0 && selectedEntryId === null) {
+    setSelectedEntryId(entries[0].id);
+  }
+}, [entries.length, selectedEntryId, autoSelectDisabled]);
+
+// Manual entry selection - disables auto-selection forever
+const handleSelectEntry = (entryId: number) => {
+  setAutoSelectDisabled(true);
+  setSelectedEntryId(entryId);
+};
+
+// Entry creation with immediate selection
+const handleCreateEntry = (entryType: string) => {
+  // Disable auto-selection since we're making a manual choice
+  setAutoSelectDisabled(true);
+  
+  createEntry(
+    {
+      title: `New ${entryType}`,
+      content: "",
+      projectId: Number(id),
+      entryType
+    },
+    {
+      onSuccess: (data) => {
+        // Set the filter to show the new entry type
+        setSelectedType(data.entryType);
+        
+        // Select the new entry
+        setSelectedEntryId(data.id);
+        
+        toast({
+          title: "Entry created",
+          description: `New ${data.entryType} has been created.`
+        });
+      },
+      onError: () => {
+        toast({
+          title: "Error creating entry",
+          description: "There was an error creating your entry. Please try again.",
+          variant: "destructive"
+        });
+      }
+    }
+  );
+};

@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useStoryBibleEntries, useCreateStoryBibleEntry } from "@/hooks/use-story-bible";
 import { StoryBibleEntry } from "@shared/schema";
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import BibleEntry from "@/components/story-bible/bible-entry";
 import BibleEditor from "@/components/story-bible/bible-editor";
 import { useToast } from "@/hooks/use-toast";
@@ -47,18 +47,19 @@ export default function StoryBible() {
   const [selectedEntryId, setSelectedEntryId] = useState<number | null>(null);
   const [selectedType, setSelectedType] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState("");
-  
+  const [autoSelectDisabled, setAutoSelectDisabled] = useState(false);
+
   // Auto-collapse on mobile
   useEffect(() => {
     if (isMobile) {
       setIsCollapsed(true);
     }
   }, [isMobile]);
-  
+
   const { data: project, isLoading: isLoadingProject } = useProject(id ? Number(id) : 0);
   const { data: entries = [], isLoading: isLoadingEntries } = useStoryBibleEntries(id ? Number(id) : 0);
   const { mutate: createEntry, isPending: isCreating } = useCreateStoryBibleEntry();
-  
+
   // Filter entries by type and search term
   const filteredEntries = entries.filter(entry => {
     const matchesType = selectedType === "all" || entry.entryType === selectedType;
@@ -66,46 +67,39 @@ export default function StoryBible() {
                          (entry.content ? entry.content.toLowerCase().includes(searchTerm.toLowerCase()) : false);
     return matchesType && matchesSearch;
   }).sort((a, b) => a.title.localeCompare(b.title));
-  
-  // Simple entry state tracking
-  const pendingEntryIdRef = useRef<number | null>(null);
-  const userManuallySelectedRef = useRef<boolean>(false);
-  
-  // Only get entry from ID when needed (with stable reference)
-  const selectedEntry = useMemo(() => {
-    // First priority: find the selected entry if it exists
-    if (selectedEntryId !== null) {
-      const foundEntry = entries.find(entry => entry.id === selectedEntryId);
-      if (foundEntry) return foundEntry;
-    }
-    
-    // Second priority: if this is a newly created entry, use that
-    if (pendingEntryIdRef.current !== null) {
-      const newEntry = entries.find(entry => entry.id === pendingEntryIdRef.current);
-      if (newEntry) return newEntry;
-    }
-    
-    // If the user has manually selected something before, don't auto-select
-    if (userManuallySelectedRef.current) {
-      return null;
-    }
-    
-    // Fallback for initial load: use first entry
-    return entries.length > 0 ? entries[0] : null;
-  }, [entries, selectedEntryId]);
-  
-  // One-time initialization effect (runs only on first load)
+
+  // Add debug log for troubleshooting
   useEffect(() => {
-    // Only run once when entries are first loaded
-    if (entries.length > 0 && selectedEntryId === null && !userManuallySelectedRef.current) {
+    console.log('Entries changed:', entries.length, 'Selected:', selectedEntryId, 'Auto-select disabled:', autoSelectDisabled);
+  }, [entries.length, selectedEntryId, autoSelectDisabled]);
+
+  // Simple, clean entry selection logic
+  const selectedEntry = useMemo(() => {
+    if (selectedEntryId !== null) {
+      return entries.find(entry => entry.id === selectedEntryId) || null;
+    }
+    return null;
+  }, [entries, selectedEntryId]);
+
+  // Auto-select first entry only once, and only if no manual selection has been made
+  useEffect(() => {
+    if (!autoSelectDisabled && entries.length > 0 && selectedEntryId === null) {
       setSelectedEntryId(entries[0].id);
     }
-  }, [entries.length > 0]);
-  
-  // Handle entry creation with simple, reliable selection
+  }, [entries.length, selectedEntryId, autoSelectDisabled]);
+
+  // Handle manual entry selection - simple and reliable
+  const handleSelectEntry = (entryId: number) => {
+    // Mark that user manually selected an entry - disable auto-selection
+    setAutoSelectDisabled(true);
+    setSelectedEntryId(entryId);
+    console.log('Manual selection:', entryId);
+  };
+
+  // Handle entry creation with guaranteed selection
   const handleCreateEntry = (entryType: string) => {
-    // Mark that we're about to create a new entry
-    userManuallySelectedRef.current = true;
+    // Disable auto-selection since we're making a manual choice
+    setAutoSelectDisabled(true);
     
     createEntry(
       {
@@ -116,13 +110,12 @@ export default function StoryBible() {
       },
       {
         onSuccess: (data) => {
-          // Store the ID for selection
-          pendingEntryIdRef.current = data.id;
+          console.log('Entry created:', data.id);
           
-          // Set the entry type filter to match the new entry
+          // Set the filter to show the new entry type
           setSelectedType(data.entryType);
           
-          // Set the selection to the new entry
+          // Select the new entry
           setSelectedEntryId(data.id);
           
           toast({
@@ -140,12 +133,12 @@ export default function StoryBible() {
       }
     );
   };
-  
+
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-background">
       <div className="flex flex-row flex-1 w-full h-full overflow-hidden">
         <SidebarNavigation onCollapsedChange={setIsCollapsed} />
-        
+
         <main className="flex-grow overflow-hidden flex flex-col w-full pl-0 md:pl-0" style={{marginLeft: isCollapsed ? '56px' : '0'}}>
         <header className="h-16 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between px-4 sm:px-6">
           <div className="flex items-center">
@@ -157,14 +150,14 @@ export default function StoryBible() {
           </div>
           <div className="flex items-center space-x-2 sm:space-x-4">
             <ThemeToggle />
-            
+
             <Button variant="ghost" className="flex items-center gap-1">
               <Share2 className="h-4 w-4" />
               <span className="hidden sm:inline">Share</span>
             </Button>
-            
+
             {project && <ExportModal projectId={project.id} projectTitle={project.title} />}
-            
+
             <Button className="flex items-center gap-1">
               <ExternalLink className="h-4 w-4" />
               <span className="hidden sm:inline">Preview</span>
@@ -183,7 +176,7 @@ export default function StoryBible() {
                   <Edit3 className="mr-1 h-4 w-4" /> Write
                 </TabsTrigger>
               </Link>
-              
+
               <Link href={`/project/${id}/storyboard`}>
                 <TabsTrigger value="storyboard" className={cn(
                   "data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none",
@@ -192,7 +185,7 @@ export default function StoryBible() {
                   <Grid className="mr-1 h-4 w-4" /> Storyboard
                 </TabsTrigger>
               </Link>
-              
+
               <Link href={`/project/${id}/outline`}>
                 <TabsTrigger value="outline" className={cn(
                   "data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none",
@@ -201,7 +194,7 @@ export default function StoryBible() {
                   <ListTree className="mr-1 h-4 w-4" /> Outline
                 </TabsTrigger>
               </Link>
-              
+
               <Link href={`/project/${id}/story-bible`}>
                 <TabsTrigger value="story-bible" className={cn(
                   "data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none",
@@ -228,19 +221,19 @@ export default function StoryBible() {
                     e.stopPropagation();
                     const menu = document.getElementById('entry-type-menu');
                     const button = document.getElementById('entry-type-button');
-                    
+
                     if (menu && button) {
                       // Toggle menu visibility
                       const isVisible = menu.style.display !== 'none';
-                      
+
                       if (!isVisible) {
                         // Position the menu relative to the button
                         const buttonRect = button.getBoundingClientRect();
-                        
+
                         // Check if there's enough space on the right
                         const rightSpace = window.innerWidth - buttonRect.right;
                         const menuWidth = 250; // Max width of the menu
-                        
+
                         if (rightSpace < menuWidth) {
                           // Not enough space on right, position to the left of the button
                           menu.style.right = (window.innerWidth - buttonRect.left) + 'px';
@@ -250,11 +243,11 @@ export default function StoryBible() {
                           menu.style.left = buttonRect.left + 'px';
                           menu.style.right = 'auto';
                         }
-                        
+
                         // Position vertically below the button
                         menu.style.top = (buttonRect.bottom + 4) + 'px';
                         menu.style.display = 'block';
-                        
+
                         // Add click listener to document to close on outside clicks
                         const handleClickOutside = (event: MouseEvent) => {
                           const target = event.target as Node;
@@ -263,7 +256,7 @@ export default function StoryBible() {
                             document.removeEventListener('click', handleClickOutside);
                           }
                         };
-                        
+
                         // Add with slight delay to prevent immediate closing
                         setTimeout(() => {
                           document.addEventListener('click', handleClickOutside);
@@ -276,7 +269,7 @@ export default function StoryBible() {
                 >
                   <Plus className="h-4 w-4" />
                 </Button>
-                
+
                 {/* Dropdown menu for entry types */}
                 <div 
                   id="entry-type-menu" 
@@ -286,7 +279,7 @@ export default function StoryBible() {
                   <div className="py-1 px-2 text-xs text-neutral-500 dark:text-neutral-400 font-medium">
                     Create new:
                   </div>
-                  
+
                   {/* Characters & Races */}
                   <div className="py-1 px-2 text-xs text-neutral-500 dark:text-neutral-400 font-medium border-t border-neutral-200 dark:border-neutral-700 mt-1">
                     Characters & People
@@ -335,7 +328,7 @@ export default function StoryBible() {
                   >
                     <Building className="h-4 w-4 mr-2" /> Government
                   </Button>
-                  
+
                   {/* World Elements */}
                   <div className="py-1 px-2 text-xs text-neutral-500 dark:text-neutral-400 font-medium border-t border-neutral-200 dark:border-neutral-700 mt-1">
                     World Elements
@@ -406,7 +399,7 @@ export default function StoryBible() {
                   >
                     <ShoppingBag className="h-4 w-4 mr-2" /> Item
                   </Button>
-                  
+
                   {/* History & Lore */}
                   <div className="py-1 px-2 text-xs text-neutral-500 dark:text-neutral-400 font-medium border-t border-neutral-200 dark:border-neutral-700 mt-1">
                     History & Lore
@@ -446,7 +439,7 @@ export default function StoryBible() {
                   </Button>
                 </div>
               </div>
-              
+
               <div className="relative">
                 <input
                   type="text"
@@ -457,7 +450,7 @@ export default function StoryBible() {
                 />
               </div>
             </div>
-            
+
             <div className="border-b border-neutral-200 dark:border-neutral-800 p-1 flex overflow-x-auto">
               {entryTypes.map(type => (
                 <Button
@@ -475,7 +468,7 @@ export default function StoryBible() {
                 </Button>
               ))}
             </div>
-            
+
             <div className="flex-grow overflow-y-auto p-2">
               {isLoadingEntries ? (
                 <div className="space-y-2">
@@ -494,21 +487,14 @@ export default function StoryBible() {
                       key={entry.id}
                       entry={entry}
                       isSelected={entry.id === selectedEntryId}
-                      onClick={() => {
-                        // Mark as manually selected to prevent auto-switching
-                        userManuallySelectedRef.current = true;
-                        // Clear any pending entry ID to prevent it from overriding
-                        pendingEntryIdRef.current = null;
-                        // Set the selection
-                        setSelectedEntryId(entry.id);
-                      }}
+                      onClick={() => handleSelectEntry(entry.id)}
                     />
                   ))}
                 </div>
               )}
             </div>
           </div>
-          
+
           {/* Story Bible Entry Editor */}
           <div className="flex-grow flex flex-col overflow-hidden">
             {isLoadingEntries ? (
@@ -561,7 +547,7 @@ export default function StoryBible() {
                       </Button>
                     </div>
                   </div>
-                  
+
                   {/* World Elements section */}
                   <div className="mb-4">
                     <h4 className="text-sm font-medium text-neutral-500 dark:text-neutral-400 mb-2">World Elements</h4>
@@ -616,7 +602,7 @@ export default function StoryBible() {
                       </Button>
                     </div>
                   </div>
-                  
+
                   {/* History & Lore section */}
                   <div>
                     <h4 className="text-sm font-medium text-neutral-500 dark:text-neutral-400 mb-2">History & Lore</h4>
