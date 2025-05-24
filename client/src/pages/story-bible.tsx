@@ -75,16 +75,29 @@ export default function StoryBible() {
     }
     return null;
   }, [entries, selectedEntryId]);
+  
+  // State debugging logs
+  useEffect(() => {
+    console.log('🔍 State Debug:', {
+      selectedEntryId,
+      autoSelectDisabled,
+      entriesLength: entries.length,
+      selectedEntryExists: selectedEntry ? 'YES' : 'NO',
+      selectedEntryTitle: selectedEntry?.title
+    });
+  }, [selectedEntryId, autoSelectDisabled, entries.length, selectedEntry]);
 
   // Auto-select first entry only once, and only if no manual selection has been made
   useEffect(() => {
     if (!autoSelectDisabled && entries.length > 0 && selectedEntryId === null) {
+      console.log('🤖 Auto-selecting first entry:', entries[0].title, entries[0].id);
       setSelectedEntryId(entries[0].id);
     }
   }, [entries.length, selectedEntryId, autoSelectDisabled]);
 
   // Handle manual entry selection - simple and reliable
   const handleSelectEntry = (entryId: number) => {
+    console.log('👆 Manual selection:', entryId);
     // Mark that user manually selected an entry - disable auto-selection
     setAutoSelectDisabled(true);
     setSelectedEntryId(entryId);
@@ -92,6 +105,7 @@ export default function StoryBible() {
 
   // Handle entry creation with guaranteed selection
   const handleCreateEntry = (entryType: string) => {
+    console.log('➕ Creating entry:', entryType);
     // Disable auto-selection since we're making a manual choice
     setAutoSelectDisabled(true);
     
@@ -104,6 +118,10 @@ export default function StoryBible() {
       },
       {
         onSuccess: (data) => {
+          console.log('✅ Entry created successfully:', data);
+          console.log('📝 Setting type filter to:', data.entryType);
+          console.log('🎯 Setting selected entry to:', data.id);
+          
           // Set the filter to show the new entry type
           setSelectedType(data.entryType);
           
@@ -115,7 +133,8 @@ export default function StoryBible() {
             description: `New ${data.entryType} has been created.`
           });
         },
-        onError: () => {
+        onError: (error) => {
+          console.error('❌ Entry creation failed:', error);
           toast({
             title: "Error creating entry",
             description: "There was an error creating your entry. Please try again.",

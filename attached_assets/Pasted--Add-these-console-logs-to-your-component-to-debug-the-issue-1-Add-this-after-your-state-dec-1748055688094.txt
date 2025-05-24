@@ -1,0 +1,65 @@
+// Add these console logs to your component to debug the issue:
+
+// 1. Add this after your state declarations
+useEffect(() => {
+  console.log('🔍 State Debug:', {
+    selectedEntryId,
+    autoSelectDisabled,
+    entriesLength: entries.length,
+    selectedEntryExists: selectedEntry ? 'YES' : 'NO',
+    selectedEntryTitle: selectedEntry?.title
+  });
+}, [selectedEntryId, autoSelectDisabled, entries.length, selectedEntry]);
+
+// 2. Add this to your auto-selection effect
+useEffect(() => {
+  if (!autoSelectDisabled && entries.length > 0 && selectedEntryId === null) {
+    console.log('🤖 Auto-selecting first entry:', entries[0].title, entries[0].id);
+    setSelectedEntryId(entries[0].id);
+  }
+}, [entries.length, selectedEntryId, autoSelectDisabled]);
+
+// 3. Update your handleSelectEntry with logging
+const handleSelectEntry = (entryId: number) => {
+  console.log('👆 Manual selection:', entryId);
+  setAutoSelectDisabled(true);
+  setSelectedEntryId(entryId);
+};
+
+// 4. Update your handleCreateEntry with detailed logging
+const handleCreateEntry = (entryType: string) => {
+  console.log('➕ Creating entry:', entryType);
+  setAutoSelectDisabled(true);
+  
+  createEntry(
+    {
+      title: `New ${entryType}`,
+      content: "",
+      projectId: Number(id),
+      entryType
+    },
+    {
+      onSuccess: (data) => {
+        console.log('✅ Entry created successfully:', data);
+        console.log('📝 Setting type filter to:', data.entryType);
+        console.log('🎯 Setting selected entry to:', data.id);
+        
+        setSelectedType(data.entryType);
+        setSelectedEntryId(data.id);
+        
+        toast({
+          title: "Entry created",
+          description: `New ${data.entryType} has been created.`
+        });
+      },
+      onError: (error) => {
+        console.error('❌ Entry creation failed:', error);
+        toast({
+          title: "Error creating entry",
+          description: "There was an error creating your entry. Please try again.",
+          variant: "destructive"
+        });
+      }
+    }
+  );
+};
