@@ -68,11 +68,6 @@ export default function StoryBible() {
     return matchesType && matchesSearch;
   }).sort((a, b) => a.title.localeCompare(b.title));
 
-  // Add debug log for troubleshooting
-  useEffect(() => {
-    console.log('Entries changed:', entries.length, 'Selected:', selectedEntryId, 'Auto-select disabled:', autoSelectDisabled);
-  }, [entries.length, selectedEntryId, autoSelectDisabled]);
-
   // Simple, clean entry selection logic
   const selectedEntry = useMemo(() => {
     if (selectedEntryId !== null) {
@@ -93,7 +88,6 @@ export default function StoryBible() {
     // Mark that user manually selected an entry - disable auto-selection
     setAutoSelectDisabled(true);
     setSelectedEntryId(entryId);
-    console.log('Manual selection:', entryId);
   };
 
   // Handle entry creation with guaranteed selection
@@ -110,8 +104,6 @@ export default function StoryBible() {
       },
       {
         onSuccess: (data) => {
-          console.log('Entry created:', data.id);
-          
           // Set the filter to show the new entry type
           setSelectedType(data.entryType);
           
@@ -269,7 +261,7 @@ export default function StoryBible() {
                 >
                   <Plus className="h-4 w-4" />
                 </Button>
-
+                
                 {/* Dropdown menu for entry types */}
                 <div 
                   id="entry-type-menu" 
@@ -279,7 +271,7 @@ export default function StoryBible() {
                   <div className="py-1 px-2 text-xs text-neutral-500 dark:text-neutral-400 font-medium">
                     Create new:
                   </div>
-
+                  
                   {/* Characters & Races */}
                   <div className="py-1 px-2 text-xs text-neutral-500 dark:text-neutral-400 font-medium border-t border-neutral-200 dark:border-neutral-700 mt-1">
                     Characters & People
@@ -328,7 +320,7 @@ export default function StoryBible() {
                   >
                     <Building className="h-4 w-4 mr-2" /> Government
                   </Button>
-
+                  
                   {/* World Elements */}
                   <div className="py-1 px-2 text-xs text-neutral-500 dark:text-neutral-400 font-medium border-t border-neutral-200 dark:border-neutral-700 mt-1">
                     World Elements
@@ -360,22 +352,22 @@ export default function StoryBible() {
                     size="sm" 
                     className="w-full justify-start px-3 py-1 h-8"
                     onClick={() => {
-                      handleCreateEntry('magicSystem');
+                      handleCreateEntry('language');
                       document.getElementById('entry-type-menu')!.style.display = 'none';
                     }}
                   >
-                    <Wand2 className="h-4 w-4 mr-2" /> Magic System
+                    <Languages className="h-4 w-4 mr-2" /> Language
                   </Button>
                   <Button 
                     variant="ghost" 
                     size="sm" 
                     className="w-full justify-start px-3 py-1 h-8"
                     onClick={() => {
-                      handleCreateEntry('language');
+                      handleCreateEntry('magicSystem');
                       document.getElementById('entry-type-menu')!.style.display = 'none';
                     }}
                   >
-                    <Languages className="h-4 w-4 mr-2" /> Language
+                    <Wand2 className="h-4 w-4 mr-2" /> Magic System
                   </Button>
                   <Button 
                     variant="ghost" 
@@ -388,6 +380,11 @@ export default function StoryBible() {
                   >
                     <Train className="h-4 w-4 mr-2" /> Transportation
                   </Button>
+                  
+                  {/* Story Elements */}
+                  <div className="py-1 px-2 text-xs text-neutral-500 dark:text-neutral-400 font-medium border-t border-neutral-200 dark:border-neutral-700 mt-1">
+                    Story Elements
+                  </div>
                   <Button 
                     variant="ghost" 
                     size="sm" 
@@ -399,11 +396,6 @@ export default function StoryBible() {
                   >
                     <ShoppingBag className="h-4 w-4 mr-2" /> Item
                   </Button>
-
-                  {/* History & Lore */}
-                  <div className="py-1 px-2 text-xs text-neutral-500 dark:text-neutral-400 font-medium border-t border-neutral-200 dark:border-neutral-700 mt-1">
-                    History & Lore
-                  </div>
                   <Button 
                     variant="ghost" 
                     size="sm" 
@@ -439,36 +431,35 @@ export default function StoryBible() {
                   </Button>
                 </div>
               </div>
-
-              <div className="relative">
+              
+              {/* Search Input */}
+              <div className="relative mb-2">
                 <input
                   type="text"
                   placeholder="Search entries..."
-                  className="w-full pl-3 pr-8 py-1.5 text-sm border border-neutral-200 dark:border-neutral-700 rounded-md bg-white dark:bg-neutral-800"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full px-3 py-1 text-sm bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-md"
                 />
               </div>
+              
+              {/* Entry Type Filter */}
+              <div className="flex flex-wrap gap-1 mb-2">
+                {entryTypes.map(type => (
+                  <Button
+                    key={type.id}
+                    variant={selectedType === type.id ? "default" : "outline"}
+                    size="sm"
+                    className="px-2 py-0 h-7 text-xs"
+                    onClick={() => setSelectedType(type.id)}
+                  >
+                    <type.icon className="h-3 w-3 mr-1" />
+                    {type.label}
+                  </Button>
+                ))}
+              </div>
             </div>
-
-            <div className="border-b border-neutral-200 dark:border-neutral-800 p-1 flex overflow-x-auto">
-              {entryTypes.map(type => (
-                <Button
-                  key={type.id}
-                  variant="ghost"
-                  size="sm"
-                  className={cn(
-                    "flex items-center px-2 py-1 text-xs whitespace-nowrap",
-                    selectedType === type.id && "bg-neutral-100 dark:bg-neutral-800"
-                  )}
-                  onClick={() => setSelectedType(type.id)}
-                >
-                  <type.icon className="h-3 w-3 mr-1" />
-                  {type.label}
-                </Button>
-              ))}
-            </div>
-
+            
             <div className="flex-grow overflow-y-auto p-2">
               {isLoadingEntries ? (
                 <div className="space-y-2">
@@ -494,7 +485,7 @@ export default function StoryBible() {
               )}
             </div>
           </div>
-
+          
           {/* Story Bible Entry Editor */}
           <div className="flex-grow flex flex-col overflow-hidden">
             {isLoadingEntries ? (
@@ -505,14 +496,12 @@ export default function StoryBible() {
               <div className="flex-grow flex items-center justify-center text-center p-6">
                 <div>
                   <BookOpen className="h-12 w-12 mx-auto text-neutral-300 dark:text-neutral-600 mb-4" />
-                  <h3 className="text-lg font-medium mb-2">Select an entry</h3>
-                  <p className="text-neutral-500 dark:text-neutral-400 mb-4 max-w-md">
-                    Select an entry from your story bible or create a new one to start documenting your story elements.
+                  <h2 className="text-xl font-medium mb-2">Your Story Bible</h2>
+                  <p className="text-neutral-500 dark:text-neutral-400 mb-8 max-w-md">
+                    Keep track of all your characters, locations, events, and world-building elements in one place.
                   </p>
-                  {/* Characters & People section */}
-                  <div className="mb-4">
-                    <h4 className="text-sm font-medium text-neutral-500 dark:text-neutral-400 mb-2">Characters & People</h4>
-                    <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:gap-4 justify-center">
+                    <div className="grid grid-cols-2 sm:grid-cols-2 gap-2">
                       <Button 
                         variant="outline"
                         onClick={() => handleCreateEntry('character')}
@@ -523,37 +512,6 @@ export default function StoryBible() {
                       </Button>
                       <Button 
                         variant="outline"
-                        onClick={() => handleCreateEntry('race')}
-                        disabled={isCreating}
-                        className="flex-grow sm:flex-grow-0"
-                      >
-                        <Globe className="mr-2 h-4 w-4" /> Race/Species
-                      </Button>
-                      <Button 
-                        variant="outline"
-                        onClick={() => handleCreateEntry('group')}
-                        disabled={isCreating}
-                        className="flex-grow sm:flex-grow-0"
-                      >
-                        <FolderTree className="mr-2 h-4 w-4" /> Group
-                      </Button>
-                      <Button 
-                        variant="outline"
-                        onClick={() => handleCreateEntry('government')}
-                        disabled={isCreating}
-                        className="flex-grow sm:flex-grow-0"
-                      >
-                        <Building className="mr-2 h-4 w-4" /> Government
-                      </Button>
-                    </div>
-                  </div>
-
-                  {/* World Elements section */}
-                  <div className="mb-4">
-                    <h4 className="text-sm font-medium text-neutral-500 dark:text-neutral-400 mb-2">World Elements</h4>
-                    <div className="flex flex-wrap gap-2">
-                      <Button 
-                        variant="outline"
                         onClick={() => handleCreateEntry('location')}
                         disabled={isCreating}
                         className="flex-grow sm:flex-grow-0"
@@ -562,66 +520,11 @@ export default function StoryBible() {
                       </Button>
                       <Button 
                         variant="outline"
-                        onClick={() => handleCreateEntry('geography')}
-                        disabled={isCreating}
-                        className="flex-grow sm:flex-grow-0"
-                      >
-                        <Mountain className="mr-2 h-4 w-4" /> Geography
-                      </Button>
-                      <Button 
-                        variant="outline"
-                        onClick={() => handleCreateEntry('magicSystem')}
-                        disabled={isCreating}
-                        className="flex-grow sm:flex-grow-0"
-                      >
-                        <Wand2 className="mr-2 h-4 w-4" /> Magic System
-                      </Button>
-                      <Button 
-                        variant="outline"
-                        onClick={() => handleCreateEntry('language')}
-                        disabled={isCreating}
-                        className="flex-grow sm:flex-grow-0"
-                      >
-                        <Languages className="mr-2 h-4 w-4" /> Language
-                      </Button>
-                      <Button 
-                        variant="outline"
-                        onClick={() => handleCreateEntry('transportation')}
-                        disabled={isCreating}
-                        className="flex-grow sm:flex-grow-0"
-                      >
-                        <Train className="mr-2 h-4 w-4" /> Transportation
-                      </Button>
-                      <Button 
-                        variant="outline"
                         onClick={() => handleCreateEntry('item')}
                         disabled={isCreating}
                         className="flex-grow sm:flex-grow-0"
                       >
                         <ShoppingBag className="mr-2 h-4 w-4" /> Item
-                      </Button>
-                    </div>
-                  </div>
-
-                  {/* History & Lore section */}
-                  <div>
-                    <h4 className="text-sm font-medium text-neutral-500 dark:text-neutral-400 mb-2">History & Lore</h4>
-                    <div className="flex flex-wrap gap-2">
-                      <Button 
-                        variant="outline"
-                        onClick={() => handleCreateEntry('event')}
-                        disabled={isCreating}
-                        className="flex-grow sm:flex-grow-0"
-                      >
-                        <Calendar className="mr-2 h-4 w-4" /> Event
-                      </Button>
-                      <Button 
-                        variant="outline"
-                        onClick={() => handleCreateEntry('timeline')}
-                        disabled={isCreating}
-                        className="flex-grow sm:flex-grow-0"
-                      >
-                        <GitBranch className="mr-2 h-4 w-4" /> Timeline Event
                       </Button>
                       <Button 
                         variant="outline"
