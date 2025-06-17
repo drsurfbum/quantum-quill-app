@@ -153,37 +153,25 @@ export function usePlotStructureActions() {
   const updateSectionMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number, data: Partial<PlotStructureSection> }) => {
       const res = await apiRequest('PUT', `/api/plot-structure-sections/${id}`, data);
-      return await res.json() as PlotStructureSection;
-    },
-    onSettled: (data, error) => {
-      if (error) {
-        toast({
-          title: 'Failed to update section',
-          description: error.message,
-          variant: 'destructive',
-          duration: 3000
-        });
-      } else if (data) {
-        // Update the sections list cache
-        queryClient.setQueryData(
-          [`/api/plot-structures/${data.plotStructureId}/sections`], 
-          (oldData: PlotStructureSection[] | undefined) => {
-            if (!oldData) return [data];
-            return oldData.map(section => 
-              section.id === data.id ? { ...section, ...data } : section
-            );
-          }
-        );
-        
-        // Also update the individual section cache if it exists
-        queryClient.setQueryData(
-          [`/api/plot-structure-sections/${data.id}`], 
-          (oldData: PlotStructureSection | undefined) => {
-            if (!oldData) return data;
-            return { ...oldData, ...data };
-          }
-        );
-      }
+      const result = await res.json() as PlotStructureSection;
+      
+      // Silent cache update after successful save
+      queryClient.setQueryData(
+        [`/api/plot-structures/${result.plotStructureId}/sections`], 
+        (oldData: PlotStructureSection[] | undefined) => {
+          if (!oldData) return [result];
+          return oldData.map(section => 
+            section.id === result.id ? { ...section, ...result } : section
+          );
+        }
+      );
+      
+      queryClient.setQueryData(
+        [`/api/plot-structure-sections/${result.id}`], 
+        result
+      );
+      
+      return result;
     }
   });
 

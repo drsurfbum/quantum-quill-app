@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Save, Trash2, Users, MapPin, ShoppingBag, Calendar, Check } from "lucide-react";
 import { debounce } from "lodash";
+import { cn } from "@/lib/utils";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -134,27 +135,9 @@ const BibleEditor = memo(({ entry, projectId }: BibleEditorProps) => {
   }, [entry.id, title, content, entryType, updateEntry]);
   
   const handleDelete = useCallback(() => {
-    deleteEntry(
-      { id: entry.id, projectId },
-      {
-        onSuccess: () => {
-          toast({
-            title: "Entry deleted",
-            description: `The ${entryType} entry has been deleted.`
-          });
-          setIsDeleteDialogOpen(false);
-        },
-        onError: () => {
-          toast({
-            title: "Error deleting entry",
-            description: "There was an error deleting the entry. Please try again.",
-            variant: "destructive",
-          });
-          setIsDeleteDialogOpen(false);
-        }
-      }
-    );
-  }, [entry.id, projectId, entryType, deleteEntry, toast]);
+    deleteEntry({ id: entry.id, projectId });
+    setIsDeleteDialogOpen(false);
+  }, [entry.id, projectId, deleteEntry]);
   
   // Memoized type icon
   const typeIcon = useMemo(() => {
@@ -172,12 +155,7 @@ const BibleEditor = memo(({ entry, projectId }: BibleEditorProps) => {
     }
   }, [entryType]);
   
-  // Memoized status text
-  const statusText = useMemo(() => {
-    if (saveStatus === 'saved') return 'Saved';
-    if (saveStatus === 'typing') return 'Typing...';
-    return 'Saving...';
-  }, [saveStatus]);
+  // Remove save status indicator as we're using silent auto-save
   
   return (
     <div className="flex-grow flex flex-col overflow-hidden">
@@ -194,9 +172,6 @@ const BibleEditor = memo(({ entry, projectId }: BibleEditorProps) => {
           />
         </div>
         <div className="flex items-center space-x-3">
-          <span className="text-xs px-2 py-0.5 bg-success bg-opacity-10 text-success rounded-full">
-            {statusText}
-          </span>
           <Button
             variant="outline"
             size="sm"
@@ -209,9 +184,17 @@ const BibleEditor = memo(({ entry, projectId }: BibleEditorProps) => {
           <Button
             onClick={handleSave}
             size="sm"
+            className={cn(
+              "transition-colors duration-200",
+              saveButtonClicked && "bg-green-500 hover:bg-green-600 text-white"
+            )}
           >
-            <Save className="h-4 w-4 mr-2" />
-            Save
+            {saveButtonClicked ? (
+              <Check className="h-4 w-4 mr-2" />
+            ) : (
+              <Save className="h-4 w-4 mr-2" />
+            )}
+            {saveButtonClicked ? "Saved!" : "Save"}
           </Button>
         </div>
       </div>
