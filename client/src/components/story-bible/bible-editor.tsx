@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import CharacterSheet from "./character-sheet";
 import { LocationSheet } from "./location-sheet";
 import { EventSheet } from "./event-sheet";
+import { WorldElementSheet } from "./world-element-sheet";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -44,6 +45,11 @@ const BibleEditor = memo(({ entry, projectId }: BibleEditorProps) => {
   // If this is an event entry, use the specialized event sheet
   if (entry.entryType === 'event') {
     return <EventSheet entry={entry} projectId={projectId} />;
+  }
+  
+  // If this is a world element entry, use the specialized world element sheet
+  if (entry.entryType === 'world-element') {
+    return <WorldElementSheet entry={entry} projectId={projectId} />;
   }
   const { toast } = useToast();
   const [title, setTitle] = useState(entry.title);

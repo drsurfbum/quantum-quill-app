@@ -1,0 +1,99 @@
+Perfect—that’s exactly what we needed. With these categories confirmed, I’ll revise the World Element UI wireframe to reflect the complete list, and outline how these categories can dynamically tailor the entry interface.
+
+⸻
+
+🌐 Quantum Quill — Finalized World Element UI Wireframe
+
+⸻
+
+🧭 Layout Focus
+
+This module supports 18 category-specific entries (from “Flora” to “Weather”) but should maintain a unified structure. Where possible, allow dynamic subfields based on category—without breaking the flow.
+
+⸻
+
+1. Header Block (Core Fields)
+	•	[Element Name Field] – Large, top-aligned
+	•	[Category Dropdown] – Select from list below ⬇
+	•	[Parent Element (Optional)] – Use if this is part of a hierarchy (e.g., “Elven Ritual Garb” ← “Elven Culture”)
+	•	[Short Notes Field] – One-liner description or significance
+
+⸻
+
+2. Category List (With Dynamic Hints/Subfields)
+
+Category	Suggested Dynamic Subfields (Optional)
+Flora	Habitat, Growth Behavior, Uses, Threats
+Fauna	Habitat, Diet, Behavior, Lifecycle, Interaction with Species
+Religion/Ritual	Beliefs, Deities, Ceremonies, Followers, Taboos
+Mythology	Story Summary, Characters, Symbolism, Cultural Influence
+Item/Artifact	Creator, Use, Materials, Power, Ownership History
+Language	Spoken/Written, Unique Words, Grammar Notes, Origin
+System	Structure, Function, Reach, Participants (e.g. economy, communication)
+Entertainment	Type (music, game, play), Origin, Cultural Role
+Clothing	Region, Materials, Symbolism, Occasion
+Food	Ingredients, Preparation, Cultural Significance
+Disease/Medicine	Symptoms, Spread, Cure, Related Species or Conditions
+Law/Politics	Structure, Leaders, Enforcement, Punishment
+Professions	Tools, Role in Society, Training, Specialties
+Technology	Power Source, Inventor, Common Uses, Limitations
+Astronomy	Body Type (moon, star), Behavior, Notable Events, Associated Beliefs
+Weather	Region, Frequency, Effects, Local Reactions
+
+If user selects “Category: Clothing,” only relevant prompts (materials, occasion, etc.) display—but base description remains constant.
+
+⸻
+
+3. Description Block
+	•	[Overview Field]
+	•	Rich text or markdown-enabled
+	•	Always present regardless of category
+	•	Used for main narrative explanation or definition
+	•	[Subfields Based on Category]
+	•	Optional UI prompts beneath overview
+	•	Could be shown as collapsible blocks for clarity
+
+⸻
+
+4. Relational Panels
+
+▸ Characters
+
+Who interacts with or is shaped by this element (users, creators, believers)
+
+▸ Groups/Races
+
+Who it’s tied to—origin culture, dominant users, affected faction
+
+▸ Locations
+
+Where it’s found, created, or observed
+
+▸ Events
+
+Historic or future events tied to the element (e.g., a plague, a prophecy, an invention)
+
+▸ Details
+
+Freeform lore hooks—idioms, sayings, rumors, pop culture references
+
+⸻
+
+5. Research Section (Optional)
+	•	Add inspiration or real-world reference links
+	•	Fields:
+	•	Title
+	•	Type (e.g., video, article, concept art)
+	•	URL
+	•	Notes Taken? (checkbox)
+
+⸻
+
+🔖 Design Notes
+	•	🌈 Use color-coded chips or borders for each category (like your Notion screenshot) for at-a-glance visual hierarchy.
+	•	📚 Entries should feel like worldbuilding “encyclopedia cards”—each one a little self-contained shard of your universe.
+	•	🔄 Optional toggle: “Is this a sub-element?” (unlocks breadcrumb navigation or nested parent/child structure)
+
+⸻
+
+Would you like me to generate a sample entry using this full wireframe (e.g., a piece of tech, a religious rite, or a creature)? Or help design how these plug into a larger database or filterable view?
