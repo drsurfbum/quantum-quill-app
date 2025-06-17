@@ -28,10 +28,12 @@ export const useCreateStoryBibleEntry = () => {
       entryType: string 
     }) => {
       const res = await apiRequest('POST', '/api/story-bible', data);
-      return res.json();
-    },
-    onSuccess: (data) => {
+      const result = await res.json();
+      
+      // Invalidate cache after successful creation
       queryClient.invalidateQueries({ queryKey: [`/api/projects/${data.projectId}/story-bible`] });
+      
+      return { success: true, data: result };
     }
   });
 };
@@ -46,11 +48,16 @@ export const useUpdateStoryBibleEntry = () => {
       entryType?: string
     }) => {
       const res = await apiRequest('PUT', `/api/story-bible/${id}`, data);
-      return res.json();
-    },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: [`/api/story-bible/${data.id}`] });
-      queryClient.invalidateQueries({ queryKey: [`/api/projects/${data.projectId}/story-bible`] });
+      const result = await res.json();
+      
+      // Silent cache update after successful save
+      queryClient.setQueryData([`/api/story-bible/${id}`], result);
+      queryClient.setQueryData([`/api/projects/${result.projectId}/story-bible`], (old: StoryBibleEntry[] | undefined) => {
+        if (!old) return [result];
+        return old.map(entry => entry.id === result.id ? result : entry);
+      });
+      
+      return result;
     }
   });
 };
@@ -60,10 +67,14 @@ export const useDeleteStoryBibleEntry = () => {
   return useMutation({
     mutationFn: async ({ id, projectId }: { id: number | string, projectId: number | string }) => {
       const res = await apiRequest('DELETE', `/api/story-bible/${id}`, undefined);
+      
+      // Update cache immediately after successful deletion
+      queryClient.setQueryData([`/api/projects/${projectId}/story-bible`], (old: StoryBibleEntry[] | undefined) => {
+        if (!old) return [];
+        return old.filter(entry => entry.id !== id);
+      });
+      
       return { id, projectId };
-    },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: [`/api/projects/${data.projectId}/story-bible`] });
     }
   });
 };

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Save, Trash2, Users, MapPin, ShoppingBag, Calendar } from "lucide-react";
+import { Save, Trash2, Users, MapPin, ShoppingBag, Calendar, Check } from "lucide-react";
 import { debounce } from "lodash";
 import {
   AlertDialog,
@@ -31,12 +31,13 @@ const BibleEditor = memo(({ entry, projectId }: BibleEditorProps) => {
   const [title, setTitle] = useState(entry.title);
   const [content, setContent] = useState(entry.content || "");
   const [entryType, setEntryType] = useState(entry.entryType);
-  const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'typing'>('saved');
+  const [saveButtonClicked, setSaveButtonClicked] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("edit");
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
   
-  const { mutate: updateEntry } = useUpdateStoryBibleEntry();
-  const { mutate: deleteEntry } = useDeleteStoryBibleEntry();
+  const { mutate: updateEntry, isError: isUpdateError } = useUpdateStoryBibleEntry();
+  const { mutate: deleteEntry, isError: isDeleteError } = useDeleteStoryBibleEntry();
   
   // Reset state when entry changes with a delay for better tab switching performance
   useEffect(() => {
@@ -44,90 +45,93 @@ const BibleEditor = memo(({ entry, projectId }: BibleEditorProps) => {
       setTitle(entry.title);
       setContent(entry.content || "");
       setEntryType(entry.entryType);
+      setIsInitialLoad(false);
     }, 50);
     
     return () => clearTimeout(timer);
   }, [entry]);
+
+  // Handle update errors
+  useEffect(() => {
+    if (isUpdateError) {
+      toast({
+        title: "Failed to save",
+        description: "There was an error saving your changes. Please try again.",
+        variant: "destructive",
+      });
+    }
+  }, [isUpdateError, toast]);
+
+  // Handle delete errors
+  useEffect(() => {
+    if (isDeleteError) {
+      toast({
+        title: "Error deleting entry",
+        description: "There was an error deleting the entry. Please try again.",
+        variant: "destructive",
+      });
+    }
+  }, [isDeleteError, toast]);
   
-  // Create a stable debounced save function
+  // Create a stable debounced save function with silent auto-save
   const debouncedSave = useCallback(
     debounce((newTitle: string, newContent: string, newType: string) => {
-      setSaveStatus('saving');
+      // During initial load, don't trigger a save
+      if (isInitialLoad) {
+        return;
+      }
       
-      updateEntry(
-        { 
-          id: entry.id, 
-          title: newTitle, 
-          content: newContent,
-          entryType: newType
-        },
-        {
-          onSuccess: () => {
-            setSaveStatus('saved');
-          },
-          onError: () => {
-            toast({
-              title: "Failed to save",
-              description: "There was an error saving your changes. Please try again.",
-              variant: "destructive",
-            });
-            setSaveStatus('saved');
-          }
-        }
-      );
-    }, 5000), // Increased to 5 seconds for better typing performance
-    [entry.id, updateEntry, toast]
+      // Skip save if no real changes were made
+      const titleUnchanged = entry.title === newTitle;
+      const contentUnchanged = (entry.content || "") === newContent;
+      const typeUnchanged = entry.entryType === newType;
+      
+      if (titleUnchanged && contentUnchanged && typeUnchanged) {
+        return;
+      }
+
+      updateEntry({ 
+        id: entry.id, 
+        title: newTitle, 
+        content: newContent,
+        entryType: newType
+      });
+    }, 3000), // 3 seconds for good typing performance
+    [entry.id, entry.title, entry.content, entry.entryType, updateEntry, isInitialLoad]
   );
   
   // Memoized handler functions
   const handleTitleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const newTitle = e.target.value;
     setTitle(newTitle);
-    setSaveStatus('typing');
     debouncedSave(newTitle, content, entryType);
   }, [content, entryType, debouncedSave]);
   
   const handleContentChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newContent = e.target.value;
     setContent(newContent);
-    setSaveStatus('typing');
     debouncedSave(title, newContent, entryType);
   }, [title, entryType, debouncedSave]);
   
   const handleTypeChange = useCallback((newType: string) => {
     setEntryType(newType);
-    setSaveStatus('typing');
     debouncedSave(title, content, newType);
   }, [title, content, debouncedSave]);
   
   const handleSave = useCallback(() => {
-    setSaveStatus('saving');
-    updateEntry(
-      { 
-        id: entry.id, 
-        title, 
-        content,
-        entryType
-      },
-      {
-        onSuccess: () => {
-          setSaveStatus('saved');
-          toast({
-            title: "Changes saved",
-            description: `Your ${entryType} entry has been updated.`
-          });
-        },
-        onError: () => {
-          toast({
-            title: "Failed to save",
-            description: "There was an error saving your changes. Please try again.",
-            variant: "destructive",
-          });
-          setSaveStatus('saved');
-        }
-      }
-    );
-  }, [entry.id, title, content, entryType, updateEntry, toast]);
+    setSaveButtonClicked(true);
+    updateEntry({ 
+      id: entry.id, 
+      title, 
+      content,
+      entryType
+    });
+    
+    // Reset the visual feedback after a short delay
+    setTimeout(() => {
+      setSaveButtonClicked(false);
+    }, 1000);
+  }, [entry.id, title, content, entryType, updateEntry]);
   
   const handleDelete = useCallback(() => {
     deleteEntry(
