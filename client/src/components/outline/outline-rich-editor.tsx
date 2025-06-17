@@ -40,7 +40,7 @@ export default function OutlineRichEditor({ item, projectId }: OutlineRichEditor
   const [isCompleted, setIsCompleted] = useState(item.isCompleted || false);
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving'>('saved');
   
-  const { mutate: updateItem } = useUpdateOutlineItem();
+  const { mutate: updateItem, isError: isUpdateError, error: updateError } = useUpdateOutlineItem();
   
   // Track if this is initial load to prevent auto-save on first click
   const [isInitialLoad, setIsInitialLoad] = useState(true);
@@ -92,6 +92,18 @@ export default function OutlineRichEditor({ item, projectId }: OutlineRichEditor
       editor.commands.setContent(content);
     }
   }, [item.id, editor]);
+
+  // Handle update errors
+  useEffect(() => {
+    if (isUpdateError) {
+      toast({
+        title: "Failed to save",
+        description: "There was an error saving your changes. Please try again.",
+        variant: "destructive",
+      });
+      setSaveStatus('saved');
+    }
+  }, [isUpdateError, toast]);
   
   // Set up debounced save with longer delay to prevent cursor jumping
   const debouncedSave = useCallback(
