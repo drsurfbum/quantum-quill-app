@@ -101,7 +101,6 @@ export default function OutlineRichEditor({ item, projectId }: OutlineRichEditor
         description: "There was an error saving your changes. Please try again.",
         variant: "destructive",
       });
-      setSaveStatus('saved');
     }
   }, [isUpdateError, toast]);
   
@@ -146,63 +145,37 @@ export default function OutlineRichEditor({ item, projectId }: OutlineRichEditor
         content: newContent,
         isCompleted: newIsCompleted 
       });
-      
-      // Set save status immediately to prevent UI jumping
-      setSaveStatus('saved');
-    }, 1000), // Reduced to 1000ms for more responsive saves
+    }, 1500), // Increased to 1500ms to prevent race conditions when switching sections
     [updateItem, toast, item.id, item.title, item.content, item.isCompleted, editor, isInitialLoad]
   );
   
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newTitle = e.target.value;
     setTitle(newTitle);
-    setSaveStatus('saving');
     if (editor) {
       debouncedSave(newTitle, editor.getHTML(), isCompleted);
     }
   };
   
   const handleContentChange = (html: string) => {
-    setSaveStatus('saving');
     debouncedSave(title, html, isCompleted);
   };
 
   const handleCompletedChange = (checked: boolean) => {
     setIsCompleted(checked);
-    setSaveStatus('saving');
     if (editor) {
       debouncedSave(title, editor.getHTML(), checked);
     }
   };
   
   const handleSave = () => {
-    setSaveStatus('saving');
     if (editor) {
-      updateItem(
-        { 
-          id: item.id, 
-          title, 
-          content: editor.getHTML(),
-          isCompleted
-        },
-        {
-          onSuccess: () => {
-            setSaveStatus('saved');
-            toast({
-              title: "Changes saved",
-              description: "Your outline has been updated."
-            });
-          },
-          onError: () => {
-            toast({
-              title: "Failed to save",
-              description: "There was an error saving your changes. Please try again.",
-              variant: "destructive",
-            });
-            setSaveStatus('saved');
-          }
-        }
-      );
+      updateItem({ 
+        id: item.id, 
+        title, 
+        content: editor.getHTML(),
+        isCompleted
+      });
     }
   };
 
