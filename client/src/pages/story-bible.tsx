@@ -57,7 +57,7 @@ export default function StoryBible() {
   
   const { data: project, isLoading: isLoadingProject } = useProject(id ? Number(id) : 0);
   const { data: entries = [], isLoading: isLoadingEntries } = useStoryBibleEntries(id ? Number(id) : 0);
-  const { mutate: createEntry, isPending: isCreating } = useCreateStoryBibleEntry();
+  const { mutate: createEntry, isPending: isCreating, isSuccess: isCreateSuccess, data: createResult, isError: isCreateError } = useCreateStoryBibleEntry();
   
   // Filter entries by type and search term
   const filteredEntries = entries.filter(entry => {
@@ -101,44 +101,52 @@ export default function StoryBible() {
       setSelectedEntryId(entries[0].id);
     }
   }, [entries.length > 0]);
+
+  // Handle create operation results
+  useEffect(() => {
+    if (isCreateSuccess && createResult) {
+      if ((createResult as any).success && (createResult as any).data) {
+        const newEntry = (createResult as any).data;
+        
+        // Set the entry type filter to match the new entry
+        setSelectedType(newEntry.entryType);
+        
+        // Always auto-select newly created entries
+        setSelectedEntryId(newEntry.id);
+        
+        // Expand sidebar on mobile when new entry is created for better UX
+        if (isMobile) {
+          setIsCollapsed(false);
+        }
+      } else {
+        toast({
+          title: "Error creating entry",
+          description: "There was an error creating your entry. Please try again.",
+          variant: "destructive"
+        });
+      }
+    }
+  }, [isCreateSuccess, createResult, isMobile, toast]);
+
+  // Handle create operation errors
+  useEffect(() => {
+    if (isCreateError) {
+      toast({
+        title: "Error creating entry",
+        description: "There was an error creating your entry. Please try again.",
+        variant: "destructive"
+      });
+    }
+  }, [isCreateError, toast]);
   
   // Handle entry creation with simple, reliable selection
   const handleCreateEntry = (entryType: string) => {
-    // Mark that we're about to create a new entry
-    userManuallySelectedRef.current = true;
-    
-    createEntry(
-      {
-        title: `New ${entryType}`,
-        content: "",
-        projectId: Number(id),
-        entryType
-      },
-      {
-        onSuccess: (data) => {
-          // Store the ID for selection
-          pendingEntryIdRef.current = data.id;
-          
-          // Set the entry type filter to match the new entry
-          setSelectedType(data.entryType);
-          
-          // Set the selection to the new entry
-          setSelectedEntryId(data.id);
-          
-          toast({
-            title: "Entry created",
-            description: `New ${data.entryType} has been created.`
-          });
-        },
-        onError: () => {
-          toast({
-            title: "Error creating entry",
-            description: "There was an error creating your entry. Please try again.",
-            variant: "destructive"
-          });
-        }
-      }
-    );
+    createEntry({
+      title: `New ${entryType}`,
+      content: "",
+      projectId: Number(id),
+      entryType
+    });
   };
   
   return (
