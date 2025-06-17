@@ -12,6 +12,7 @@ import { debounce } from "lodash";
 import { cn } from "@/lib/utils";
 import CharacterSheet from "./character-sheet";
 import { LocationSheet } from "./location-sheet";
+import { EventSheet } from "./event-sheet";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -38,6 +39,11 @@ const BibleEditor = memo(({ entry, projectId }: BibleEditorProps) => {
   // If this is a location entry, use the specialized location sheet
   if (entry.entryType === 'location') {
     return <LocationSheet entry={entry} projectId={projectId} />;
+  }
+  
+  // If this is an event entry, use the specialized event sheet
+  if (entry.entryType === 'event') {
+    return <EventSheet entry={entry} projectId={projectId} />;
   }
   const { toast } = useToast();
   const [title, setTitle] = useState(entry.title);

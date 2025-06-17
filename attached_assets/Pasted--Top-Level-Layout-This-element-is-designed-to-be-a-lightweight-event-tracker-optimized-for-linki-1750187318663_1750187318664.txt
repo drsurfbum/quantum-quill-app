@@ -1,0 +1,77 @@
+🧭 Top-Level Layout
+
+This element is designed to be a lightweight event tracker, optimized for linking to characters, locations, and timeline data. Think of it like a metadata card that holds just enough detail to support plot structure, with optional depth when needed.
+
+⸻
+
+1. Header Block (Quick Reference)
+	•	[Event Title Field] – Bold and left-aligned (e.g. “The Martian Uprising”)
+	•	[Type Dropdown] – (e.g. Battle, Discovery, Meeting, Birth, Collapse)
+	•	[Era Field] – Optional tag (e.g. “Colonial Era”, “Dark Cycle”)
+	•	[Short Summary Field] – One-liner description (e.g. “SPN forces retake mining colony on Phobos.”)
+
+⸻
+
+2. Date Information Section
+
+This section is crucial for syncing with a future timeline dashboard.
+	•	[Date Selector Panel]
+	•	Year (required)
+	•	Month (optional)
+	•	Day (optional)
+	•	Support for fictional calendar labels if applicable (e.g. “Cycle 12, Sol 82”)
+	•	Optional toggle: “Date is Approximate / Flexible”
+
+Note: This allows sorting events even when full precision isn’t known. Enables partial placement on a timeline view later.
+
+⸻
+
+3. Context Description
+	•	[Section Title: “Narrative Context”]
+	•	Multi-line rich text or plain editor
+	•	Used to describe the event in prose: what happened, why, outcomes
+
+⸻
+
+4. Relational Panels (Quick Link Cards)
+
+Each link should be visually grouped like in your other Story Bible entries. Every relation strengthens timeline utility and search power.
+
+▸ A. Characters Involved
+	•	Add primary and secondary characters
+	•	Optional role tags: “Protagonist,” “Witness,” “Victim,” “Commander”
+
+▸ B. Groups / Factions
+	•	Factions involved (e.g. “SPN Fleet,” “Martian Separatists”)
+
+▸ C. Locations
+	•	Where the event took place
+	•	Optional: allow multiple (e.g. “Phobos,” “SPN Base,” “Orbit Pathway”)
+
+▸ D. World Elements
+	•	Tech, artifacts, systems that were used or introduced (e.g. “Orbital Cannon,” “Gene Flux Crisis”)
+
+⸻
+
+5. Optional Metadata Section
+	•	Event Status (e.g. “Historical,” “Speculative,” “Canonical,” “Unverified”)
+	•	Visibility Toggle – “Include on Timeline” or “Internal Only”
+	•	Tags – For filtering (e.g. “Politics,” “War,” “Rebellion”)
+
+⸻
+
+✍️ Design Philosophy
+	•	📅 Timeline-ready: Everything centers around precise or flexible time placement.
+	•	🧠 Minimalist by default: Most fields optional unless timeline/logic-heavy stories require them.
+	•	🕸️ Strong relational anchors: Every event should be a node in your story web.
+	•	🔮 Future-proofed for dashboard syncing: Treat each event as a row in a temporal graph—title, date, links.
+
+⸻
+
+🛠️ What This Enables Later
+
+Once the timeline dashboard is built, you’ll be able to:
+	•	Auto-pull and plot events from this element based on year/month/day fields
+	•	View chronological arcs per character or location
+	•	Filter by event type (e.g. only show “Battles” from 2300–2400)
+	•	Jump from timeline view back into full event detail in Story Bible
