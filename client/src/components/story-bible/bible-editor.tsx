@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Save, Trash2, Users, MapPin, ShoppingBag, Calendar, Check } from "lucide-react";
 import { debounce } from "lodash";
 import { cn } from "@/lib/utils";
+import CharacterSheet from "./character-sheet";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,6 +29,10 @@ interface BibleEditorProps {
 
 // Optimized Bible Editor with memoization to prevent unnecessary re-renders
 const BibleEditor = memo(({ entry, projectId }: BibleEditorProps) => {
+  // If this is a character entry, use the specialized character sheet
+  if (entry.entryType === 'character') {
+    return <CharacterSheet entry={entry} projectId={projectId} />;
+  }
   const { toast } = useToast();
   const [title, setTitle] = useState(entry.title);
   const [content, setContent] = useState(entry.content || "");
