@@ -40,7 +40,7 @@ export default function Outline() {
   
   const { data: project, isLoading: isLoadingProject } = useProject(id || '');
   const { data: outlineItems = [], isLoading: isLoadingOutline } = useOutlineItems(id || '');
-  const { mutate: createOutlineItem, isPending: isCreating } = useCreateOutlineItem();
+  const { mutate: createOutlineItem, isPending: isCreating, data: createResult, isSuccess: isCreateSuccess, isError: isCreateError } = useCreateOutlineItem();
   
   // Find root-level items (parentId is null)
   const rootItems = outlineItems.filter(item => item.parentId === null)
@@ -75,6 +75,50 @@ export default function Outline() {
       ensureParentsExpanded(selectedItem);
     }
   }, [selectedItemId, outlineItems, ensureParentsExpanded, selectedItem]);
+
+  // Handle create operation results
+  useEffect(() => {
+    if (isCreateSuccess && createResult) {
+      if (createResult.success) {
+        const newItem = createResult.data;
+        
+        // If the item has a parent, ensure the parent stays expanded
+        if (newItem.parentId) {
+          setOutlineItemExpanded(newItem.parentId, true);
+        }
+        
+        // Trigger cache invalidation to get fresh data
+        queryClient.invalidateQueries({ queryKey: [`/api/projects/${id}/outline`] });
+        
+        // Set selected item after a brief delay to ensure cache is updated
+        setTimeout(() => {
+          setSelectedItemId(newItem.id);
+          setOutlineItemExpanded(newItem.id, true);
+          
+          if (newItem.parentId) {
+            setOutlineItemExpanded(newItem.parentId, true);
+          }
+        }, 300);
+      } else {
+        toast({
+          title: "Error creating section",
+          description: "There was an error creating your outline section. Please try again.",
+          variant: "destructive"
+        });
+      }
+    }
+  }, [isCreateSuccess, createResult, setOutlineItemExpanded, queryClient, id, toast]);
+
+  // Handle create operation errors
+  useEffect(() => {
+    if (isCreateError) {
+      toast({
+        title: "Error creating section",
+        description: "There was an error creating your outline section. Please try again.",
+        variant: "destructive"
+      });
+    }
+  }, [isCreateError, toast]);
   
   const handleCreateItem = (parentId: number | null = null) => {
     const maxOrder = parentId 

@@ -58,19 +58,20 @@ export function usePlotStructureActions() {
       const res = await apiRequest('POST', '/api/plot-structures', data);
       return await res.json() as PlotStructure;
     },
-    onSuccess: (data, variables) => {
-      queryClient.invalidateQueries({ queryKey: [`/api/projects/${variables.projectId}/plot-structures`] });
-      toast({
-        title: 'Plot structure created',
-        description: 'Your new plot structure has been created successfully.'
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: 'Failed to create plot structure',
-        description: error.message,
-        variant: 'destructive'
-      });
+    onSettled: (data, error, variables) => {
+      if (error) {
+        toast({
+          title: 'Failed to create plot structure',
+          description: error.message,
+          variant: 'destructive'
+        });
+      } else if (data) {
+        queryClient.invalidateQueries({ queryKey: [`/api/projects/${variables.projectId}/plot-structures`] });
+        toast({
+          title: 'Plot structure created',
+          description: 'Your new plot structure has been created successfully.'
+        });
+      }
     }
   });
 
@@ -80,20 +81,21 @@ export function usePlotStructureActions() {
       const res = await apiRequest('PUT', `/api/plot-structures/${id}`, data);
       return await res.json() as PlotStructure;
     },
-    onSuccess: (data, variables) => {
-      queryClient.invalidateQueries({ queryKey: [`/api/plot-structures/${variables.id}`] });
-      queryClient.invalidateQueries({ queryKey: [`/api/projects/${data.projectId}/plot-structures`] });
-      toast({
-        title: 'Plot structure updated',
-        description: 'Your plot structure has been updated successfully.'
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: 'Failed to update plot structure',
-        description: error.message,
-        variant: 'destructive'
-      });
+    onSettled: (data, error, variables) => {
+      if (error) {
+        toast({
+          title: 'Failed to update plot structure',
+          description: error.message,
+          variant: 'destructive'
+        });
+      } else if (data) {
+        queryClient.invalidateQueries({ queryKey: [`/api/plot-structures/${variables.id}`] });
+        queryClient.invalidateQueries({ queryKey: [`/api/projects/${data.projectId}/plot-structures`] });
+        toast({
+          title: 'Plot structure updated',
+          description: 'Your plot structure has been updated successfully.'
+        });
+      }
     }
   });
 
@@ -104,22 +106,23 @@ export function usePlotStructureActions() {
       await apiRequest('DELETE', `/api/plot-structures/${id}`);
       return structure;
     },
-    onSuccess: (data) => {
-      if (data) {
-        queryClient.invalidateQueries({ queryKey: [`/api/projects/${data.projectId}/plot-structures`] });
-        queryClient.removeQueries({ queryKey: [`/api/plot-structures/${data.id}`] });
+    onSettled: (data, error) => {
+      if (error) {
+        toast({
+          title: 'Failed to delete plot structure',
+          description: error.message,
+          variant: 'destructive'
+        });
+      } else {
+        if (data) {
+          queryClient.invalidateQueries({ queryKey: [`/api/projects/${data.projectId}/plot-structures`] });
+          queryClient.removeQueries({ queryKey: [`/api/plot-structures/${data.id}`] });
+        }
+        toast({
+          title: 'Plot structure deleted',
+          description: 'Your plot structure has been deleted successfully.'
+        });
       }
-      toast({
-        title: 'Plot structure deleted',
-        description: 'Your plot structure has been deleted successfully.'
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: 'Failed to delete plot structure',
-        description: error.message,
-        variant: 'destructive'
-      });
     }
   });
 
@@ -129,19 +132,20 @@ export function usePlotStructureActions() {
       const res = await apiRequest('POST', '/api/plot-structure-sections', data);
       return await res.json() as PlotStructureSection;
     },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: [`/api/plot-structures/${data.plotStructureId}/sections`] });
-      toast({
-        title: 'Section created',
-        description: 'Your new section has been created successfully.'
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: 'Failed to create section',
-        description: error.message,
-        variant: 'destructive'
-      });
+    onSettled: (data, error) => {
+      if (error) {
+        toast({
+          title: 'Failed to create section',
+          description: error.message,
+          variant: 'destructive'
+        });
+      } else if (data) {
+        queryClient.invalidateQueries({ queryKey: [`/api/plot-structures/${data.plotStructureId}/sections`] });
+        toast({
+          title: 'Section created',
+          description: 'Your new section has been created successfully.'
+        });
+      }
     }
   });
 
@@ -151,40 +155,35 @@ export function usePlotStructureActions() {
       const res = await apiRequest('PUT', `/api/plot-structure-sections/${id}`, data);
       return await res.json() as PlotStructureSection;
     },
-    onSuccess: (data) => {
-      // Update the local cache directly without triggering any invalidation
-      // This is the critical change to match the chapter editor behavior
-      
-      // Update the sections list cache
-      queryClient.setQueryData(
-        [`/api/plot-structures/${data.plotStructureId}/sections`], 
-        (oldData: PlotStructureSection[] | undefined) => {
-          if (!oldData) return [data];
-          return oldData.map(section => 
-            section.id === data.id ? { ...section, ...data } : section
-          );
-        }
-      );
-      
-      // Also update the individual section cache if it exists
-      queryClient.setQueryData(
-        [`/api/plot-structure-sections/${data.id}`], 
-        (oldData: PlotStructureSection | undefined) => {
-          if (!oldData) return data;
-          return { ...oldData, ...data };
-        }
-      );
-      
-      // IMPORTANT: No invalidation or refetching of any queries
-      // No toast notifications either
-    },
-    onError: (error) => {
-      toast({
-        title: 'Failed to update section',
-        description: error.message,
-        variant: 'destructive',
-        duration: 3000 // Shorter duration
-      });
+    onSettled: (data, error) => {
+      if (error) {
+        toast({
+          title: 'Failed to update section',
+          description: error.message,
+          variant: 'destructive',
+          duration: 3000
+        });
+      } else if (data) {
+        // Update the sections list cache
+        queryClient.setQueryData(
+          [`/api/plot-structures/${data.plotStructureId}/sections`], 
+          (oldData: PlotStructureSection[] | undefined) => {
+            if (!oldData) return [data];
+            return oldData.map(section => 
+              section.id === data.id ? { ...section, ...data } : section
+            );
+          }
+        );
+        
+        // Also update the individual section cache if it exists
+        queryClient.setQueryData(
+          [`/api/plot-structure-sections/${data.id}`], 
+          (oldData: PlotStructureSection | undefined) => {
+            if (!oldData) return data;
+            return { ...oldData, ...data };
+          }
+        );
+      }
     }
   });
 
@@ -193,20 +192,19 @@ export function usePlotStructureActions() {
     mutationFn: async (id: number) => {
       await apiRequest('DELETE', `/api/plot-structure-sections/${id}`);
     },
-    onSuccess: () => {
-      // We don't know which plot structure this section belonged to, so we can't selectively invalidate
-      // Let's trust that the component calling this will handle invalidation
-      toast({
-        title: 'Section deleted',
-        description: 'Your section has been deleted successfully.'
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: 'Failed to delete section',
-        description: error.message,
-        variant: 'destructive'
-      });
+    onSettled: (data, error) => {
+      if (error) {
+        toast({
+          title: 'Failed to delete section',
+          description: error.message,
+          variant: 'destructive'
+        });
+      } else {
+        toast({
+          title: 'Section deleted',
+          description: 'Your section has been deleted successfully.'
+        });
+      }
     }
   });
 
