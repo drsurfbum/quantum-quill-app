@@ -38,6 +38,7 @@ export default function OutlineRichEditor({ item, projectId }: OutlineRichEditor
   const { toast } = useToast();
   const [title, setTitle] = useState(item.title);
   const [isCompleted, setIsCompleted] = useState(item.isCompleted || false);
+  const [saveButtonClicked, setSaveButtonClicked] = useState(false);
 
   
   const { mutate: updateItem, isError: isUpdateError, error: updateError } = useUpdateOutlineItem();
@@ -109,7 +110,6 @@ export default function OutlineRichEditor({ item, projectId }: OutlineRichEditor
     debounce((newTitle: string, newContent: string, newIsCompleted: boolean) => {
       // During initial load, don't trigger a save
       if (isInitialLoad) {
-        setSaveStatus('saved');
         return;
       }
       
@@ -122,13 +122,11 @@ export default function OutlineRichEditor({ item, projectId }: OutlineRichEditor
                              (isDefaultContent && (!item.content || item.content === '<p>Start writing here...</p>'));
                             
       if (item.title === newTitle && contentUnchanged && item.isCompleted === newIsCompleted) {
-        setSaveStatus('saved');
         return;
       }
 
       // Avoid saving empty/default content
       if (isDefaultContent && item.title === newTitle && item.isCompleted === newIsCompleted) {
-        setSaveStatus('saved');
         return;
       }
 
@@ -170,12 +168,18 @@ export default function OutlineRichEditor({ item, projectId }: OutlineRichEditor
   
   const handleSave = () => {
     if (editor) {
+      setSaveButtonClicked(true);
       updateItem({ 
         id: item.id, 
         title, 
         content: editor.getHTML(),
         isCompleted
       });
+      
+      // Reset the visual feedback after a short delay
+      setTimeout(() => {
+        setSaveButtonClicked(false);
+      }, 1000);
     }
   };
 
@@ -207,9 +211,17 @@ export default function OutlineRichEditor({ item, projectId }: OutlineRichEditor
           <Button
             onClick={handleSave}
             size="sm"
+            className={cn(
+              "transition-colors duration-200",
+              saveButtonClicked && "bg-green-500 hover:bg-green-600 text-white"
+            )}
           >
-            <Save className="h-4 w-4 mr-2" />
-            Save
+            {saveButtonClicked ? (
+              <Check className="h-4 w-4 mr-2" />
+            ) : (
+              <Save className="h-4 w-4 mr-2" />
+            )}
+            {saveButtonClicked ? "Saved!" : "Save"}
           </Button>
         </div>
       </div>

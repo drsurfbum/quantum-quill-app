@@ -82,8 +82,11 @@ export default function Outline() {
       if (createResult.success) {
         const newItem = createResult.data;
         
-        // Immediately set selected item and expanded states without delay
-        setSelectedItemId(newItem.id);
+        // Only auto-select if no item is currently selected
+        if (!selectedItemId) {
+          setSelectedItemId(newItem.id);
+        }
+        
         setOutlineItemExpanded(newItem.id, true);
         
         // If the item has a parent, ensure the parent stays expanded
@@ -98,7 +101,7 @@ export default function Outline() {
         });
       }
     }
-  }, [isCreateSuccess, createResult, setOutlineItemExpanded, toast]);
+  }, [isCreateSuccess, createResult, setOutlineItemExpanded, selectedItemId, toast]);
 
   // Handle create operation errors
   useEffect(() => {
