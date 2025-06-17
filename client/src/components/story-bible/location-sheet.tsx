@@ -204,7 +204,7 @@ const LocationSheet = memo(({ entry, projectId }: LocationSheetProps) => {
         variant: "destructive",
       });
     }
-  }, [entry.id, deleteStoryBibleEntry, toast]);
+  }, [entry.id, projectId, deleteStoryBibleEntry, toast]);
 
   // Array management functions
   const addToArray = useCallback((key: keyof LocationData, newItem: any) => {
