@@ -38,7 +38,7 @@ export default function OutlineRichEditor({ item, projectId }: OutlineRichEditor
   const { toast } = useToast();
   const [title, setTitle] = useState(item.title);
   const [isCompleted, setIsCompleted] = useState(item.isCompleted || false);
-  const [saveStatus, setSaveStatus] = useState<'saved' | 'saving'>('saved');
+
   
   const { mutate: updateItem, isError: isUpdateError, error: updateError } = useUpdateOutlineItem();
   
@@ -204,9 +204,6 @@ export default function OutlineRichEditor({ item, projectId }: OutlineRichEditor
               <span>{isCompleted ? "Completed" : "Mark as complete"}</span>
             </Label>
           </div>
-          <span className="text-xs px-2 py-0.5 bg-success bg-opacity-10 text-success rounded-full">
-            {saveStatus === 'saved' ? 'Saved' : 'Saving...'}
-          </span>
           <Button
             onClick={handleSave}
             size="sm"
