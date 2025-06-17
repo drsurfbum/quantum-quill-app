@@ -65,9 +65,9 @@ export const useCreateOutlineItem = () => {
         return { success: false, error, projectId: data.projectId } as OutlineItemError;
       }
     },
-    onSuccess: (result) => {
-      if (!result.success) {
-        console.error("Create operation was not successful:", result.error);
+    onSettled: (result) => {
+      if (!result || !result.success) {
+        console.error("Create operation was not successful:", result?.error);
         return;
       }
       
@@ -110,9 +110,9 @@ export const useUpdateOutlineItem = () => {
         return { success: false, error, id } as OutlineItemError;
       }
     },
-    onSuccess: (result) => {
-      if (!result.success) {
-        console.error("Update operation was not successful:", result.error);
+    onSettled: (result) => {
+      if (!result || !result.success) {
+        console.error("Update operation was not successful:", result?.error);
         return;
       }
       
@@ -158,9 +158,9 @@ export const useDeleteOutlineItem = () => {
         data: { id, projectId } 
       } as DeleteOutlineItemSuccess;
     },
-    onSuccess: (result) => {
-      if (!result.success) {
-        console.error("Delete operation was not successful:", result.error);
+    onSettled: (result) => {
+      if (!result || !result.success) {
+        console.error("Delete operation was not successful:", result?.error);
         return;
       }
       

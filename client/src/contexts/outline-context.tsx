@@ -46,23 +46,24 @@ export function OutlineProvider({ children, projectId }: { children: ReactNode, 
   const [expandedItems, setExpandedItems] = useState<Set<number>>(new Set());
   
   // Fetch outline items for this project
-  const { data: outlineItems = [] } = useQuery<OutlineItem[]>({
+  const { data: outlineItems = [], isError } = useQuery<OutlineItem[]>({
     queryKey: [`/api/projects/${projectId}/outline`],
     queryFn: async () => {
       const res = await apiRequest('GET', `/api/projects/${projectId}/outline`);
       return await res.json();
     },
-    onSuccess: () => {
-      console.log('Successfully fetched outline items');
-    },
-    onError: () => {
+  });
+
+  // Handle error state separately
+  useEffect(() => {
+    if (isError) {
       toast({
         title: 'Error loading outline',
         description: 'Failed to load outline items. Please try refreshing the page.',
         variant: 'destructive',
       });
-    },
-  });
+    }
+  }, [isError, toast]);
   
   // Helper to get all root items (items with no parent)
   const getRootItems = () => {

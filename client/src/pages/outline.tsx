@@ -91,63 +91,13 @@ export default function Outline() {
       setSelectedItemId(null);
     }
     
-    createOutlineItem(
-      {
-        title: "New Section",
-        content: "<p>Start writing here...</p>",  // Initialize with default content
-        projectId: Number(id),
-        parentId,
-        order: maxOrder + 1
-      },
-      {
-        onSuccess: (result) => {
-          if (!result.success) {
-            toast({
-              title: "Error creating section",
-              description: "There was an error creating your outline section. Please try again.",
-              variant: "destructive"
-            });
-            return;
-          }
-          
-          const newItem = result.data;
-          
-          // If the item has a parent, ensure the parent stays expanded
-          if (newItem.parentId) {
-            setOutlineItemExpanded(newItem.parentId, true);
-          }
-          
-          // No success toast to avoid UI interference with selection
-          
-          // Simplify approach to avoid timing issues
-          
-          // Immediate action: trigger a cache invalidation so we get fresh data
-          queryClient.invalidateQueries({ queryKey: [`/api/projects/${id}/outline`] });
-          
-          // Use a much simpler approach that skips DOM manipulation
-          setTimeout(() => {
-            // Directly set selected item without complex interim steps
-            setSelectedItemId(newItem.id);
-            
-            // Force expanded state
-            setOutlineItemExpanded(newItem.id, true);
-            
-            // If it has a parent, expand that too
-            if (newItem.parentId) {
-              setOutlineItemExpanded(newItem.parentId, true);
-            }
-          }, 300);
-        },
-        onError: (error) => {
-          console.error("Create error:", error);
-          toast({
-            title: "Error creating section",
-            description: "There was an error creating your outline section. Please try again.",
-            variant: "destructive"
-          });
-        }
-      }
-    );
+    createOutlineItem({
+      title: "New Section",
+      content: "<p>Start writing here...</p>",
+      projectId: Number(id),
+      parentId,
+      order: maxOrder + 1
+    });
   };
   
   return (
