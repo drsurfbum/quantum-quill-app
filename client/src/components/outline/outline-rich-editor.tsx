@@ -83,78 +83,15 @@ export default function OutlineRichEditor({ item, projectId }: OutlineRichEditor
 
   // Reset state when item changes
   useEffect(() => {
-    // When item changes, we need to completely reset all state to prevent content bleed
     setTitle(item.title);
     setIsCompleted(item.isCompleted || false);
-    
-    // Reset initial load state when item changes to prevent auto-save on first interaction
     setIsInitialLoad(true);
     
-    // Always update the content when item changes to ensure consistency
     if (editor && editor.isEditable) {
-      // Store editor state before update
-      const isFocused = editor.isFocused; 
-      const scrollPosition = window.scrollY;
-      
-      // Completely destroy and rebuild editor state to prevent content bleeding
-      // First, we'll update the content after a small delay to ensure clean transition
-      setTimeout(() => {
-        // Force update editor content to match the current item
-        if (item.content) {
-          editor.commands.setContent(item.content);
-        } else {
-          editor.commands.setContent('<p>Start writing here...</p>');
-        }
-          
-        // If editor was focused, restore focus after a short delay
-        // to ensure the DOM has been fully updated
-        if (isFocused) {
-          setTimeout(() => {
-            editor.commands.focus();
-            window.scrollTo(0, scrollPosition);
-          }, 100);
-        }
-      }, 50);
+      const content = item.content || '<p>Start writing here...</p>';
+      editor.commands.setContent(content);
     }
-  }, [item.id, editor]); // Only depend on item.id not the entire item to prevent unnecessary re-renders
-  
-  // When item changes, immediately reapply the expanded state to keep the item visible
-  useEffect(() => {
-    // Ensure the outline item remains expanded in the sidebar
-    if (item && item.id) {
-      const parentId = item.parentId;
-      
-      // Immediately set this item as expanded
-      setTimeout(() => {
-        // This needs to happen outside the current render cycle
-        const event = new CustomEvent('ensure-outline-expanded', { 
-          detail: { itemId: item.id }
-        });
-        window.dispatchEvent(event);
-      }, 10);
-    }
-  }, [item.id]);
-  
-  // Add a listener for the custom event to ensure sections stay expanded
-  useEffect(() => {
-    // Listen for events to keep items expanded
-    const handleKeepExpanded = (e: CustomEvent) => {
-      if (e.detail && e.detail.itemId === item.id) {
-        // Force focus on the editor
-        if (editor) {
-          setTimeout(() => {
-            editor.commands.focus();
-          }, 10);
-        }
-      }
-    };
-    
-    window.addEventListener('ensure-outline-expanded', handleKeepExpanded as EventListener);
-    
-    return () => {
-      window.removeEventListener('ensure-outline-expanded', handleKeepExpanded as EventListener);
-    };
-  }, [editor, item.id]);
+  }, [item.id, editor]);
   
   // Set up debounced save with longer delay to prevent cursor jumping
   const debouncedSave = useCallback(
@@ -191,49 +128,16 @@ export default function OutlineRichEditor({ item, projectId }: OutlineRichEditor
       // Get the item ID at the time of save to prevent race conditions
       const currentItemId = item.id;
 
-      updateItem(
-        { 
-          id: currentItemId, 
-          title: newTitle, 
-          content: newContent,
-          isCompleted: newIsCompleted 
-        },
-        {
-          onSuccess: (result) => {
-            if (!result.success) {
-              toast({
-                title: "Failed to save",
-                description: "There was an error saving your changes. Please try again.",
-                variant: "destructive",
-              });
-              setSaveStatus('saved');
-              return;
-            }
-            
-            // Only update if we're still on the same item
-            if (currentItemId === item.id) {
-              setSaveStatus('saved');
-              
-              // Restore focus and scroll position if it was focused before
-              if (wasFocused && editor) {
-                setTimeout(() => {
-                  editor.commands.focus();
-                  window.scrollTo(0, scrollPosition);
-                }, 10);
-              }
-            }
-          },
-          onError: () => {
-            toast({
-              title: "Failed to save",
-              description: "There was an error saving your changes. Please try again.",
-              variant: "destructive",
-            });
-            setSaveStatus('saved');
-          }
-        }
-      );
-    }, 3000), // Increased to 3000ms to further reduce save frequency and prevent UI issues
+      updateItem({ 
+        id: currentItemId, 
+        title: newTitle, 
+        content: newContent,
+        isCompleted: newIsCompleted 
+      });
+      
+      // Set save status immediately to prevent UI jumping
+      setSaveStatus('saved');
+    }, 1000), // Reduced to 1000ms for more responsive saves
     [updateItem, toast, item.id, item.title, item.content, item.isCompleted, editor, isInitialLoad]
   );
   

@@ -73,7 +73,7 @@ export const useCreateOutlineItem = () => {
       
       const data = result.data;
       
-      // Use queryClient.setQueryData to update the cached items without triggering a full refetch
+      // Update the cached items directly to avoid multiple API calls
       const outlineItems = queryClient.getQueryData<OutlineItem[]>([`/api/projects/${data.projectId}/outline`]);
       
       if (outlineItems) {
@@ -82,10 +82,8 @@ export const useCreateOutlineItem = () => {
         
         // Cache the individual item data as well
         queryClient.setQueryData([`/api/outline/${data.id}`], data);
-      } else {
-        // Fall back to invalidation if we don't have the data cached
-        queryClient.invalidateQueries({ queryKey: [`/api/projects/${data.projectId}/outline`] });
       }
+      // Don't invalidate queries to prevent multiple API calls
     }
   });
 };
@@ -118,22 +116,19 @@ export const useUpdateOutlineItem = () => {
       
       const data = result.data;
       
-      // Use queryClient.setQueryData to update the cached item without triggering a full refetch
+      // Update the cached item directly to prevent save failures
       const outlineItems = queryClient.getQueryData<OutlineItem[]>([`/api/projects/${data.projectId}/outline`]);
       
       if (outlineItems) {
-        // Update the specific item without triggering a full refetch
+        // Update the specific item without triggering a refetch
         const updatedItems = outlineItems.map(item => 
           item.id === data.id ? { ...item, ...data } : item
         );
         
         queryClient.setQueryData([`/api/projects/${data.projectId}/outline`], updatedItems);
         queryClient.setQueryData([`/api/outline/${data.id}`], data);
-      } else {
-        // Fall back to invalidation only if we don't have the data cached
-        queryClient.invalidateQueries({ queryKey: [`/api/outline/${data.id}`] });
-        queryClient.invalidateQueries({ queryKey: [`/api/projects/${data.projectId}/outline`] });
       }
+      // Don't invalidate to prevent multiple API calls and save conflicts
     }
   });
 };

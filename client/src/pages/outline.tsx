@@ -82,23 +82,14 @@ export default function Outline() {
       if (createResult.success) {
         const newItem = createResult.data;
         
+        // Immediately set selected item and expanded states without delay
+        setSelectedItemId(newItem.id);
+        setOutlineItemExpanded(newItem.id, true);
+        
         // If the item has a parent, ensure the parent stays expanded
         if (newItem.parentId) {
           setOutlineItemExpanded(newItem.parentId, true);
         }
-        
-        // Trigger cache invalidation to get fresh data
-        queryClient.invalidateQueries({ queryKey: [`/api/projects/${id}/outline`] });
-        
-        // Set selected item after a brief delay to ensure cache is updated
-        setTimeout(() => {
-          setSelectedItemId(newItem.id);
-          setOutlineItemExpanded(newItem.id, true);
-          
-          if (newItem.parentId) {
-            setOutlineItemExpanded(newItem.parentId, true);
-          }
-        }, 300);
       } else {
         toast({
           title: "Error creating section",
@@ -107,7 +98,7 @@ export default function Outline() {
         });
       }
     }
-  }, [isCreateSuccess, createResult, setOutlineItemExpanded, queryClient, id, toast]);
+  }, [isCreateSuccess, createResult, setOutlineItemExpanded, toast]);
 
   // Handle create operation errors
   useEffect(() => {
