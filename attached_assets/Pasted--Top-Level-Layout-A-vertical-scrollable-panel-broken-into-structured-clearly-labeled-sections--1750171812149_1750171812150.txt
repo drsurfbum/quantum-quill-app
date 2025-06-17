@@ -1,0 +1,90 @@
+🧭 Top-Level Layout
+
+A vertical scrollable panel, broken into structured, clearly labeled sections. Each section has a title with optional expand/collapse toggles. Use subtle card-style blocks for clarity and visual separation.
+
+⸻
+
+1. Header Block (Inline Overview)
+	•	[Title Field] – Large, bold, top-aligned (e.g. “Phobos”)
+	•	[Type Dropdown] – Right-aligned pill field (e.g. Moon, City, Station)
+	•	[Parent Location Field] – Inline dropdown or search-selector (e.g. “Mars”)
+	•	[Short Notes Field] – Single-line subtitle or quick descriptor
+
+Example: “Largest moon of Mars and home of SPN Moon base”
+
+⸻
+
+2. Description Section
+	•	[Section Title: “Description”]
+	•	Plain rich text field or markdown-enabled editor.
+	•	Supports multi-paragraph entries.
+	•	Optional templates/prompts: “Purpose, layout, key features…”
+
+Use case: Freeform worldbuilding—supports short lore blurbs or dense entries.
+
+⸻
+
+3. Relational Panels (Stacked Sections)
+
+Each is visually distinct but consistent, likely styled like horizontal cards with badges, names, and quick actions.
+
+⸻
+
+▸ A. Characters Linked
+	•	Small avatar + name chip list
+	•	Button: “+ Add Character”
+	•	Option to tag role (e.g. resident, founder, enemy)
+	•	Expand for short notes per link if desired
+
+⸻
+
+▸ B. Groups / Races
+	•	Icon + name chips
+	•	“+ Add Group or Race”
+	•	Optional: control or influence tags (e.g. “Owned by,” “Origin of”)
+
+⸻
+
+▸ C. Events
+	•	Timeline snippet layout (Date — Event Title)
+	•	“+ Add Event”
+	•	Filter by past/future or link visibility
+
+⸻
+
+▸ D. World Elements
+	•	Tag-like cards showing related tech, objects, phenomena
+	•	“+ Add World Element”
+	•	Optional categories (e.g. Energy Source, Environmental Hazard)
+
+⸻
+
+▸ E. Details
+	•	Text field list (simple bullets or quote-style cards)
+	•	Think “local flavor,” idioms, customs
+	•	“+ Add Detail”
+
+⸻
+
+▸ F. Research
+	•	Structured as list of:
+	•	Title
+	•	Type (e.g. article, map, video)
+	•	URL
+	•	Optional: checkbox for “Notes Taken?”
+
+⸻
+
+4. Notes Section
+	•	Labeled “Writer’s Notes” or “Internal Notes”
+	•	Always collapsed by default
+	•	Rich text field (no formatting required, just plain if needed)
+	•	Used for behind-the-scenes scribbles, reminders, etc.
+
+⸻
+
+✨ Design Philosophy
+	•	🔎 Clear scanning hierarchy: Title → Type → Description → Linked Items
+	•	🪶 Light UI weight: sections are carded and optional, but fields are never buried
+	•	🧩 Modular: Can be extended for map pins, current status, or nested locations
+	•	⚡ Fast actions: Add/remove relationships should be low-friction, with autosuggest

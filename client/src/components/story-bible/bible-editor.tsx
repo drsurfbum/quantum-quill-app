@@ -11,6 +11,7 @@ import { Save, Trash2, Users, MapPin, ShoppingBag, Calendar, Check } from "lucid
 import { debounce } from "lodash";
 import { cn } from "@/lib/utils";
 import CharacterSheet from "./character-sheet";
+import { LocationSheet } from "./location-sheet";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,6 +33,11 @@ const BibleEditor = memo(({ entry, projectId }: BibleEditorProps) => {
   // If this is a character entry, use the specialized character sheet
   if (entry.entryType === 'character') {
     return <CharacterSheet entry={entry} projectId={projectId} />;
+  }
+  
+  // If this is a location entry, use the specialized location sheet
+  if (entry.entryType === 'location') {
+    return <LocationSheet entry={entry} projectId={projectId} />;
   }
   const { toast } = useToast();
   const [title, setTitle] = useState(entry.title);
