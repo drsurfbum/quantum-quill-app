@@ -26,8 +26,9 @@ const entryTypes = [
   { id: "character", label: "Characters", icon: Users },
   { id: "race", label: "Races/Species", icon: Globe },
   { id: "location", label: "Locations", icon: MapPin },
-  { id: "item", label: "Items", icon: ShoppingBag },
+  { id: "world-element", label: "World Elements", icon: Workflow },
   { id: "event", label: "Events", icon: Calendar },
+  { id: "item", label: "Items", icon: ShoppingBag },
   { id: "language", label: "Languages", icon: Languages },
   { id: "magicSystem", label: "Magic Systems", icon: Wand2 },
   { id: "transportation", label: "Transportation", icon: Train },
@@ -402,6 +403,17 @@ export default function StoryBible() {
                     }}
                   >
                     <Train className="h-4 w-4 mr-2" /> Transportation
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="w-full justify-start px-3 py-1 h-8"
+                    onClick={() => {
+                      handleCreateEntry('world-element');
+                      document.getElementById('entry-type-menu')!.style.display = 'none';
+                    }}
+                  >
+                    <Workflow className="h-4 w-4 mr-2" /> World Element
                   </Button>
                   <Button 
                     variant="ghost" 
