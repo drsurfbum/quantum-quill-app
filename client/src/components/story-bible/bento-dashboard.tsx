@@ -172,37 +172,61 @@ export default function BentoDashboard({ entries, onCreateEntry, onSelectEntry, 
                   )}
                 </div>
               ) : (
-                // Optimized grid layout for better space utilization
-                <div className="space-y-1">
-                  {categoryEntries.slice(0, isExpanded ? undefined : 6).map(entry => (
-                    <button
-                      key={entry.id}
-                      onClick={() => onSelectEntry(entry)}
-                      className={cn(
-                        "flex items-center w-full p-2 rounded-md text-left transition-colors hover:bg-background/60 group",
-                        selectedEntryId === entry.id && "bg-background/80 ring-1 ring-ring"
-                      )}
-                    >
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate group-hover:text-primary transition-colors">
-                          {entry.title}
-                        </p>
-                        {entry.content && entry.content.trim() && (
-                          <p className="text-xs text-muted-foreground truncate mt-0.5">
-                            {entry.content.replace(/<[^>]*>/g, '').substring(0, 60)}
-                            {entry.content.length > 60 ? '...' : ''}
-                          </p>
+                // Bento-in-bento: Compact color-coded mini-cards
+                <div className="grid grid-cols-2 gap-2">
+                  {categoryEntries.slice(0, isExpanded ? undefined : 8).map(entry => {
+                    // Color coding based on entry type
+                    const getEntryColor = (entryType: string) => {
+                      switch (entryType) {
+                        case 'character': return 'bg-blue-100 hover:bg-blue-200 border-blue-200 text-blue-900';
+                        case 'location': return 'bg-green-100 hover:bg-green-200 border-green-200 text-green-900';
+                        case 'event': return 'bg-amber-100 hover:bg-amber-200 border-amber-200 text-amber-900';
+                        case 'lore': return 'bg-purple-100 hover:bg-purple-200 border-purple-200 text-purple-900';
+                        case 'government': return 'bg-red-100 hover:bg-red-200 border-red-200 text-red-900';
+                        case 'technology': return 'bg-cyan-100 hover:bg-cyan-200 border-cyan-200 text-cyan-900';
+                        case 'culture': return 'bg-pink-100 hover:bg-pink-200 border-pink-200 text-pink-900';
+                        case 'religion': return 'bg-indigo-100 hover:bg-indigo-200 border-indigo-200 text-indigo-900';
+                        case 'economy': return 'bg-emerald-100 hover:bg-emerald-200 border-emerald-200 text-emerald-900';
+                        case 'geography': return 'bg-teal-100 hover:bg-teal-200 border-teal-200 text-teal-900';
+                        default: return 'bg-gray-100 hover:bg-gray-200 border-gray-200 text-gray-900';
+                      }
+                    };
+
+                    return (
+                      <button
+                        key={entry.id}
+                        onClick={() => onSelectEntry(entry)}
+                        className={cn(
+                          "relative p-3 rounded-lg border transition-all duration-200 text-left group",
+                          getEntryColor(entry.entryType),
+                          selectedEntryId === entry.id && "ring-2 ring-primary ring-offset-1 shadow-md"
                         )}
-                      </div>
-                      {selectedEntryId === entry.id && <Pin className="h-3 w-3 text-muted-foreground flex-shrink-0 ml-2" />}
-                    </button>
-                  ))}
-                  {!isExpanded && categoryEntries.length > 6 && (
+                      >
+                        <div className="flex flex-col min-h-[60px]">
+                          <p className="font-medium text-sm truncate leading-tight">
+                            {entry.title}
+                          </p>
+                          <div className="flex-1 flex items-end mt-1">
+                            <span className="text-xs opacity-70 capitalize">
+                              {entry.entryType.replace('-', ' ')}
+                            </span>
+                          </div>
+                        </div>
+                        {selectedEntryId === entry.id && (
+                          <Pin className="absolute top-2 right-2 h-3 w-3 opacity-60" />
+                        )}
+                      </button>
+                    );
+                  })}
+                  {!isExpanded && categoryEntries.length > 8 && (
                     <button
                       onClick={() => setExpandedCategory(category.id)}
-                      className="flex items-center justify-center w-full p-2 rounded-md bg-background/20 hover:bg-background/40 transition-colors text-muted-foreground"
+                      className="flex items-center justify-center p-3 rounded-lg border border-dashed border-gray-300 hover:border-gray-400 transition-colors text-muted-foreground hover:text-foreground min-h-[60px]"
                     >
-                      <span className="text-xs">+{categoryEntries.length - 6} more entries</span>
+                      <div className="text-center">
+                        <span className="text-lg">+</span>
+                        <p className="text-xs mt-1">{categoryEntries.length - 8} more</p>
+                      </div>
                     </button>
                   )}
                 </div>
