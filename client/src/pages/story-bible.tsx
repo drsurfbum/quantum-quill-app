@@ -17,6 +17,7 @@ import { StoryBibleEntry } from "@shared/schema";
 import { useState, useEffect, useRef, useMemo } from "react";
 import BibleEntry from "@/components/story-bible/bible-entry";
 import BibleEditor from "@/components/story-bible/bible-editor";
+import BentoDashboard from "@/components/story-bible/bento-dashboard";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -48,6 +49,7 @@ export default function StoryBible() {
   const [selectedEntryId, setSelectedEntryId] = useState<number | null>(null);
   const [selectedType, setSelectedType] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState("");
+  const [viewMode, setViewMode] = useState<"list" | "bento">("bento");
   
   // Auto-collapse on mobile
   useEffect(() => {
@@ -165,6 +167,26 @@ export default function StoryBible() {
             )}
           </div>
           <div className="flex items-center space-x-2 sm:space-x-4">
+            {/* View Toggle */}
+            <div className="flex items-center bg-muted rounded-md p-1">
+              <Button
+                variant={viewMode === "bento" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setViewMode("bento")}
+                className="h-7 px-2"
+              >
+                <Grid className="h-4 w-4" />
+              </Button>
+              <Button
+                variant={viewMode === "list" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setViewMode("list")}
+                className="h-7 px-2"
+              >
+                <ListTree className="h-4 w-4" />
+              </Button>
+            </div>
+            
             <ThemeToggle />
             
             <Button variant="ghost" className="flex items-center gap-1">
@@ -224,8 +246,26 @@ export default function StoryBible() {
         </div>
 
         <div className="flex-grow flex overflow-hidden">
-          {/* Story Bible Sidebar */}
-          <div className="w-64 border-r border-neutral-200 dark:border-neutral-800 flex flex-col overflow-hidden bg-neutral-50 dark:bg-neutral-900">
+          {/* Conditional rendering based on view mode */}
+          {viewMode === "bento" ? (
+            /* Bento Dashboard View */
+            <div className="flex-grow overflow-auto">
+              <BentoDashboard
+                entries={entries}
+                onCreateEntry={handleCreateEntry}
+                onSelectEntry={(entry) => {
+                  setSelectedEntryId(entry.id);
+                  setViewMode("list"); // Switch to list view when editing
+                }}
+                selectedEntryId={selectedEntryId}
+              />
+            </div>
+          ) : (
+            /* List View */
+            <>
+              {/* Story Bible Sidebar */}
+              <div className="w-64 border-r border-neutral-200 dark:border-neutral-800 flex flex-col overflow-hidden bg-neutral-50 dark:bg-neutral-900">
+            <div className="p-3 border-b border-neutral-200 dark:border-neutral-800">
             <div className="p-3 border-b border-neutral-200 dark:border-neutral-800">
               <div className="flex justify-between items-center mb-3">
                 <h3 className="font-medium">Story Bible</h3>
@@ -676,6 +716,8 @@ export default function StoryBible() {
               />
             )}
           </div>
+            </>
+          )}
         </div>
       </main>
       </div>
