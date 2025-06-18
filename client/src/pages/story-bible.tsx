@@ -108,28 +108,37 @@ export default function StoryBible() {
   // Handle successful entry creation - always select new entry
   useEffect(() => {
     if (isCreateSuccess && createResult) {
-      const newEntryId = createResult.id;
-      
-      if (newEntryId) {
-        // Store the pending entry ID for selection
-        pendingEntryIdRef.current = newEntryId;
+      try {
+        const entryData = createResult as any;
+        const newEntryId = entryData?.id;
         
-        // Auto-select the new entry
-        setSelectedEntryId(newEntryId);
-        
-        // Switch to list view to show the editor
-        setViewMode("list");
-        
-        // On mobile, collapse the sidebar to show the editor
-        if (isMobile) {
-          setIsCollapsed(true);
+        if (newEntryId) {
+          // Store the pending entry ID for selection
+          pendingEntryIdRef.current = newEntryId;
+          
+          // Auto-select the new entry
+          setSelectedEntryId(newEntryId);
+          
+          // Switch to list view to show the editor
+          setViewMode("list");
+          
+          // On mobile, collapse the sidebar to show the editor
+          if (isMobile) {
+            setIsCollapsed(true);
+          }
+          
+          toast({
+            title: "Entry created",
+            description: "Your new entry has been created and is ready to edit.",
+          });
+        } else {
+          toast({
+            title: "Error creating entry",
+            description: "There was an error creating your entry. Please try again.",
+            variant: "destructive"
+          });
         }
-        
-        toast({
-          title: "Entry created",
-          description: "Your new entry has been created and is ready to edit.",
-        });
-      } else {
+      } catch (error) {
         toast({
           title: "Error creating entry",
           description: "There was an error creating your entry. Please try again.",
@@ -373,6 +382,19 @@ export default function StoryBible() {
               
               {/* Story Bible Entry Editor */}
               <div className="flex-grow flex flex-col overflow-hidden">
+                {/* Back to Bento View Button */}
+                <div className="px-4 py-2 border-b border-neutral-200 dark:border-neutral-800">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setViewMode("bento")}
+                    className="flex items-center gap-2"
+                  >
+                    <Grid className="h-4 w-4" />
+                    Back to Dashboard
+                  </Button>
+                </div>
+
                 {isLoadingEntries ? (
                   <div className="flex-grow flex items-center justify-center p-6">
                     <Skeleton className="h-40 w-full max-w-2xl" />

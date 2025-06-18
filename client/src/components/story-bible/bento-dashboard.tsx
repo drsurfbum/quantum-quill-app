@@ -144,9 +144,9 @@ export default function BentoDashboard({ entries, onCreateEntry, onSelectEntry, 
         
         <CardContent className="pt-0 flex flex-col h-full">
           {/* Entry Grid - Better space utilization */}
-          {categoryEntries.length > 0 && (
-            <div className="flex-1 mb-4">
-              {category.id === "world-element" ? (
+          <div className="flex-1 mb-4">
+            {categoryEntries.length > 0 ? (
+              category.id === "world-element" ? (
                 // Special grid layout for World Elements by subcategory
                 <div className="grid grid-cols-2 gap-2">
                   {getWorldElementsByCategory().slice(0, isExpanded ? undefined : 6).map(subCategory => (
@@ -201,9 +201,18 @@ export default function BentoDashboard({ entries, onCreateEntry, onSelectEntry, 
                     </button>
                   )}
                 </div>
-              )}
-            </div>
-          )}
+              )
+            ) : (
+              // Empty state - show placeholder message
+              <div className="flex-1 flex items-center justify-center text-center py-8">
+                <div className="text-muted-foreground">
+                  <category.icon className={cn("h-8 w-8 mx-auto mb-2", category.iconColor)} />
+                  <p className="text-sm">No {category.label.toLowerCase()} yet</p>
+                  <p className="text-xs">Create your first one below</p>
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* Add new button - Always at bottom */}
           <div className="mt-auto pt-3 border-t border-border/50">
