@@ -117,6 +117,9 @@ export default function StoryBible() {
         // Auto-select the new entry
         setSelectedEntryId(newEntryId);
         
+        // Switch to list view to show the editor
+        setViewMode("list");
+        
         // On mobile, collapse the sidebar to show the editor
         if (isMobile) {
           setIsCollapsed(true);

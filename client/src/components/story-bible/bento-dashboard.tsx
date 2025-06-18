@@ -116,12 +116,11 @@ export default function BentoDashboard({ entries, onCreateEntry, onSelectEntry, 
 
   const renderCategoryTile = (category: typeof categories[0]) => {
     const categoryEntries = groupedEntries[category.id] || [];
-    const recentEntries = getRecentEntries(categoryEntries);
     const isExpanded = expandedCategory === category.id;
 
     return (
-      <Card key={category.id} className={cn("transition-all duration-200 hover:shadow-md", category.color)}>
-        <CardHeader className="pb-3">
+      <Card key={category.id} className={cn("transition-all duration-200 hover:shadow-md h-full", category.color)}>
+        <CardHeader className="pb-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <category.icon className={cn("h-6 w-6", category.iconColor)} />
@@ -143,82 +142,71 @@ export default function BentoDashboard({ entries, onCreateEntry, onSelectEntry, 
           </div>
         </CardHeader>
         
-        <CardContent className="pt-0">
-          {/* Recent entries preview */}
-          {recentEntries.length > 0 && (
-            <div className="space-y-2 mb-4">
-              <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Recent</h4>
-              {recentEntries.map(entry => (
-                <button
-                  key={entry.id}
-                  onClick={() => onSelectEntry(entry)}
-                  className={cn(
-                    "flex items-center gap-2 w-full p-2 rounded-md text-left transition-colors hover:bg-background/60",
-                    selectedEntryId === entry.id && "bg-background/80 ring-1 ring-ring"
+        <CardContent className="pt-0 flex flex-col h-full">
+          {/* Entry Grid - Better space utilization */}
+          {categoryEntries.length > 0 && (
+            <div className="flex-1 mb-4">
+              {category.id === "world-element" ? (
+                // Special grid layout for World Elements by subcategory
+                <div className="grid grid-cols-2 gap-2">
+                  {getWorldElementsByCategory().slice(0, isExpanded ? undefined : 6).map(subCategory => (
+                    <button
+                      key={subCategory.id}
+                      onClick={() => subCategory.entries.length > 0 && onSelectEntry(subCategory.entries[0])}
+                      className="flex items-center gap-2 p-2 rounded-md bg-background/40 hover:bg-background/60 transition-colors text-left"
+                    >
+                      <span className="text-sm">{subCategory.icon}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium truncate">{subCategory.label}</p>
+                        <p className="text-xs text-muted-foreground">{subCategory.entries.length}</p>
+                      </div>
+                    </button>
+                  ))}
+                  {!isExpanded && getWorldElementsByCategory().length > 6 && (
+                    <button
+                      onClick={() => setExpandedCategory(category.id)}
+                      className="flex items-center justify-center p-2 rounded-md bg-background/20 hover:bg-background/40 transition-colors text-muted-foreground"
+                    >
+                      <span className="text-xs">+{getWorldElementsByCategory().length - 6} more</span>
+                    </button>
                   )}
-                >
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{entry.title}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {entry.entryType.charAt(0).toUpperCase() + entry.entryType.slice(1).replace('-', ' ')}
-                    </p>
-                  </div>
-                  {selectedEntryId === entry.id && <Pin className="h-3 w-3 text-muted-foreground" />}
-                </button>
-              ))}
+                </div>
+              ) : (
+                // Grid layout for other categories
+                <div className="grid grid-cols-1 gap-1">
+                  {categoryEntries.slice(0, isExpanded ? undefined : 4).map(entry => (
+                    <button
+                      key={entry.id}
+                      onClick={() => onSelectEntry(entry)}
+                      className={cn(
+                        "flex items-center gap-2 w-full p-2 rounded-md text-left transition-colors hover:bg-background/60",
+                        selectedEntryId === entry.id && "bg-background/80 ring-1 ring-ring"
+                      )}
+                    >
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{entry.title}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {entry.entryType.charAt(0).toUpperCase() + entry.entryType.slice(1).replace('-', ' ')}
+                        </p>
+                      </div>
+                      {selectedEntryId === entry.id && <Pin className="h-3 w-3 text-muted-foreground" />}
+                    </button>
+                  ))}
+                  {!isExpanded && categoryEntries.length > 4 && (
+                    <button
+                      onClick={() => setExpandedCategory(category.id)}
+                      className="flex items-center justify-center p-2 rounded-md bg-background/20 hover:bg-background/40 transition-colors text-muted-foreground"
+                    >
+                      <span className="text-xs">+{categoryEntries.length - 4} more entries</span>
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
-          {/* Special handling for World Elements */}
-          {category.id === "world-element" && isExpanded && (
-            <div className="space-y-2">
-              <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Categories</h4>
-              <div className="grid grid-cols-2 gap-2">
-                {getWorldElementsByCategory().map(subCategory => (
-                  <div
-                    key={subCategory.id}
-                    className="flex items-center gap-2 p-2 rounded-md bg-background/40"
-                  >
-                    <span className="text-sm">{subCategory.icon}</span>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium truncate">{subCategory.label}</p>
-                      <p className="text-xs text-muted-foreground">{subCategory.entries.length}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Expanded view for other categories */}
-          {category.id !== "world-element" && isExpanded && categoryEntries.length > 3 && (
-            <div className="space-y-2">
-              <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">All Entries</h4>
-              <div className="max-h-48 overflow-y-auto space-y-1">
-                {categoryEntries.map(entry => (
-                  <button
-                    key={entry.id}
-                    onClick={() => onSelectEntry(entry)}
-                    className={cn(
-                      "flex items-center gap-2 w-full p-2 rounded-md text-left transition-colors hover:bg-background/60",
-                      selectedEntryId === entry.id && "bg-background/80 ring-1 ring-ring"
-                    )}
-                  >
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{entry.title}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {entry.entryType.charAt(0).toUpperCase() + entry.entryType.slice(1).replace('-', ' ')}
-                      </p>
-                    </div>
-                    {selectedEntryId === entry.id && <Pin className="h-3 w-3 text-muted-foreground" />}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Add new button */}
-          <div className="mt-4 pt-3 border-t border-border/50">
+          {/* Add new button - Always at bottom */}
+          <div className="mt-auto pt-3 border-t border-border/50">
             <Button
               variant="outline"
               size="sm"
@@ -255,7 +243,7 @@ export default function BentoDashboard({ entries, onCreateEntry, onSelectEntry, 
       </div>
 
       {/* Bento Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 auto-rows-fr">
         {categories.map(renderCategoryTile)}
       </div>
 
