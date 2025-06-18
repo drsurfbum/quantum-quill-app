@@ -172,32 +172,37 @@ export default function BentoDashboard({ entries, onCreateEntry, onSelectEntry, 
                   )}
                 </div>
               ) : (
-                // Grid layout for other categories
-                <div className="grid grid-cols-1 gap-1">
-                  {categoryEntries.slice(0, isExpanded ? undefined : 4).map(entry => (
+                // Optimized grid layout for better space utilization
+                <div className="space-y-1">
+                  {categoryEntries.slice(0, isExpanded ? undefined : 6).map(entry => (
                     <button
                       key={entry.id}
                       onClick={() => onSelectEntry(entry)}
                       className={cn(
-                        "flex items-center gap-2 w-full p-2 rounded-md text-left transition-colors hover:bg-background/60",
+                        "flex items-center w-full p-2 rounded-md text-left transition-colors hover:bg-background/60 group",
                         selectedEntryId === entry.id && "bg-background/80 ring-1 ring-ring"
                       )}
                     >
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{entry.title}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {entry.entryType.charAt(0).toUpperCase() + entry.entryType.slice(1).replace('-', ' ')}
+                        <p className="text-sm font-medium truncate group-hover:text-primary transition-colors">
+                          {entry.title}
                         </p>
+                        {entry.content && entry.content.trim() && (
+                          <p className="text-xs text-muted-foreground truncate mt-0.5">
+                            {entry.content.replace(/<[^>]*>/g, '').substring(0, 60)}
+                            {entry.content.length > 60 ? '...' : ''}
+                          </p>
+                        )}
                       </div>
-                      {selectedEntryId === entry.id && <Pin className="h-3 w-3 text-muted-foreground" />}
+                      {selectedEntryId === entry.id && <Pin className="h-3 w-3 text-muted-foreground flex-shrink-0 ml-2" />}
                     </button>
                   ))}
-                  {!isExpanded && categoryEntries.length > 4 && (
+                  {!isExpanded && categoryEntries.length > 6 && (
                     <button
                       onClick={() => setExpandedCategory(category.id)}
-                      className="flex items-center justify-center p-2 rounded-md bg-background/20 hover:bg-background/40 transition-colors text-muted-foreground"
+                      className="flex items-center justify-center w-full p-2 rounded-md bg-background/20 hover:bg-background/40 transition-colors text-muted-foreground"
                     >
-                      <span className="text-xs">+{categoryEntries.length - 4} more entries</span>
+                      <span className="text-xs">+{categoryEntries.length - 6} more entries</span>
                     </button>
                   )}
                 </div>
