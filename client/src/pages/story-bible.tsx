@@ -162,8 +162,11 @@ export default function StoryBible() {
   
   // Handle entry creation with simple, reliable selection
   const handleCreateEntry = (entryType: string) => {
+    const entryTypeLabel = entryType.replace('-', ' ');
+    console.log('Creating entry:', { entryType, projectId: Number(id) });
+    
     createEntry({
-      title: `New ${entryType}`,
+      title: `New ${entryTypeLabel}`,
       content: "",
       projectId: Number(id),
       entryType

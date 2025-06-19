@@ -124,8 +124,8 @@ export default function BentoDashboard({ entries, onCreateEntry, onSelectEntry, 
     const isExpanded = expandedCategory === category.id;
 
     return (
-      <Card key={category.id} className={cn("transition-all duration-200 hover:shadow-md flex flex-col h-full", category.color)}>
-        <CardHeader className="pb-3 flex-shrink-0">
+      <Card key={category.id} className={cn("transition-all duration-200 hover:shadow-md flex flex-col h-full overflow-hidden relative", category.color)}>
+        <CardHeader className="pb-3 flex-shrink-0 relative z-10">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3 min-w-0 flex-1">
               <category.icon className={cn("h-6 w-6 flex-shrink-0", category.iconColor)} />
@@ -147,9 +147,9 @@ export default function BentoDashboard({ entries, onCreateEntry, onSelectEntry, 
           </div>
         </CardHeader>
         
-        <CardContent className="pt-0 flex flex-col min-h-0">
+        <CardContent className="pt-0 flex flex-col flex-1 overflow-hidden relative z-10">
           {/* Entry Grid - Better space utilization */}
-          <div className="flex-1 min-h-0 mb-4">
+          <div className="flex-1 overflow-auto mb-4">
             {categoryEntries.length > 0 ? (
               category.id === "world-element" ? (
                 // Bento-in-bento for World Elements with same color coding as other categories
@@ -278,7 +278,7 @@ export default function BentoDashboard({ entries, onCreateEntry, onSelectEntry, 
           </div>
 
           {/* Add new button - Always at bottom with proper spacing */}
-          <div className="mt-4 pt-4 border-t border-border/50">
+          <div className="mt-auto pt-4 border-t border-border/50 relative z-10 bg-background">
             <Button
               variant="outline"
               size="sm"
@@ -314,39 +314,37 @@ export default function BentoDashboard({ entries, onCreateEntry, onSelectEntry, 
         </div>
       </div>
 
-      {/* Bento Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[600px] relative z-10">
+      {/* Bento Grid - Isolated layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[600px]">
         {categories.map(renderCategoryTile)}
       </div>
 
-      {/* Quick Stats - Separated section */}
+      {/* Quick Stats - Completely separate from grid */}
       {entries.length > 0 && (
-        <div className="relative z-0 mt-8">
-          <Card className="bg-muted/50">
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Star className="h-5 w-5" />
-                Quick Stats
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {categories.map(category => {
-                  const count = groupedEntries[category.id]?.length || 0;
-                  return (
-                    <div key={category.id} className="flex items-center gap-3">
-                      <category.icon className={cn("h-5 w-5", category.iconColor)} />
-                      <div>
-                        <p className="text-sm font-medium">{count}</p>
-                        <p className="text-xs text-muted-foreground">{category.label}</p>
-                      </div>
+        <Card className="bg-muted/50 mt-6">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Star className="h-5 w-5" />
+              Quick Stats
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {categories.map(category => {
+                const count = groupedEntries[category.id]?.length || 0;
+                return (
+                  <div key={category.id} className="flex items-center gap-3">
+                    <category.icon className={cn("h-5 w-5", category.iconColor)} />
+                    <div>
+                      <p className="text-sm font-medium">{count}</p>
+                      <p className="text-xs text-muted-foreground">{category.label}</p>
                     </div>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
       )}
     </div>
   );
