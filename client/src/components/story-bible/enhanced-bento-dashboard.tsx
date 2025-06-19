@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Plus, Search, Filter, Star, Archive, Users, MapPin, Calendar, Zap, Leaf, Paw, Church, Scroll, Package, Languages, Settings, Palette, Utensils, Shield, Scale, Briefcase, Cpu, Globe, Cloud, FileText, BookOpen, Grid, List } from "lucide-react";
+import { Plus, Search, Filter, Star, Archive, Users, MapPin, Calendar, Zap, Leaf, Heart, Church, Scroll, Package, Languages, Settings, Palette, Utensils, Shield, Scale, Briefcase, Cpu, Globe, Cloud, FileText, BookOpen, Grid, List } from "lucide-react";
 import { StoryBibleEntry } from "@shared/schema";
 import { useStoryBibleEntries } from "@/hooks/use-story-bible";
 import { STORY_BIBLE_TAXONOMY, getEntryTypeDisplayName } from "@shared/taxonomy";
@@ -25,7 +25,7 @@ const ENTRY_TYPE_ICONS = {
   events: Calendar,
   world_elements: Zap,
   flora: Leaf,
-  fauna: Paw,
+  fauna: Heart,
   religion_ritual: Church,
   mythology: Scroll,
   item_artifact: Package,
@@ -87,10 +87,11 @@ export function EnhancedBentoDashboard({ projectId, onCreateEntry, onEditEntry }
   // Get unique categories for current entry type
   const availableCategories = useMemo(() => {
     if (selectedEntryType === "all") return [];
-    return [...new Set(entries
+    const categories = entries
       .filter(entry => entry.entryType === selectedEntryType && entry.category)
       .map(entry => entry.category!)
-    )];
+      .filter((category, index, array) => array.indexOf(category) === index);
+    return categories;
   }, [entries, selectedEntryType]);
 
   const EntryCard = ({ entry }: { entry: StoryBibleEntry }) => {

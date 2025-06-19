@@ -365,8 +365,12 @@ export class MemStorage implements IStorage {
       updatedAt: now,
       content: insertEntry.content || "",
       category: insertEntry.category || null,
+      subcategory: insertEntry.subcategory || null,
       tags: insertEntry.tags || null,
-      relatedEntryIds: insertEntry.relatedEntryIds || null
+      relatedEntryIds: insertEntry.relatedEntryIds || null,
+      metadata: insertEntry.metadata || {},
+      isArchived: insertEntry.isArchived || false,
+      priority: insertEntry.priority || 0
     };
     this.storyBibleEntriesMap.set(id, entry);
     return entry;

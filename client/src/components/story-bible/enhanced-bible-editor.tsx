@@ -277,7 +277,7 @@ export function EnhancedBibleEditor({ entry, projectId, onClose }: EnhancedBible
                 <Checkbox 
                   id="archived" 
                   checked={isArchived} 
-                  onCheckedChange={setIsArchived}
+                  onCheckedChange={(checked) => setIsArchived(checked === true)}
                 />
                 <Label htmlFor="archived">Archived</Label>
               </div>
@@ -285,7 +285,7 @@ export function EnhancedBibleEditor({ entry, projectId, onClose }: EnhancedBible
                 <Checkbox 
                   id="priority" 
                   checked={priority > 0} 
-                  onCheckedChange={(checked) => setPriority(checked ? 1 : 0)}
+                  onCheckedChange={(checked) => setPriority(checked === true ? 1 : 0)}
                 />
                 <Label htmlFor="priority">High Priority</Label>
               </div>

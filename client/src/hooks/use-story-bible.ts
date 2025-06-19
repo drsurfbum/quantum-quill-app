@@ -75,13 +75,7 @@ export const useDeleteStoryBibleEntry = () => {
     mutationFn: async (id: number | string) => {
       const res = await apiRequest('DELETE', `/api/story-bible/${id}`, undefined);
       
-      // Update cache immediately after successful deletion
-      queryClient.setQueryData([`/api/projects/${projectId}/story-bible`], (old: StoryBibleEntry[] | undefined) => {
-        if (!old) return [];
-        return old.filter(entry => entry.id !== id);
-      });
-      
-      return { id, projectId };
+      return { id };
     }
   });
 };
