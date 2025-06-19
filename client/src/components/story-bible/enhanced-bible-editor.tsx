@@ -134,6 +134,13 @@ export function EnhancedBibleEditor({ entry, projectId, onClose }: EnhancedBible
     }
   };
 
+  // Mark as loaded after first render to prevent initial saves
+  useEffect(() => {
+    if (isInitialLoad) {
+      setIsInitialLoad(false);
+    }
+  }, [isInitialLoad]);
+
   const handleDelete = async () => {
     try {
       await deleteMutation.mutateAsync(entry.id);
