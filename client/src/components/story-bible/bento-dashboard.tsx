@@ -153,7 +153,7 @@ export default function BentoDashboard({ entries, onCreateEntry, onSelectEntry, 
             {categoryEntries.length > 0 ? (
               category.id === "world-element" ? (
                 // Bento-in-bento for World Elements with same color coding as other categories
-                <div className="grid grid-cols-4 gap-2">
+                <div className="grid grid-cols-2 gap-3">
                   {categoryEntries.slice(0, isExpanded ? undefined : 8).map(entry => {
                     const getEntryColor = (entryType: string) => {
                       switch (entryType) {
@@ -207,7 +207,7 @@ export default function BentoDashboard({ entries, onCreateEntry, onSelectEntry, 
                 </div>
               ) : (
                 // Bento-in-bento: Compact color-coded mini-cards
-                <div className="grid grid-cols-4 gap-2">
+                <div className="grid grid-cols-2 gap-3">
                   {categoryEntries.slice(0, isExpanded ? undefined : 8).map(entry => {
                     // Color coding based on entry type
                     const getEntryColor = (entryType: string) => {
@@ -284,9 +284,9 @@ export default function BentoDashboard({ entries, onCreateEntry, onSelectEntry, 
               size="sm"
               className="w-full justify-center gap-2 h-9"
               onClick={() => {
-                // For world elements, default to the most common category
+                // For world elements, use specific subcategories instead of generic "world-element"
                 if (category.id === "world-element") {
-                  onCreateEntry("world-element");
+                  onCreateEntry("government"); // Default to government as most common
                 } else {
                   // For other categories, use the primary subcategory
                   onCreateEntry(category.subcategories[0]);
@@ -315,7 +315,7 @@ export default function BentoDashboard({ entries, onCreateEntry, onSelectEntry, 
       </div>
 
       {/* Bento Grid - Optimized for 2x4 display */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 min-h-[700px]">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 min-h-[800px]">
         {categories.map(renderCategoryTile)}
       </div>
 
