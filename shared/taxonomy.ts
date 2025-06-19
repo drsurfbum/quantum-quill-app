@@ -1,19 +1,56 @@
 // Story Bible Taxonomy - Comprehensive categorization system
-// Based on user-provided organizational taxonomy
+// Based on user-provided detailed taxonomy rules
 
 export const STORY_BIBLE_TAXONOMY = {
   CHARACTERS: {
     name: "Characters",
     key: "characters",
     description: "People, beings, and entities in your story",
-    subcategories: {
-      PROTAGONIST: "Protagonist",
-      ANTAGONIST: "Antagonist", 
-      SUPPORTING: "Supporting Character",
-      MINOR: "Minor Character",
-      CROWD: "Crowd Character",
-      HISTORICAL: "Historical Figure",
-      MYTHICAL: "Mythical Being"
+    fields: {
+      primaryRole: {
+        name: "Primary Role",
+        type: "single-select",
+        required: true,
+        options: [
+          "Protagonist",
+          "Antagonist", 
+          "Supporting Character",
+          "NPC / Minor Character",
+          "Cameo / Background"
+        ]
+      },
+      affiliation: {
+        name: "Affiliation / Faction",
+        type: "multi-select-linked",
+        linkedTo: "groups_races",
+        required: false
+      },
+      archetype: {
+        name: "Archetype / Profession",
+        type: "multi-select",
+        required: false,
+        options: [
+          "Pilot", "Scientist", "Merchant", "Warrior", "Scholar", "Healer",
+          "Artist", "Leader", "Spy", "Criminal", "Noble", "Commoner"
+        ]
+      },
+      status: {
+        name: "Status",
+        type: "single-select",
+        required: false,
+        options: ["Alive", "Deceased", "Missing", "Unknown"]
+      },
+      era: {
+        name: "Era / Timeline Period",
+        type: "text",
+        required: false
+      },
+      importance: {
+        name: "Importance Level",
+        type: "single-select",
+        required: false,
+        options: ["Main", "Secondary", "Tertiary"]
+      }
     }
   },
   
@@ -21,17 +58,53 @@ export const STORY_BIBLE_TAXONOMY = {
     name: "Groups & Races",
     key: "groups_races",
     description: "Species, races, organizations, and collective entities",
-    subcategories: {
-      SPECIES: "Species",
-      RACE: "Race/Ethnicity",
-      ORGANIZATION: "Organization",
-      FACTION: "Faction",
-      GUILD: "Guild",
-      FAMILY: "Family/Clan",
-      GOVERNMENT: "Government Body",
-      MILITARY: "Military Unit",
-      RELIGIOUS_ORDER: "Religious Order",
-      SECRET_SOCIETY: "Secret Society"
+    fields: {
+      category: {
+        name: "Category",
+        type: "single-select",
+        required: true,
+        options: [
+          "Species / Race",
+          "Organization / Faction",
+          "Tribe / Clan",
+          "Government / Political Body",
+          "Company / Guild"
+        ]
+      },
+      parentGroup: {
+        name: "Parent Group",
+        type: "single-select-linked",
+        linkedTo: "groups_races",
+        required: false
+      },
+      status: {
+        name: "Status",
+        type: "single-select",
+        required: false,
+        options: ["Active", "Defunct", "Secret/Hidden"]
+      },
+      homeLocation: {
+        name: "Home Location",
+        type: "single-select-linked",
+        linkedTo: "locations",
+        required: false
+      },
+      notableMembers: {
+        name: "Notable Members",
+        type: "multi-select-linked",
+        linkedTo: "characters",
+        required: false
+      },
+      eraEstablished: {
+        name: "Era Established",
+        type: "text",
+        required: false
+      },
+      eraDisolved: {
+        name: "Era Dissolved",
+        type: "text",
+        required: false
+      }
     }
   },
 
@@ -39,15 +112,62 @@ export const STORY_BIBLE_TAXONOMY = {
     name: "Locations",
     key: "locations", 
     description: "Places, settings, and geographical features",
-    subcategories: {
-      SETTLEMENT: "Settlement",
-      BUILDING: "Building",
-      ROOM: "Room/Interior",
-      NATURAL: "Natural Feature",
-      CELESTIAL: "Celestial Body",
-      TRANSPORTATION: "Vehicle/Vessel",
-      DIMENSION: "Dimension/Realm",
-      REGION: "Region/Territory"
+    fields: {
+      type: {
+        name: "Type",
+        type: "single-select",
+        required: true,
+        options: [
+          "Planet",
+          "Moon",
+          "City / Settlement",
+          "Building / Structure",
+          "Region / Biome",
+          "Station / Ship",
+          "Dungeon / Ruin",
+          "Other"
+        ]
+      },
+      parentLocation: {
+        name: "Parent Location",
+        type: "single-select-linked",
+        linkedTo: "locations",
+        required: false
+      },
+      environment: {
+        name: "Environment / Biome",
+        type: "multi-select",
+        required: false,
+        options: [
+          "Desert", "Forest", "Ice", "Urban", "Underwater", "Mountain",
+          "Plains", "Swamp", "Volcanic", "Space", "Underground"
+        ]
+      },
+      status: {
+        name: "Status",
+        type: "single-select",
+        required: false,
+        options: ["Inhabited", "Abandoned", "Ruined", "Under Construction"]
+      },
+      significance: {
+        name: "Significance",
+        type: "multi-select",
+        required: false,
+        options: [
+          "Capital", "Trading Hub", "Military Base", "Sacred Site",
+          "Research Facility", "Mining Colony", "Agricultural Center"
+        ]
+      },
+      coordinates: {
+        name: "Coordinates / Map Reference",
+        type: "text",
+        required: false
+      },
+      era: {
+        name: "Era / Timeline Relevance",
+        type: "text",
+        required: false
+      }
     }
   },
 
@@ -55,15 +175,65 @@ export const STORY_BIBLE_TAXONOMY = {
     name: "Events",
     key: "events",
     description: "Historical events, battles, ceremonies, and occurrences",
-    subcategories: {
-      HISTORICAL: "Historical Event",
-      BATTLE: "Battle/Conflict",
-      CEREMONY: "Ceremony/Ritual",
-      FESTIVAL: "Festival/Celebration",
-      DISASTER: "Disaster/Catastrophe",
-      DISCOVERY: "Discovery/Invention",
-      POLITICAL: "Political Event",
-      PERSONAL: "Personal Event"
+    fields: {
+      type: {
+        name: "Type",
+        type: "single-select",
+        required: true,
+        options: [
+          "Conflict / Battle",
+          "Discovery / Invention",
+          "Diplomacy / Treaty",
+          "Personal Milestone",
+          "Catastrophe / Disaster",
+          "Festival / Ceremony",
+          "Migration / Exploration",
+          "Other"
+        ]
+      },
+      date: {
+        name: "Date / Era",
+        type: "text",
+        required: false
+      },
+      approximateDate: {
+        name: "Date is Approximate",
+        type: "checkbox",
+        required: false
+      },
+      locations: {
+        name: "Location(s)",
+        type: "multi-select-linked",
+        linkedTo: "locations",
+        required: false
+      },
+      charactersInvolved: {
+        name: "Characters Involved",
+        type: "multi-select-linked",
+        linkedTo: "characters",
+        required: false
+      },
+      groupsInvolved: {
+        name: "Groups / Factions",
+        type: "multi-select-linked",
+        linkedTo: "groups_races",
+        required: false
+      },
+      outcome: {
+        name: "Outcome / Significance",
+        type: "multi-select",
+        required: false,
+        options: [
+          "Victory", "Defeat", "Alliance Formed", "Cataclysm", 
+          "Turning Point", "Discovery Made", "Treaty Signed"
+        ]
+      },
+      visibility: {
+        name: "Visibility / Status",
+        type: "single-select",
+        required: false,
+        options: ["Canonical", "Rumor/Legend", "Hypothetical"]
+      }
     }
   },
 
@@ -71,94 +241,87 @@ export const STORY_BIBLE_TAXONOMY = {
     name: "World Elements",
     key: "world_elements",
     description: "Core elements that define your world",
-    subcategories: {
-      MAGIC_SYSTEM: "Magic System",
-      TECHNOLOGY: "Technology",
-      NATURAL_PHENOMENON: "Natural Phenomenon",
-      CURRENCY: "Currency/Economy",
-      TRANSPORTATION: "Transportation",
-      COMMUNICATION: "Communication"
+    fields: {
+      category: {
+        name: "Category",
+        type: "single-select",
+        required: true,
+        options: [
+          "Flora", "Fauna", "Religion/Ritual", "Mythology", "Item/Artifact",
+          "Language", "System", "Entertainment", "Clothing", "Food",
+          "Disease/Medicine", "Law/Politics", "Professions", "Technology",
+          "Astronomy", "Weather"
+        ]
+      },
+      subcategory: {
+        name: "Subcategory / Specific Type",
+        type: "text",
+        required: false
+      },
+      parentElement: {
+        name: "Parent Element",
+        type: "single-select-linked",
+        linkedTo: "world_elements",
+        required: false
+      },
+      associatedLocations: {
+        name: "Associated Locations",
+        type: "multi-select-linked",
+        linkedTo: "locations",
+        required: false
+      },
+      associatedCharacters: {
+        name: "Associated Characters",
+        type: "multi-select-linked",
+        linkedTo: "characters",
+        required: false
+      },
+      associatedGroups: {
+        name: "Associated Groups",
+        type: "multi-select-linked",
+        linkedTo: "groups_races",
+        required: false
+      },
+      associatedEvents: {
+        name: "Associated Events",
+        type: "multi-select-linked",
+        linkedTo: "events",
+        required: false
+      },
+      status: {
+        name: "Status",
+        type: "single-select",
+        required: false,
+        options: ["Common", "Rare", "Extinct/Defunct", "Legendary"]
+      }
+    },
+    categoryFields: {
+      Flora: {
+        habitat: { name: "Habitat", type: "text" },
+        growthBehavior: { name: "Growth Behavior", type: "text" },
+        uses: { name: "Uses", type: "multi-select", options: ["Edible", "Medicinal", "Material", "Decorative"] },
+        threats: { name: "Threats", type: "text" },
+        lifecycle: { name: "Lifecycle", type: "text" }
+      },
+      Fauna: {
+        habitat: { name: "Habitat", type: "text" },
+        diet: { name: "Diet", type: "single-select", options: ["Carnivore", "Herbivore", "Omnivore", "Other"] },
+        behavior: { name: "Behavior", type: "text" },
+        lifecycle: { name: "Lifecycle", type: "text" },
+        domestication: { name: "Domestication Status", type: "single-select", options: ["Wild", "Domestic", "Semi-domestic"] },
+        threatLevel: { name: "Threat Level", type: "single-select", options: ["Harmless", "Low", "Moderate", "High", "Extreme"] }
+      },
+      Technology: {
+        inventor: { name: "Inventor/Creator", type: "text" },
+        powerSource: { name: "Power Source", type: "text" },
+        functionalDescription: { name: "Functional Description", type: "textarea" },
+        limitations: { name: "Limitations", type: "text" },
+        adoptionLevel: { name: "Adoption Level", type: "single-select", options: ["Prototype", "Limited", "Common", "Universal"] }
+      }
     }
   },
 
-  FLORA: {
-    name: "Flora",
-    key: "flora",
-    description: "Plants, trees, and vegetation",
-    subcategories: {
-      TREE: "Tree",
-      FLOWER: "Flower",
-      CROP: "Crop/Food Plant",
-      HERB: "Herb/Medicine",
-      FUNGUS: "Fungus/Mushroom",
-      AQUATIC: "Aquatic Plant",
-      MAGICAL: "Magical Plant",
-      POISONOUS: "Poisonous Plant"
-    }
-  },
-
-  FAUNA: {
-    name: "Fauna", 
-    key: "fauna",
-    description: "Animals, creatures, and beasts",
-    subcategories: {
-      DOMESTIC: "Domestic Animal",
-      WILD: "Wild Animal",
-      PREDATOR: "Predator",
-      MAGICAL: "Magical Creature",
-      MYTHICAL: "Mythical Beast",
-      AQUATIC: "Aquatic Creature",
-      AERIAL: "Flying Creature",
-      EXTINCT: "Extinct Species"
-    }
-  },
-
-  RELIGION_RITUAL: {
-    name: "Religion/Ritual",
-    key: "religion_ritual", 
-    description: "Religious beliefs, deities, and ceremonial practices",
-    subcategories: {
-      DEITY: "Deity/God",
-      RELIGION: "Religion/Faith",
-      RITUAL: "Ritual/Ceremony",
-      HOLY_SITE: "Holy Site/Temple", 
-      RELIGIOUS_TEXT: "Religious Text",
-      AFTERLIFE: "Afterlife/Death Beliefs",
-      PRAYER: "Prayer/Incantation",
-      RELIGIOUS_ORDER: "Religious Order"
-    }
-  },
-
-  MYTHOLOGY: {
-    name: "Mythology",
-    key: "mythology",
-    description: "Myths, legends, and folklore",
-    subcategories: {
-      CREATION_MYTH: "Creation Myth",
-      LEGEND: "Legend",
-      FOLKTALE: "Folktale",
-      PROPHECY: "Prophecy",
-      CURSE: "Curse/Blessing",
-      HERO_TALE: "Hero Tale",
-      ORIGIN_STORY: "Origin Story"
-    }
-  },
-
-  ITEM_ARTIFACT: {
-    name: "Item/Artifact",
-    key: "item_artifact",
-    description: "Objects, tools, weapons, and artifacts",
-    subcategories: {
-      WEAPON: "Weapon",
-      ARMOR: "Armor/Protection",
-      TOOL: "Tool/Instrument",
-      JEWELRY: "Jewelry/Accessory",
-      BOOK: "Book/Document",
-      MAGICAL_ITEM: "Magical Item",
-      RELIC: "Relic/Artifact",
-      EVERYDAY_OBJECT: "Everyday Object"
-    }
-  },
+  // Note: Flora, Fauna, Religion/Ritual, Mythology, Item/Artifact are handled as World Elements subcategories
 
   LANGUAGE: {
     name: "Language",
@@ -365,14 +528,22 @@ export function getTaxonomyByKey(key: string) {
   return STORY_BIBLE_TAXONOMY[key as keyof typeof STORY_BIBLE_TAXONOMY];
 }
 
-export function getAllSubcategories(entryType: string) {
-  const taxonomy = getTaxonomyByKey(entryType.toUpperCase());
-  return taxonomy ? Object.values(taxonomy.subcategories) : [];
-}
-
 export function getEntryTypeDisplayName(key: string) {
   const taxonomy = getTaxonomyByKey(key.toUpperCase());
   return taxonomy?.name || key;
+}
+
+export function getTaxonomyFields(entryType: string) {
+  const taxonomy = getTaxonomyByKey(entryType.toUpperCase());
+  return taxonomy?.fields || {};
+}
+
+export function getCategorySpecificFields(entryType: string, category?: string) {
+  const taxonomy = getTaxonomyByKey(entryType.toUpperCase());
+  if (taxonomy && 'categoryFields' in taxonomy && category) {
+    return (taxonomy as any).categoryFields[category] || {};
+  }
+  return {};
 }
 
 // Validation schemas

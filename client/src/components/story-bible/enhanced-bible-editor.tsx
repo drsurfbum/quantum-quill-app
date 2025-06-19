@@ -14,6 +14,7 @@ import { useUpdateStoryBibleEntry, useDeleteStoryBibleEntry, useStoryBibleEntrie
 import { useToast } from "@/hooks/use-toast";
 import { StoryBibleEntry } from "@shared/schema";
 import { TaxonomySelector } from "./taxonomy-selector";
+import { DynamicFormFields } from "./dynamic-form-fields";
 import { debounce } from "lodash";
 
 interface EnhancedBibleEditorProps {
@@ -188,10 +189,10 @@ export function EnhancedBibleEditor({ entry, projectId, onClose }: EnhancedBible
 
         {/* Sidebar */}
         <div className="space-y-4">
-          {/* Taxonomy */}
+          {/* Basic Classification */}
           <Card>
             <CardHeader>
-              <CardTitle>Classification</CardTitle>
+              <CardTitle>Basic Classification</CardTitle>
             </CardHeader>
             <CardContent>
               <TaxonomySelector
@@ -206,6 +207,15 @@ export function EnhancedBibleEditor({ entry, projectId, onClose }: EnhancedBible
               />
             </CardContent>
           </Card>
+
+          {/* Dynamic Structured Fields */}
+          <DynamicFormFields
+            entryType={entryType}
+            metadata={metadata}
+            onMetadataChange={setMetadata}
+            projectId={projectId}
+            disabled={hasUnsavedChanges}
+          />
 
           {/* Related Entries */}
           <Card>
