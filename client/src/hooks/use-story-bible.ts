@@ -45,7 +45,14 @@ export const useUpdateStoryBibleEntry = () => {
       id: number | string,
       title?: string, 
       content?: string,
-      entryType?: string
+      entryType?: string,
+      category?: string | null,
+      subcategory?: string | null,
+      tags?: string[] | null,
+      relatedEntryIds?: number[] | null,
+      metadata?: any,
+      isArchived?: boolean,
+      priority?: number
     }) => {
       const res = await apiRequest('PUT', `/api/story-bible/${id}`, data);
       const result = await res.json();
@@ -65,7 +72,7 @@ export const useUpdateStoryBibleEntry = () => {
 // Delete a story bible entry
 export const useDeleteStoryBibleEntry = () => {
   return useMutation({
-    mutationFn: async ({ id, projectId }: { id: number | string, projectId: number | string }) => {
+    mutationFn: async (id: number | string) => {
       const res = await apiRequest('DELETE', `/api/story-bible/${id}`, undefined);
       
       // Update cache immediately after successful deletion
