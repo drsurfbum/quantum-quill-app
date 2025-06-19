@@ -54,6 +54,23 @@ export function EnhancedBentoDashboard({ projectId, onCreateEntry, onEditEntry }
 
   const { data: entries = [] } = useStoryBibleEntries(projectId);
 
+  // Create a mapping from old entry types to enhanced taxonomy categories
+  const entryTypeMapping = useMemo(() => ({
+    'government': 'groups_races',
+    'lore': 'world_elements',
+    'timeline': 'events',
+    'location': 'locations',
+    'event': 'events',
+    'race': 'groups_races',
+    'group': 'groups_races',
+    // Keep direct matches
+    'characters': 'characters',
+    'groups_races': 'groups_races', 
+    'locations': 'locations',
+    'events': 'events',
+    'world_elements': 'world_elements'
+  }), []);
+
   // Filter and search entries
   const filteredEntries = useMemo(() => {
     return entries.filter(entry => {
@@ -73,23 +90,6 @@ export function EnhancedBentoDashboard({ projectId, onCreateEntry, onEditEntry }
       return matchesSearch && matchesType && matchesCategory && matchesArchived && matchesPriority;
     });
   }, [entries, searchTerm, selectedEntryType, selectedCategory, showArchived, priorityFilter, entryTypeMapping]);
-
-  // Create a mapping from old entry types to enhanced taxonomy categories
-  const entryTypeMapping: Record<string, string> = {
-    'government': 'groups_races',
-    'lore': 'world_elements',
-    'timeline': 'events',
-    'location': 'locations',
-    'event': 'events',
-    'race': 'groups_races',
-    'group': 'groups_races',
-    // Keep direct matches
-    'characters': 'characters',
-    'groups_races': 'groups_races', 
-    'locations': 'locations',
-    'events': 'events',
-    'world_elements': 'world_elements'
-  };
 
   // Group entries by mapped type for overview
   const entriesByType = useMemo(() => {
