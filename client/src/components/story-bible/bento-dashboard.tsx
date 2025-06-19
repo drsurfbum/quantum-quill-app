@@ -153,7 +153,7 @@ export default function BentoDashboard({ entries, onCreateEntry, onSelectEntry, 
             {categoryEntries.length > 0 ? (
               category.id === "world-element" ? (
                 // Bento-in-bento for World Elements with same color coding as other categories
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-4 gap-2">
                   {categoryEntries.slice(0, isExpanded ? undefined : 8).map(entry => {
                     const getEntryColor = (entryType: string) => {
                       switch (entryType) {
@@ -207,7 +207,7 @@ export default function BentoDashboard({ entries, onCreateEntry, onSelectEntry, 
                 </div>
               ) : (
                 // Bento-in-bento: Compact color-coded mini-cards
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-4 gap-2">
                   {categoryEntries.slice(0, isExpanded ? undefined : 8).map(entry => {
                     // Color coding based on entry type
                     const getEntryColor = (entryType: string) => {
@@ -314,8 +314,8 @@ export default function BentoDashboard({ entries, onCreateEntry, onSelectEntry, 
         </div>
       </div>
 
-      {/* Bento Grid - Isolated layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[600px]">
+      {/* Bento Grid - Optimized for 2x4 display */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 min-h-[700px]">
         {categories.map(renderCategoryTile)}
       </div>
 
