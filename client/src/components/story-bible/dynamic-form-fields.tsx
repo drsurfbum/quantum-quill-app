@@ -125,15 +125,15 @@ export function DynamicFormFields({
       case "single-select":
         return (
           <Select
-            value={value || ""}
-            onValueChange={(newValue) => updateMetadata(fieldKey, newValue)}
+            value={value || "__none__"}
+            onValueChange={(newValue) => updateMetadata(fieldKey, newValue === "__none__" ? "" : newValue)}
             disabled={disabled}
           >
             <SelectTrigger>
               <SelectValue placeholder={`Select ${field.name.toLowerCase()}...`} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">None</SelectItem>
+              <SelectItem value="__none__">None</SelectItem>
               {field.options?.map((option) => (
                 <SelectItem key={option} value={option}>
                   {option}
@@ -163,12 +163,12 @@ export function DynamicFormFields({
                 </Badge>
               ))}
             </div>
-            {!disabled && (
+            {!disabled && field.options && field.options.filter(option => !(value || []).includes(option)).length > 0 && (
               <div className="flex gap-2">
                 <Select
-                  value={newMultiSelectValue[fieldKey] || ""}
+                  value="__add_option__"
                   onValueChange={(newValue) => {
-                    if (newValue) {
+                    if (newValue !== "__add_option__") {
                       const currentValues = value || [];
                       if (!currentValues.includes(newValue)) {
                         updateMetadata(fieldKey, [...currentValues, newValue]);
@@ -180,6 +180,7 @@ export function DynamicFormFields({
                     <SelectValue placeholder={`Add ${field.name.toLowerCase()}...`} />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="__add_option__" disabled>Add option...</SelectItem>
                     {field.options?.filter(option => !(value || []).includes(option)).map((option) => (
                       <SelectItem key={option} value={option}>
                         {option}
@@ -187,6 +188,11 @@ export function DynamicFormFields({
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+            )}
+            {!disabled && field.options && field.options.filter(option => !(value || []).includes(option)).length === 0 && field.options.length > 0 && (
+              <div className="text-sm text-muted-foreground p-2 border rounded">
+                All available options are already selected
               </div>
             )}
           </div>
@@ -213,15 +219,20 @@ export function DynamicFormFields({
                 )}
               </div>
             )}
-            {!disabled && !selectedEntry && (
+            {!disabled && !selectedEntry && linkedEntries.length > 0 && (
               <Select
-                value=""
-                onValueChange={(entryId) => addLinkedValue(fieldKey, entryId)}
+                value="__select__"
+                onValueChange={(entryId) => {
+                  if (entryId !== "__select__") {
+                    addLinkedValue(fieldKey, entryId);
+                  }
+                }}
               >
                 <SelectTrigger>
                   <SelectValue placeholder={`Select ${field.name.toLowerCase()}...`} />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="__select__" disabled>Select an entry...</SelectItem>
                   {linkedEntries.map((entry) => (
                     <SelectItem key={entry.id} value={entry.id.toString()}>
                       <div className="flex flex-col">
@@ -235,17 +246,23 @@ export function DynamicFormFields({
                 </SelectContent>
               </Select>
             )}
+            {!disabled && !selectedEntry && linkedEntries.length === 0 && (
+              <div className="text-sm text-muted-foreground p-2 border rounded">
+                No {field.linkedTo} entries available to link
+              </div>
+            )}
           </div>
         );
 
       case "multi-select-linked":
         const linkedEntriesMulti = getLinkedEntries(field.linkedTo!);
         const selectedEntries = (value || []).map((id: number) => getLinkedEntryById(id)).filter(Boolean);
+        const availableEntries = linkedEntriesMulti.filter(entry => !(value || []).includes(entry.id));
         
         return (
           <div className="space-y-2">
             <div className="flex flex-wrap gap-1 min-h-[2rem] p-2 border rounded-md">
-              {selectedEntries.map((entry) => (
+              {selectedEntries.map((entry: any) => (
                 <Badge key={entry.id} variant="secondary" className="gap-1">
                   {entry.title}
                   {!disabled && (
@@ -261,29 +278,42 @@ export function DynamicFormFields({
                 </Badge>
               ))}
             </div>
-            {!disabled && (
+            {!disabled && availableEntries.length > 0 && (
               <Select
-                value=""
-                onValueChange={(entryId) => addLinkedValue(fieldKey, entryId)}
+                value="__add__"
+                onValueChange={(entryId) => {
+                  if (entryId !== "__add__") {
+                    addLinkedValue(fieldKey, entryId);
+                  }
+                }}
               >
                 <SelectTrigger>
                   <SelectValue placeholder={`Add ${field.name.toLowerCase()}...`} />
                 </SelectTrigger>
                 <SelectContent>
-                  {linkedEntriesMulti
-                    .filter(entry => !(value || []).includes(entry.id))
-                    .map((entry) => (
-                      <SelectItem key={entry.id} value={entry.id.toString()}>
-                        <div className="flex flex-col">
-                          <span className="font-medium">{entry.title}</span>
-                          <span className="text-xs text-muted-foreground">
-                            {entry.category || 'No category'}
-                          </span>
-                        </div>
-                      </SelectItem>
-                    ))}
+                  <SelectItem value="__add__" disabled>Add entry...</SelectItem>
+                  {availableEntries.map((entry) => (
+                    <SelectItem key={entry.id} value={entry.id.toString()}>
+                      <div className="flex flex-col">
+                        <span className="font-medium">{entry.title}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {entry.category || 'No category'}
+                        </span>
+                      </div>
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
+            )}
+            {!disabled && availableEntries.length === 0 && linkedEntriesMulti.length > 0 && (
+              <div className="text-sm text-muted-foreground p-2 border rounded">
+                All available {field.linkedTo} entries are already linked
+              </div>
+            )}
+            {linkedEntriesMulti.length === 0 && (
+              <div className="text-sm text-muted-foreground p-2 border rounded">
+                No {field.linkedTo} entries available to link
+              </div>
             )}
           </div>
         );
