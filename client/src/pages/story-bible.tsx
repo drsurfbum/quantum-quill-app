@@ -151,6 +151,7 @@ export default function StoryBible() {
   // Handle create operation errors
   useEffect(() => {
     if (isCreateError) {
+      console.error("Entry creation error:", isCreateError);
       toast({
         title: "Error creating entry",
         description: "There was an error creating your entry. Please try again.",

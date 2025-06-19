@@ -315,36 +315,38 @@ export default function BentoDashboard({ entries, onCreateEntry, onSelectEntry, 
       </div>
 
       {/* Bento Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[600px]">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[600px] relative z-10">
         {categories.map(renderCategoryTile)}
       </div>
 
-      {/* Quick Stats */}
+      {/* Quick Stats - Separated section */}
       {entries.length > 0 && (
-        <Card className="bg-muted/50">
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Star className="h-5 w-5" />
-              Quick Stats
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {categories.map(category => {
-                const count = groupedEntries[category.id]?.length || 0;
-                return (
-                  <div key={category.id} className="flex items-center gap-3">
-                    <category.icon className={cn("h-5 w-5", category.iconColor)} />
-                    <div>
-                      <p className="text-sm font-medium">{count}</p>
-                      <p className="text-xs text-muted-foreground">{category.label}</p>
+        <div className="relative z-0 mt-8">
+          <Card className="bg-muted/50">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Star className="h-5 w-5" />
+                Quick Stats
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {categories.map(category => {
+                  const count = groupedEntries[category.id]?.length || 0;
+                  return (
+                    <div key={category.id} className="flex items-center gap-3">
+                      <category.icon className={cn("h-5 w-5", category.iconColor)} />
+                      <div>
+                        <p className="text-sm font-medium">{count}</p>
+                        <p className="text-xs text-muted-foreground">{category.label}</p>
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       )}
     </div>
   );
