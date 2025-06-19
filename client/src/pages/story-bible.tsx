@@ -144,22 +144,7 @@ export default function StoryBible() {
                     <BookOpen className="mr-1 h-4 w-4" /> Story Bible
                   </TabsTrigger>
                 </Link>
-                <Link href={`/project/${id}/whiteboards`}>
-                  <TabsTrigger value={`/project/${id}/whiteboards`} className={cn(
-                    "data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none",
-                    location === `/project/${id}/whiteboards` ? "border-b-2 border-primary" : ""
-                  )}>
-                    Whiteboards
-                  </TabsTrigger>
-                </Link>
-                <Link href={`/project/${id}/plot-structure`}>
-                  <TabsTrigger value={`/project/${id}/plot-structure`} className={cn(
-                    "data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none",
-                    location === `/project/${id}/plot-structure` ? "border-b-2 border-primary" : ""
-                  )}>
-                    Plot Structure
-                  </TabsTrigger>
-                </Link>
+
               </TabsList>
             </Tabs>
 

@@ -61,7 +61,9 @@ export function EnhancedBentoDashboard({ projectId, onCreateEntry, onEditEntry }
                            entry.content?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            entry.tags?.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
       
-      const matchesType = selectedEntryType === "all" || entry.entryType === selectedEntryType;
+      // Use mapping for type filtering
+      const mappedType = entryTypeMapping[entry.entryType] || entry.entryType;
+      const matchesType = selectedEntryType === "all" || mappedType === selectedEntryType || entry.entryType === selectedEntryType;
       const matchesCategory = selectedCategory === "all" || entry.category === selectedCategory;
       const matchesArchived = showArchived ? entry.isArchived : !entry.isArchived;
       const matchesPriority = priorityFilter === "all" || 
@@ -70,16 +72,34 @@ export function EnhancedBentoDashboard({ projectId, onCreateEntry, onEditEntry }
 
       return matchesSearch && matchesType && matchesCategory && matchesArchived && matchesPriority;
     });
-  }, [entries, searchTerm, selectedEntryType, selectedCategory, showArchived, priorityFilter]);
+  }, [entries, searchTerm, selectedEntryType, selectedCategory, showArchived, priorityFilter, entryTypeMapping]);
 
-  // Group entries by type for overview
+  // Create a mapping from old entry types to enhanced taxonomy categories
+  const entryTypeMapping: Record<string, string> = {
+    'government': 'groups_races',
+    'lore': 'world_elements',
+    'timeline': 'events',
+    'location': 'locations',
+    'event': 'events',
+    'race': 'groups_races',
+    'group': 'groups_races',
+    // Keep direct matches
+    'characters': 'characters',
+    'groups_races': 'groups_races', 
+    'locations': 'locations',
+    'events': 'events',
+    'world_elements': 'world_elements'
+  };
+
+  // Group entries by mapped type for overview
   const entriesByType = useMemo(() => {
     const grouped: Record<string, StoryBibleEntry[]> = {};
     entries.forEach(entry => {
-      if (!grouped[entry.entryType]) {
-        grouped[entry.entryType] = [];
+      const mappedType = entryTypeMapping[entry.entryType] || entry.entryType;
+      if (!grouped[mappedType]) {
+        grouped[mappedType] = [];
       }
-      grouped[entry.entryType].push(entry);
+      grouped[mappedType].push(entry);
     });
     return grouped;
   }, [entries]);
