@@ -34,7 +34,8 @@ export function EnhancedBibleEditor({ entry, projectId, onClose }: EnhancedBible
   const [metadata, setMetadata] = useState(entry.metadata || {});
   const [isArchived, setIsArchived] = useState(entry.isArchived || false);
   const [priority, setPriority] = useState(entry.priority || 0);
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<'saved' | 'saving'>('saved');
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   const updateMutation = useUpdateStoryBibleEntry();
   const deleteMutation = useDeleteStoryBibleEntry();
@@ -44,42 +45,94 @@ export function EnhancedBibleEditor({ entry, projectId, onClose }: EnhancedBible
   // Available entries for linking (excluding current entry)
   const availableForLinking = (allEntries || []).filter(e => e.id !== entry.id);
 
-  // Debounced save function
-  const debouncedSave = debounce(async () => {
-    if (!hasUnsavedChanges) return;
+  // Reset state when entry changes
+  useEffect(() => {
+    setTitle(entry.title);
+    setContent(entry.content || "");
+    setEntryType(entry.entryType);
+    setCategory(entry.category || "");
+    setSubcategory(entry.subcategory || "");
+    setTags(entry.tags || []);
+    setRelatedEntryIds(entry.relatedEntryIds || []);
+    setMetadata(entry.metadata || {});
+    setIsArchived(entry.isArchived || false);
+    setPriority(entry.priority || 0);
+    setIsInitialLoad(true);
+  }, [entry]);
 
-    try {
-      await updateMutation.mutateAsync({
-        id: entry.id,
-        title,
-        content,
-        entryType,
-        subcategory: subcategory || null,
-        tags: tags.length > 0 ? tags : null,
-        relatedEntryIds: relatedEntryIds.length > 0 ? relatedEntryIds : null,
-        metadata,
-        isArchived,
-        priority,
-      });
-      setHasUnsavedChanges(false);
-      toast({
-        title: "Saved",
-        description: "Entry updated successfully",
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to save entry",
-        variant: "destructive",
-      });
-    }
+  // Set up debounced save
+  const debouncedSave = debounce((updatedFields: any) => {
+    updateMutation.mutate(
+      { 
+        id: entry.id, 
+        ...updatedFields
+      },
+      {
+        onSuccess: () => {
+          setSaveStatus('saved');
+        },
+        onError: () => {
+          toast({
+            title: "Failed to save",
+            description: "There was an error saving your changes. Please try again.",
+            variant: "destructive",
+          });
+          setSaveStatus('saved');
+        }
+      }
+    );
   }, 1000);
 
-  // Mark as changed when any field updates
-  useEffect(() => {
-    setHasUnsavedChanges(true);
-    debouncedSave();
-  }, [title, content, entryType, category, subcategory, tags, relatedEntryIds, metadata, isArchived, priority]);
+  // Individual change handlers with debounced save
+  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newTitle = e.target.value;
+    setTitle(newTitle);
+    if (!isInitialLoad) {
+      setSaveStatus('saving');
+      debouncedSave({ title: newTitle });
+    }
+  };
+
+  const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newContent = e.target.value;
+    setContent(newContent);
+    if (!isInitialLoad) {
+      setSaveStatus('saving');
+      debouncedSave({ content: newContent });
+    }
+  };
+
+  const handleEntryTypeChange = (value: string) => {
+    setEntryType(value);
+    if (!isInitialLoad) {
+      setSaveStatus('saving');
+      debouncedSave({ entryType: value });
+    }
+  };
+
+  const handleSubcategoryChange = (value: string) => {
+    setSubcategory(value);
+    if (!isInitialLoad) {
+      setSaveStatus('saving');
+      debouncedSave({ subcategory: value || null });
+    }
+  };
+
+  const handleTagsChange = (newTags: string[]) => {
+    setTags(newTags);
+    if (!isInitialLoad) {
+      setSaveStatus('saving');
+      debouncedSave({ tags: newTags.length > 0 ? newTags : null });
+    }
+  };
+
+  const handleMetadataChange = (newMetadata: Record<string, any>) => {
+    setMetadata(newMetadata);
+    if (!isInitialLoad) {
+      setSaveStatus('saving');
+      debouncedSave({ metadata: newMetadata });
+    }
+  };
 
   const handleDelete = async () => {
     try {
@@ -119,13 +172,13 @@ export function EnhancedBibleEditor({ entry, projectId, onClose }: EnhancedBible
         <div className="flex items-center gap-2">
           <Input
             value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            onChange={handleTitleChange}
             className="text-lg font-semibold border-none p-0 h-auto bg-transparent"
             placeholder="Entry title..."
           />
-          {hasUnsavedChanges && (
+          {saveStatus === 'saving' && (
             <Badge variant="outline" className="text-xs">
-              Unsaved
+              Saving...
             </Badge>
           )}
         </div>
@@ -179,7 +232,7 @@ export function EnhancedBibleEditor({ entry, projectId, onClose }: EnhancedBible
             <CardContent>
               <Textarea
                 value={content}
-                onChange={(e) => setContent(e.target.value)}
+                onChange={handleContentChange}
                 placeholder="Write your entry content here..."
                 className="min-h-[400px] resize-none"
               />
@@ -200,10 +253,10 @@ export function EnhancedBibleEditor({ entry, projectId, onClose }: EnhancedBible
                 category={category}
                 subcategory={subcategory}
                 tags={tags}
-                onEntryTypeChange={setEntryType}
+                onEntryTypeChange={handleEntryTypeChange}
                 onCategoryChange={setCategory}
-                onSubcategoryChange={setSubcategory}
-                onTagsChange={setTags}
+                onSubcategoryChange={handleSubcategoryChange}
+                onTagsChange={handleTagsChange}
               />
             </CardContent>
           </Card>
@@ -212,9 +265,9 @@ export function EnhancedBibleEditor({ entry, projectId, onClose }: EnhancedBible
           <DynamicFormFields
             entryType={entryType}
             metadata={metadata}
-            onMetadataChange={setMetadata}
+            onMetadataChange={handleMetadataChange}
             projectId={projectId}
-            disabled={hasUnsavedChanges}
+            disabled={false}
           />
 
           {/* Related Entries */}
