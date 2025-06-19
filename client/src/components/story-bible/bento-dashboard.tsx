@@ -183,13 +183,13 @@ export default function BentoDashboard({ entries, onCreateEntry, onSelectEntry, 
                           selectedEntryId === entry.id && "ring-2 ring-primary ring-offset-1 shadow-md"
                         )}
                       >
-                        <div className="flex flex-col min-h-[60px]">
+                        <div className="flex flex-col min-h-[80px]">
                           <p className="font-medium text-sm truncate leading-tight">
                             {entry.title}
                           </p>
                           <div className="flex-1 flex items-end mt-1">
                             <span className="text-xs opacity-70 capitalize">
-                              {entry.entryType.replace('-', ' ')}
+                              {getEntryTypeLabel(entry.entryType)}
                             </span>
                           </div>
                         </div>
@@ -202,7 +202,7 @@ export default function BentoDashboard({ entries, onCreateEntry, onSelectEntry, 
                   {!isExpanded && categoryEntries.length > 8 && (
                     <button
                       onClick={() => setExpandedCategory(category.id)}
-                      className="flex items-center justify-center p-3 rounded-lg border border-dashed border-gray-300 hover:border-gray-400 transition-colors text-muted-foreground hover:text-foreground min-h-[60px]"
+                      className="flex items-center justify-center p-3 rounded-lg border border-dashed border-gray-300 hover:border-gray-400 transition-colors text-muted-foreground hover:text-foreground min-h-[80px]"
                     >
                       <div className="text-center">
                         <span className="text-lg">+</span>
@@ -242,13 +242,13 @@ export default function BentoDashboard({ entries, onCreateEntry, onSelectEntry, 
                           selectedEntryId === entry.id && "ring-2 ring-primary ring-offset-1 shadow-md"
                         )}
                       >
-                        <div className="flex flex-col min-h-[60px]">
+                        <div className="flex flex-col min-h-[80px]">
                           <p className="font-medium text-sm truncate leading-tight">
                             {entry.title}
                           </p>
                           <div className="flex-1 flex items-end mt-1">
                             <span className="text-xs opacity-70 capitalize">
-                              {entry.entryType.replace('-', ' ')}
+                              {getEntryTypeLabel(entry.entryType)}
                             </span>
                           </div>
                         </div>
@@ -261,7 +261,7 @@ export default function BentoDashboard({ entries, onCreateEntry, onSelectEntry, 
                   {!isExpanded && categoryEntries.length > 8 && (
                     <button
                       onClick={() => setExpandedCategory(category.id)}
-                      className="flex items-center justify-center p-3 rounded-lg border border-dashed border-gray-300 hover:border-gray-400 transition-colors text-muted-foreground hover:text-foreground min-h-[60px]"
+                      className="flex items-center justify-center p-3 rounded-lg border border-dashed border-gray-300 hover:border-gray-400 transition-colors text-muted-foreground hover:text-foreground min-h-[80px]"
                     >
                       <div className="text-center">
                         <span className="text-lg">+</span>
