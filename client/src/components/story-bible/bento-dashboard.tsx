@@ -80,9 +80,18 @@ export default function BentoDashboard({ entries, onCreateEntry, onSelectEntry, 
 
   // Group entries by their main categories
   const groupedEntries = categories.reduce((acc, category) => {
-    acc[category.id] = entries.filter(entry => 
-      category.subcategories.includes(entry.entryType)
-    );
+    if (category.id === "world-element") {
+      // For world elements, include all world-element types
+      acc[category.id] = entries.filter(entry => 
+        entry.entryType === "world-element" || 
+        ["government", "technology", "culture", "religion", "economy", "geography"].includes(entry.entryType)
+      );
+    } else {
+      // For other categories, use subcategories array
+      acc[category.id] = entries.filter(entry => 
+        category.subcategories.includes(entry.entryType)
+      );
+    }
     return acc;
   }, {} as Record<string, StoryBibleEntry[]>);
 
@@ -119,13 +128,13 @@ export default function BentoDashboard({ entries, onCreateEntry, onSelectEntry, 
     const isExpanded = expandedCategory === category.id;
 
     return (
-      <Card key={category.id} className={cn("transition-all duration-200 hover:shadow-md h-full", category.color)}>
-        <CardHeader className="pb-4">
+      <Card key={category.id} className={cn("transition-all duration-200 hover:shadow-md flex flex-col h-full", category.color)}>
+        <CardHeader className="pb-3 flex-shrink-0">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <category.icon className={cn("h-6 w-6", category.iconColor)} />
-              <div>
-                <CardTitle className="text-lg">{category.label}</CardTitle>
+            <div className="flex items-center gap-3 min-w-0 flex-1">
+              <category.icon className={cn("h-6 w-6 flex-shrink-0", category.iconColor)} />
+              <div className="min-w-0 flex-1">
+                <CardTitle className="text-lg truncate">{category.label}</CardTitle>
                 <p className="text-sm text-muted-foreground">
                   {categoryEntries.length} {categoryEntries.length === 1 ? 'entry' : 'entries'}
                 </p>
@@ -135,16 +144,16 @@ export default function BentoDashboard({ entries, onCreateEntry, onSelectEntry, 
               variant="ghost"
               size="sm"
               onClick={() => setExpandedCategory(isExpanded ? null : category.id)}
-              className="h-8 w-8 p-0"
+              className="h-8 w-8 p-0 flex-shrink-0 ml-2"
             >
               <Plus className={cn("h-4 w-4 transition-transform", isExpanded && "rotate-45")} />
             </Button>
           </div>
         </CardHeader>
         
-        <CardContent className="pt-0 flex flex-col h-full">
+        <CardContent className="pt-0 flex flex-col min-h-0">
           {/* Entry Grid - Better space utilization */}
-          <div className="flex-1 mb-4">
+          <div className="flex-1 min-h-0 mb-4">
             {categoryEntries.length > 0 ? (
               category.id === "world-element" ? (
                 // Special grid layout for World Elements by subcategory
@@ -243,12 +252,12 @@ export default function BentoDashboard({ entries, onCreateEntry, onSelectEntry, 
             )}
           </div>
 
-          {/* Add new button - Always at bottom */}
-          <div className="mt-auto pt-3 border-t border-border/50">
+          {/* Add new button - Always at bottom with proper spacing */}
+          <div className="mt-4 pt-4 border-t border-border/50">
             <Button
               variant="outline"
               size="sm"
-              className="w-full justify-center gap-2"
+              className="w-full justify-center gap-2 h-9"
               onClick={() => {
                 // For world elements, default to the most common category
                 if (category.id === "world-element") {
@@ -281,7 +290,7 @@ export default function BentoDashboard({ entries, onCreateEntry, onSelectEntry, 
       </div>
 
       {/* Bento Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 auto-rows-fr">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[600px]">
         {categories.map(renderCategoryTile)}
       </div>
 
