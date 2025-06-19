@@ -528,6 +528,21 @@ export function getTaxonomyByKey(key: string) {
   return STORY_BIBLE_TAXONOMY[key as keyof typeof STORY_BIBLE_TAXONOMY];
 }
 
+export function getTaxonomySubcategories(entryType: string) {
+  const taxonomy = getTaxonomyByKey(entryType.toUpperCase());
+  return taxonomy?.subcategories || {};
+}
+
+export function getAllSubcategories() {
+  const allSubcategories: Record<string, string> = {};
+  Object.values(STORY_BIBLE_TAXONOMY).forEach(taxonomy => {
+    if (taxonomy.subcategories) {
+      Object.assign(allSubcategories, taxonomy.subcategories);
+    }
+  });
+  return allSubcategories;
+}
+
 export function getEntryTypeDisplayName(key: string) {
   const taxonomy = getTaxonomyByKey(key.toUpperCase());
   return taxonomy?.name || key;

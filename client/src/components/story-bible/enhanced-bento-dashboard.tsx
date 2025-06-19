@@ -9,7 +9,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Plus, Search, Filter, Star, Archive, Users, MapPin, Calendar, Zap, Leaf, Heart, Church, Scroll, Package, Languages, Settings, Palette, Utensils, Shield, Scale, Briefcase, Cpu, Globe, Cloud, FileText, BookOpen, Grid, List } from "lucide-react";
 import { StoryBibleEntry } from "@shared/schema";
 import { useStoryBibleEntries } from "@/hooks/use-story-bible";
-import { STORY_BIBLE_TAXONOMY, getEntryTypeDisplayName } from "@shared/taxonomy";
+import { ENHANCED_TAXONOMY, getEntryTypeDisplayName } from "@shared/enhanced-taxonomy";
 
 interface EnhancedBentoDashboardProps {
   projectId: number;
@@ -171,7 +171,7 @@ export function EnhancedBentoDashboard({ projectId, onCreateEntry, onEditEntry }
 
       {/* Overview Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-        {Object.entries(STORY_BIBLE_TAXONOMY).map(([key, taxonomy]) => {
+        {Object.entries(ENHANCED_TAXONOMY).map(([key, taxonomy]) => {
           const count = entriesByType[taxonomy.key]?.length || 0;
           const IconComponent = ENTRY_TYPE_ICONS[taxonomy.key as keyof typeof ENTRY_TYPE_ICONS] || FileText;
           
