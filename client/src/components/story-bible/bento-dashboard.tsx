@@ -77,6 +77,12 @@ const worldElementCategories = [
 
 export default function BentoDashboard({ entries, onCreateEntry, onSelectEntry, selectedEntryId }: BentoDashboardProps) {
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
+  
+  // Helper function to get proper entry type label
+  const getEntryTypeLabel = (entryType: string) => {
+    if (entryType === 'world-element') return 'world element';
+    return entryType.replace('-', ' ');
+  };
 
   // Group entries by their main categories
   const groupedEntries = categories.reduce((acc, category) => {
