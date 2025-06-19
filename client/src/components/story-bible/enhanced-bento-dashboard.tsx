@@ -225,7 +225,7 @@ export function EnhancedBentoDashboard({ projectId, onCreateEntry, onEditEntry }
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Types</SelectItem>
-            {Object.values(STORY_BIBLE_TAXONOMY).map(taxonomy => (
+            {Object.values(ENHANCED_TAXONOMY).map(taxonomy => (
               <SelectItem key={taxonomy.key} value={taxonomy.key}>
                 {taxonomy.name}
               </SelectItem>
