@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus, X } from "lucide-react";
-import { STORY_BIBLE_TAXONOMY, getTaxonomyByKey, getAllSubcategories } from "@shared/taxonomy";
+import { ENHANCED_TAXONOMY, getEnhancedTaxonomyByKey, getEnhancedTaxonomyFields } from "@shared/enhanced-taxonomy";
 
 interface TaxonomySelectorProps {
   entryType: string;
@@ -32,8 +32,8 @@ export function TaxonomySelector({
 }: TaxonomySelectorProps) {
   const [newTag, setNewTag] = useState("");
 
-  const taxonomy = getTaxonomyByKey(entryType?.toUpperCase());
-  const subcategories = entryType ? getAllSubcategories(entryType) : [];
+  const taxonomy = getEnhancedTaxonomyByKey(entryType?.toUpperCase());
+  const subcategories = taxonomy?.categoryFields ? Object.keys(taxonomy.categoryFields) : [];
 
   const handleAddTag = () => {
     if (newTag.trim() && !tags.includes(newTag.trim())) {
@@ -67,7 +67,7 @@ export function TaxonomySelector({
             <SelectValue placeholder="Select entry type..." />
           </SelectTrigger>
           <SelectContent>
-            {Object.values(STORY_BIBLE_TAXONOMY).map((tax) => (
+            {Object.values(ENHANCED_TAXONOMY).map((tax) => (
               <SelectItem key={tax.key} value={tax.key}>
                 <div className="flex flex-col">
                   <span className="font-medium">{tax.name}</span>
@@ -93,7 +93,7 @@ export function TaxonomySelector({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="">No category</SelectItem>
-              {subcategories.map((subcat) => (
+              {subcategories.map((subcat: string) => (
                 <SelectItem key={subcat} value={subcat}>
                   {subcat}
                 </SelectItem>
