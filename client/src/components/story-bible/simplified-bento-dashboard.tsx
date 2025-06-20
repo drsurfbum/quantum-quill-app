@@ -124,6 +124,176 @@ export function SimplifiedBentoDashboard({ projectId, onCreateEntry, onEditEntry
     return entries.filter(entry => starredEntries.has(entry.id));
   };
 
+  // Search Results Component
+  const SearchResults = ({
+    searchTerm,
+    searchResults,
+    starredEntries,
+    onEditEntry,
+    toggleStarEntry,
+    onClearSearch
+  }: {
+    searchTerm: string;
+    searchResults: StoryBibleEntry[];
+    starredEntries: Set<number>;
+    onEditEntry: (entry: StoryBibleEntry) => void;
+    toggleStarEntry: (entryId: number) => void;
+    onClearSearch: () => void;
+  }) => {
+    const resultsByType = useMemo(() => {
+      const grouped: Record<string, StoryBibleEntry[]> = {};
+      searchResults.forEach(entry => {
+        if (!grouped[entry.entryType]) {
+          grouped[entry.entryType] = [];
+        }
+        grouped[entry.entryType].push(entry);
+      });
+      return grouped;
+    }, [searchResults]);
+
+    if (searchResults.length === 0) {
+      return (
+        <Card className="mb-6 border-dashed">
+          <CardContent className="pt-6 pb-4 text-center">
+            <div className="text-muted-foreground">
+              <Search className="h-8 w-8 mx-auto mb-2 opacity-50" />
+              <div className="text-sm">No entries found for "{searchTerm}"</div>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={onClearSearch}
+                className="mt-2"
+              >
+                Clear search
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      );
+    }
+
+    return (
+      <Card className="mb-6 bg-accent/5 border-accent/20">
+        <CardContent className="pt-4">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Search className="h-4 w-4 text-accent" />
+              <span className="font-medium">Search Results</span>
+              <Badge variant="secondary">
+                {searchResults.length} {searchResults.length === 1 ? 'result' : 'results'}
+              </Badge>
+            </div>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={onClearSearch}
+              className="text-xs"
+            >
+              Clear
+            </Button>
+          </div>
+
+          <ScrollArea className="max-h-96">
+            <div className="space-y-4">
+              {Object.entries(resultsByType).map(([entryType, entries]) => {
+                const taxonomy = ENHANCED_TAXONOMY[entryType];
+                // Map entry types to icons
+                const getIconForType = (type: string) => {
+                  switch (type) {
+                    case 'characters': return Users;
+                    case 'groups_races': return Users;
+                    case 'locations': return MapPin;
+                    case 'events': return Calendar;
+                    case 'world_elements': return Zap;
+                    case 'details': return FileText;
+                    default: return FileText;
+                  }
+                };
+                const Icon = getIconForType(entryType);
+                
+                return (
+                  <div key={entryType} className="space-y-2">
+                    <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                      <Icon className="h-4 w-4" />
+                      {taxonomy?.name || entryType} ({entries.length})
+                    </div>
+                    
+                    <div className="grid gap-2 ml-6">
+                      {entries
+                        .sort((a, b) => {
+                          const aStarred = starredEntries.has(a.id);
+                          const bStarred = starredEntries.has(b.id);
+                          if (aStarred && !bStarred) return -1;
+                          if (!aStarred && bStarred) return 1;
+                          return 0;
+                        })
+                        .map(entry => (
+                          <div
+                            key={entry.id}
+                            className="group flex items-center justify-between p-3 border rounded-lg hover:shadow-sm transition-all duration-200 cursor-pointer bg-background"
+                            onClick={() => onEditEntry(entry)}
+                          >
+                            <div className="flex items-start gap-3 flex-1 min-w-0">
+                              {starredEntries.has(entry.id) && (
+                                <Star className="h-4 w-4 text-amber-500 fill-current flex-shrink-0 mt-0.5" />
+                              )}
+                              <div className="flex-1 min-w-0">
+                                <div className="text-sm font-medium truncate">{entry.title}</div>
+                                <div className="flex items-center gap-2 mt-1">
+                                  {entry.category && (
+                                    <Badge variant="outline" className="text-xs">
+                                      {entry.category}
+                                    </Badge>
+                                  )}
+                                  <div className="text-xs text-muted-foreground">
+                                    {new Date(entry.updatedAt || entry.createdAt || 0).toLocaleDateString()}
+                                  </div>
+                                </div>
+                                {entry.content && (
+                                  <div className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                                    {entry.content.substring(0, 100)}...
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            
+                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleStarEntry(entry.id);
+                                }}
+                                className="h-6 w-6 p-0"
+                              >
+                                <Star className={`h-3 w-3 ${starredEntries.has(entry.id) ? 'text-amber-500 fill-current' : 'text-muted-foreground'}`} />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onEditEntry(entry);
+                                }}
+                                className="h-6 w-6 p-0"
+                              >
+                                <Edit2 className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </ScrollArea>
+        </CardContent>
+      </Card>
+    );
+  };
+
   // Hybrid Expanded Entry Browser Component
   const ExpandedEntryBrowser = ({ 
     taxonomy, 
@@ -522,12 +692,26 @@ export function SimplifiedBentoDashboard({ projectId, onCreateEntry, onEditEntry
         </Card>
       </div>
 
-      {/* Bento Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-        {Object.entries(ENHANCED_TAXONOMY).map(([key, taxonomy]) => (
-          <BentoTile key={key} taxonomyKey={key} taxonomy={taxonomy} />
-        ))}
-      </div>
+      {/* Search Results */}
+      {searchTerm && (
+        <SearchResults 
+          searchTerm={searchTerm}
+          searchResults={filteredEntries}
+          starredEntries={starredEntries}
+          onEditEntry={onEditEntry}
+          toggleStarEntry={toggleStarEntry}
+          onClearSearch={() => setSearchTerm('')}
+        />
+      )}
+
+      {/* Bento Grid - Hidden when searching */}
+      {!searchTerm && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+          {Object.entries(ENHANCED_TAXONOMY).map(([key, taxonomy]) => (
+            <BentoTile key={key} taxonomyKey={key} taxonomy={taxonomy} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
