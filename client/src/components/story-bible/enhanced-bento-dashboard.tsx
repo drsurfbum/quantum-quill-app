@@ -152,11 +152,11 @@ export function EnhancedBentoDashboard({ projectId, onCreateEntry, onEditEntry }
   // Get recent entries for a type (last 3 edited)
   const getRecentEntries = (entries: StoryBibleEntry[], limit = 3) => {
     return entries
+      .filter(entry => entry.updatedAt || entry.createdAt)
       .sort((a, b) => {
-        const dateA = a.updatedAt || a.createdAt;
-        const dateB = b.updatedAt || b.createdAt;
-        if (!dateA || !dateB) return 0;
-        return new Date(dateB).getTime() - new Date(dateA).getTime();
+        const dateA = new Date(a.updatedAt || a.createdAt!).getTime();
+        const dateB = new Date(b.updatedAt || b.createdAt!).getTime();
+        return dateB - dateA;
       })
       .slice(0, limit);
   };
@@ -438,40 +438,11 @@ export function EnhancedBentoDashboard({ projectId, onCreateEntry, onEditEntry }
         </div>
       </div>
 
-      {/* Overview Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-        {Object.entries(ENHANCED_TAXONOMY).map(([key, taxonomy]) => {
-          const count = entriesByType[taxonomy.key]?.length || 0;
-          const IconComponent = ENTRY_TYPE_ICONS[taxonomy.key as keyof typeof ENTRY_TYPE_ICONS] || FileText;
-          
-          return (
-            <Card 
-              key={key}
-              className="cursor-pointer hover:shadow-md transition-shadow"
-              onClick={() => count > 0 ? setSelectedEntryType(taxonomy.key) : onCreateEntry(taxonomy.key)}
-            >
-              <CardContent className="p-4 text-center">
-                <IconComponent className="h-6 w-6 mx-auto mb-2 text-muted-foreground" />
-                <div className="text-sm font-medium">{taxonomy.name}</div>
-                <div className="text-lg font-bold">{count}</div>
-                {count === 0 && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="mt-1 h-6 text-xs"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onCreateEntry(taxonomy.key);
-                    }}
-                  >
-                    <Plus className="h-3 w-3 mr-1" />
-                    Add
-                  </Button>
-                )}
-              </CardContent>
-            </Card>
-          );
-        })}
+      {/* Enhanced Bento-Style Tiles */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+        {Object.entries(ENHANCED_TAXONOMY).map(([key, taxonomy]) => (
+          <BentoTile key={key} taxonomyKey={key} taxonomy={taxonomy} />
+        ))}
       </div>
 
       {/* Filters */}
