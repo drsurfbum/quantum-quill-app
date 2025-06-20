@@ -149,7 +149,7 @@ export default function StoryBible() {
             </Tabs>
 
             <div className="flex items-center gap-2">
-              <ExportModal projectId={projectId} />
+              <ExportModal projectId={projectId} projectTitle={project?.title || "Project"} />
               <ThemeToggle />
             </div>
           </div>
@@ -159,7 +159,7 @@ export default function StoryBible() {
         <div className="flex-1 overflow-hidden">
           {view === "dashboard" ? (
             <div className="h-full p-6">
-              <EnhancedBentoDashboard
+              <SimplifiedBentoDashboard
                 projectId={projectId}
                 onCreateEntry={handleCreateEntry}
                 onEditEntry={handleEditEntry}
