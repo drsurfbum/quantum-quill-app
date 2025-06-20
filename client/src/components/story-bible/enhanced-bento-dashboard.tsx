@@ -6,7 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Plus, Search, Filter, Star, Archive, Users, MapPin, Calendar, Zap, Leaf, Heart, Church, Scroll, Package, Languages, Settings, Palette, Utensils, Shield, Scale, Briefcase, Cpu, Globe, Cloud, FileText, BookOpen, Grid, List } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Separator } from "@/components/ui/separator";
+import { Plus, Search, Filter, Star, Archive, Users, MapPin, Calendar, Zap, Leaf, Heart, Church, Scroll, Package, Languages, Settings, Palette, Utensils, Shield, Scale, Briefcase, Cpu, Globe, Cloud, FileText, BookOpen, Grid, List, ChevronDown, ChevronRight, Eye, MoreHorizontal } from "lucide-react";
 import { StoryBibleEntry } from "@shared/schema";
 import { useStoryBibleEntries } from "@/hooks/use-story-bible";
 import { ENHANCED_TAXONOMY, getEntryTypeDisplayName } from "@shared/enhanced-taxonomy";
@@ -51,6 +53,8 @@ export function EnhancedBentoDashboard({ projectId, onCreateEntry, onEditEntry }
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [showArchived, setShowArchived] = useState(false);
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
+  const [expandedTiles, setExpandedTiles] = useState<Set<string>>(new Set());
+  const [starredEntries, setStarredEntries] = useState<Set<number>>(new Set());
 
   const { data: entries = [] } = useStoryBibleEntries(projectId);
 
@@ -106,6 +110,62 @@ export function EnhancedBentoDashboard({ projectId, onCreateEntry, onEditEntry }
     return grouped;
   }, [entries]);
 
+  // Group entries by category within each type for subcategory breakdown
+  const entriesByTypeAndCategory = useMemo(() => {
+    const groups: Record<string, Record<string, StoryBibleEntry[]>> = {};
+    
+    Object.entries(entriesByType).forEach(([type, entries]) => {
+      groups[type] = {};
+      entries.forEach(entry => {
+        const category = entry.category || 'Uncategorized';
+        if (!groups[type][category]) {
+          groups[type][category] = [];
+        }
+        groups[type][category].push(entry);
+      });
+    });
+    
+    return groups;
+  }, [entriesByType]);
+
+  // Helper functions for tile management
+  const toggleTileExpansion = (tileKey: string) => {
+    const newExpanded = new Set(expandedTiles);
+    if (newExpanded.has(tileKey)) {
+      newExpanded.delete(tileKey);
+    } else {
+      newExpanded.add(tileKey);
+    }
+    setExpandedTiles(newExpanded);
+  };
+
+  const toggleStarEntry = (entryId: number) => {
+    const newStarred = new Set(starredEntries);
+    if (newStarred.has(entryId)) {
+      newStarred.delete(entryId);
+    } else {
+      newStarred.add(entryId);
+    }
+    setStarredEntries(newStarred);
+  };
+
+  // Get recent entries for a type (last 3 edited)
+  const getRecentEntries = (entries: StoryBibleEntry[], limit = 3) => {
+    return entries
+      .sort((a, b) => {
+        const dateA = a.updatedAt || a.createdAt;
+        const dateB = b.updatedAt || b.createdAt;
+        if (!dateA || !dateB) return 0;
+        return new Date(dateB).getTime() - new Date(dateA).getTime();
+      })
+      .slice(0, limit);
+  };
+
+  // Get starred entries for a type
+  const getStarredEntries = (entries: StoryBibleEntry[]) => {
+    return entries.filter(entry => starredEntries.has(entry.id));
+  };
+
   // Get unique categories for current entry type
   const availableCategories = useMemo(() => {
     if (selectedEntryType === "all") return [];
@@ -115,6 +175,193 @@ export function EnhancedBentoDashboard({ projectId, onCreateEntry, onEditEntry }
       .filter((category, index, array) => array.indexOf(category) === index);
     return categories;
   }, [entries, selectedEntryType]);
+
+  // Enhanced Bento Tile Component
+  const BentoTile = ({ taxonomyKey, taxonomy }: { taxonomyKey: string, taxonomy: any }) => {
+    const typeEntries = entriesByType[taxonomy.key] || [];
+    const typeCategories = entriesByTypeAndCategory[taxonomy.key] || {};
+    const isExpanded = expandedTiles.has(taxonomy.key);
+    const IconComponent = ENTRY_TYPE_ICONS[taxonomy.key as keyof typeof ENTRY_TYPE_ICONS] || FileText;
+    
+    const recentEntries = getRecentEntries(typeEntries);
+    const starred = getStarredEntries(typeEntries);
+    
+    return (
+      <Card className="h-fit">
+        <CardHeader className="pb-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <IconComponent className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <CardTitle className="text-lg">{taxonomy.name}</CardTitle>
+                <p className="text-sm text-muted-foreground">{typeEntries.length} entries</p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onCreateEntry(taxonomy.key)}
+                className="h-8 px-3"
+              >
+                <Plus className="h-3 w-3 mr-1" />
+                New
+              </Button>
+              {Object.keys(typeCategories).length > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => toggleTileExpansion(taxonomy.key)}
+                  className="h-8 w-8 p-0"
+                >
+                  {isExpanded ? (
+                    <ChevronDown className="h-4 w-4" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4" />
+                  )}
+                </Button>
+              )}
+            </div>
+          </div>
+        </CardHeader>
+        
+        <CardContent className="space-y-4">
+          {/* Featured/Starred Entries */}
+          {starred.length > 0 && (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Star className="h-4 w-4 text-yellow-500" />
+                <span className="text-sm font-medium">Featured</span>
+              </div>
+              <div className="space-y-1">
+                {starred.slice(0, 2).map(entry => (
+                  <div
+                    key={entry.id}
+                    className="flex items-center justify-between p-2 bg-muted/50 rounded cursor-pointer hover:bg-muted transition-colors"
+                    onClick={() => onEditEntry(entry)}
+                  >
+                    <span className="text-sm font-medium truncate">{entry.title}</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleStarEntry(entry.id);
+                      }}
+                      className="h-6 w-6 p-0"
+                    >
+                      <Star className="h-3 w-3 text-yellow-500 fill-current" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Recent Entries */}
+          {recentEntries.length > 0 && (
+            <div className="space-y-2">
+              <span className="text-sm font-medium">Recent</span>
+              <div className="space-y-1">
+                {recentEntries.map(entry => (
+                  <div
+                    key={entry.id}
+                    className="flex items-center justify-between p-2 bg-muted/30 rounded cursor-pointer hover:bg-muted transition-colors"
+                    onClick={() => onEditEntry(entry)}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium truncate">{entry.title}</div>
+                      {entry.category && (
+                        <div className="text-xs text-muted-foreground">{entry.category}</div>
+                      )}
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleStarEntry(entry.id);
+                      }}
+                      className="h-6 w-6 p-0"
+                    >
+                      <Star className={`h-3 w-3 ${starredEntries.has(entry.id) ? 'text-yellow-500 fill-current' : 'text-muted-foreground'}`} />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Subcategory Breakdown */}
+          {isExpanded && Object.keys(typeCategories).length > 0 && (
+            <Collapsible open={isExpanded}>
+              <CollapsibleContent className="space-y-2">
+                <Separator />
+                <div className="space-y-2">
+                  <span className="text-sm font-medium">Categories</span>
+                  <div className="grid grid-cols-1 gap-2">
+                    {Object.entries(typeCategories).map(([category, categoryEntries]) => (
+                      <div
+                        key={category}
+                        className="flex items-center justify-between p-2 bg-background border rounded hover:bg-muted/50 transition-colors group"
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium">{category}</span>
+                          <Badge variant="secondary" className="text-xs">
+                            {categoryEntries.length}
+                          </Badge>
+                        </div>
+                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              // Navigate to filtered view
+                              setSelectedEntryType(taxonomy.key);
+                              setSelectedCategory(category);
+                            }}
+                            className="h-6 px-2 text-xs"
+                          >
+                            <Eye className="h-3 w-3 mr-1" />
+                            View
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => onCreateEntry(taxonomy.key)}
+                            className="h-6 px-2 text-xs"
+                          >
+                            <Plus className="h-3 w-3 mr-1" />
+                            Add
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+          )}
+
+          {/* Empty State */}
+          {typeEntries.length === 0 && (
+            <div className="text-center py-6 text-muted-foreground">
+              <div className="text-sm">No {taxonomy.name.toLowerCase()} yet</div>
+              <Button
+                variant="ghost"
+                onClick={() => onCreateEntry(taxonomy.key)}
+                className="mt-2 text-xs"
+              >
+                Create your first {taxonomy.name.toLowerCase().slice(0, -1)}
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    );
+  };
 
   const EntryCard = ({ entry }: { entry: StoryBibleEntry }) => {
     const IconComponent = ENTRY_TYPE_ICONS[entry.entryType as keyof typeof ENTRY_TYPE_ICONS] || FileText;
@@ -131,7 +378,7 @@ export function EnhancedBentoDashboard({ projectId, onCreateEntry, onEditEntry }
               <CardTitle className="text-sm font-medium truncate">{entry.title}</CardTitle>
             </div>
             <div className="flex gap-1">
-              {(entry.priority || 0) > 0 && (
+              {starredEntries.has(entry.id) && (
                 <Star className="h-3 w-3 text-yellow-500 fill-current" />
               )}
               {entry.isArchived && (

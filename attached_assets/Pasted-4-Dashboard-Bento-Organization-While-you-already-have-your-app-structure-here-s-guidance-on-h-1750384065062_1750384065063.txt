@@ -1,0 +1,87 @@
+4. Dashboard (“Bento”) Organization
+
+While you already have your app structure, here’s guidance on how to surface the above categories in a more organized, bento-style view rather than a single long list:
+	1.	Top-Level Tiles
+	•	One tile/card per primary database: Characters, Groups & Races, Locations, Events, World Elements, Details, Research.
+	•	Display: Icon, Title, Count of entries, “+ New” button.
+	2.	Within Each Tile: Subcategory Breakdown
+	•	For World Elements: subdivide into the 17+ categories (Flora, Fauna, etc.). Each subcategory appears as a badge or collapsible row showing count and “+ New Flora” etc.
+	•	For Characters: optionally subdivide by Role (Protagonist, NPC, etc.) with counts.
+	•	For Locations: subdivide by Type (Planet, City, Building…) or Status (Inhabited vs. Abandoned).
+	•	For Events: subdivide by Era or Type (Battle, Discovery…), depending on how you want to surface.
+	•	For Groups & Races: subdivide by Category (Species vs. Faction vs. Government).
+	3.	Smart Previews
+	•	In each tile, show the most recently edited entries or pinned/favorited entries at the top for quick access.
+	•	Optionally, allow user to “star” important entries so they appear in a “Featured” row within the tile.
+	4.	Global Filters & Search
+	•	Provide filters at top: e.g., filter all entries by a tag or by timeline period. Tiles can gray out if no matching entries.
+	•	Search bar that can scope to a tile or search across all.
+	5.	Contextual Actions
+	•	Hovering over a tile’s subcategory (e.g. “Fauna”) reveals quick actions: “View All,” “Add New,” “Filter by Habitat,” etc.
+	•	Right-click or menu options: sort alphabetically, by date added, by custom field (e.g., for Locations by region).
+	6.	Breadcrumbs & Navigation
+	•	When deep inside a subcategory, show breadcrumbs: Story Bible > World Elements > Technology > “Orbital Reactors”.
+	•	Allow quick jump back to parent tile or main dashboard.
+	7.	Responsive Layout
+	•	On narrower screens or sidebars, collapse the grid to a list but keep grouping (with collapsible headers).
+	•	On wide view, show 3–4 columns of tiles for an overview.
+	8.	User Customization
+	•	Let users reorder tile positions or collapse whole categories they’re not using.
+	•	Save different dashboard “views” or workspaces (e.g., “Plot Planning View” surfaces Events and Characters first; “World-Building View” surfaces World Elements and Locations).
+
+Agent Behavior: When the user navigates or asks “Show me all Fauna entries,” interpret that as: open Story Bible dashboard → World Elements tile → expand “Fauna” subcategory → list entries. If user complains “I can’t find X,” the agent can suggest using filters or adjusting subcategory assignments.
+
+⸻
+
+5. Entry Creation & Editing Flow
+
+For each element type, define a guided flow:
+	1.	Initiate New Entry
+	•	Agent asks: “Which type of element are you creating?” Present list: Character, Location, Event, World Element, etc.
+	2.	Category Selection
+	•	Based on type, agent prompts for category/subcategory. E.g., for World Element: “Select category: Flora, Fauna, …”
+	•	If user types a new term not in list, agent: “I don’t see that category—would you like to add it as a new category? This will affect all future entries.”
+	3.	Core Fields
+	•	Prompt for required fields: Name/Title, Short Notes, Date (for Event), Type (for Location), etc.
+	•	Agent provides brief descriptions/tooltips: e.g., “Short Notes: one-sentence summary used in overview lists.”
+	4.	Dynamic Subfields
+	•	Once category chosen, surface relevant prompts (see section 3).
+	•	Agent: “Now, for Technology entries: who invented it? What powers it? Provide a short description.” For Flora: “Where does it grow? Any known uses?”
+	5.	Relational Links
+	•	After core and subfields, agent: “Link related elements: Characters involved, Locations where found, Events tied to it.” Provide autocomplete from existing entries and allow creation of stubs.
+	6.	Tags & Status
+	•	Prompt for status (e.g., Active/Defunct, Canonical/Rumor) and any additional tags.
+	•	Agent: “Tags help filter and cross-reference. Consider adding existing tags like ‘Ancient,’ ‘Bioluminescent’ if relevant.”
+	7.	Research & Details
+	•	Ask if user has research references to attach: “Add any research sources (URL or title).”
+	•	Ask if there are loose “Details” or lore hooks better stored as separate Detail entries: “Do you have notes or sub-ideas that should be a Detail linked here?”
+	8.	Review & Confirm
+	•	Present a summary of all entered fields in a compact form.
+	•	Agent: “Does this look right? Any changes or additions?”
+	•	On confirmation, save entry.
+	9.	Post-Creation Actions
+	•	Offer: “Would you like to view similar entries? For instance, other Technology elements or other Locations on the same planet?”
+	•	Suggest next logical step: e.g., “You created a new Event with date—would you like to preview it on the timeline once built?”
+
+⸻
+
+6. Managing the Taxonomy
+	•	Central Taxonomy Store: The agent should maintain (or reference) a central list of categories and subcategory options for each element type.
+	•	Versioning/Updates: When new categories are added, log them for future reference. Possibly allow the user to review and prune unused categories later.
+	•	Avoid Duplicates: If user enters “Fauna” vs. “Animals,” agent should detect similarity and ask if they mean the same category.
+	•	Category Metadata: For each category, store optional metadata: icon/emoji, color code, default subfields list. The agent can reference this when building UI or prompts.
+
+⸻
+
+7. Search, Filter & Reporting
+	•	Filtering by Category/Subcategory: Agent can guide user to filter lists, e.g., “Show me all World Elements in category ‘Technology’ with status ‘Rare.’”
+	•	Cross-Type Queries: “Which Events involve Locations on Mars?” or “List Characters affiliated with the ‘Lunar Resistance’ group.”
+	•	Timeline Integration: Agent can extract date fields from Events (and maybe from Locations or Groups if applicable) to feed into a separate timeline view when implemented.
+	•	Dashboards / Saved Queries: Agent can help define saved filters or views. E.g., “Create a view showing all active Locations in the Outer Rim.”
+
+⸻
+
+8. Bento-Style Dashboard Guidance
+	•	High-Level Canvas: Agent describes to user how to lay out the Story Bible homepage in a grid of tiles. Each tile corresponds to a database; inside, sub-tiles for subcategories.
+	•	Entry Previews: Agent can suggest including a “Recent” or “Featured” row in each tile.
+	•	Customization Prompts: Agent asks the user which categories they use most and suggests ordering tiles accordingly.
