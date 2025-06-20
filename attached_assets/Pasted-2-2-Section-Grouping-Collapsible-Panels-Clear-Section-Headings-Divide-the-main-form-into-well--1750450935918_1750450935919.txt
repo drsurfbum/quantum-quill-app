@@ -1,0 +1,33 @@
+2.2. Section Grouping & Collapsible Panels
+	•	Clear Section Headings
+Divide the main form into well-defined sections with larger headings (“Basic Info,” “Appearance,” “Abilities,” “Relationships,” “Notes”). Use more generous top/bottom padding around headings so each section stands out.
+	•	Accordion Panels
+For secondary or less frequently edited sections (e.g., “Detailed Backstory,” “Writer’s Notes,” “Alternate Versions”), collapse them by default. The user can expand when needed. This shortens the initial scroll.
+	•	Progressive Reveal
+When creating a new character, first show only the “Basic Info” fields. After the user fills those, you can prompt “Would you like to add Appearance details?” This wizard-like approach prevents showing dozens of inputs at once.
+
+2.3. Field Layout & Spacing
+	•	Compact vs. Spacious Forms
+Slightly increase vertical spacing between input fields (margin-bottom) so fields don’t feel jammed. Use consistent line heights and input heights.
+	•	Logical Pairing
+Place related fields side by side (e.g., Age + Gender + Species in one row) but limit to 2–3 per row; avoid cramming 4–5 in a row unless screen is very wide. If too many, break into separate rows.
+	•	Input Styling
+Use lightly shaded input backgrounds (in dark mode, a slightly lighter shade than the page background) so fields stand out. Use clear borders or outlines on focus, but avoid thick borders that add visual weight.
+	•	Placeholder vs. Label
+Always use persistent labels above fields, not placeholders alone. This ensures users know what each input is without clicking. Place the label with some space above the input to separate from preceding elements.
+
+2.4. Visual Hierarchy
+	•	Typography
+Use a slightly larger font size for section titles, medium size for labels, and normal size for input content. In dark mode, ensure good contrast for readability.
+	•	Emphasis
+Highlight required fields or critical info with a subtle accent (e.g., a small colored asterisk). But avoid overusing color—keep overall palette calm.
+	•	Dividers
+Instead of thin lines after every field, group multiple fields in a card/panel with a border or background shade. Use dividers only between major sections.
+
+2.5. Sidebar Organization
+	•	Sticky Sidebar
+If the entry form is long, consider making the sidebar sticky so classification and related links remain in view while scrolling the main content.
+	•	Grouping Metadata
+In the sidebar, group classification fields (Entry Type, Subcategory) at the top; below that, links (Related Entries); below that, status/timestamps/actions. Use subtle section separators or card grouping.
+	•	Minimize Repetition
+If certain metadata is auto-generated (e.g., “Created Date”), display it in a smaller font or lighter color so it doesn’t fight for attention with editable fields.

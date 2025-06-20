@@ -13,6 +13,7 @@ import { StoryBibleEntry } from "@shared/schema";
 import { useState } from "react";
 import { SimplifiedBentoDashboard } from "@/components/story-bible/simplified-bento-dashboard";
 import { EnhancedBibleEditor } from "@/components/story-bible/enhanced-bible-editor";
+import { CharacterEditor } from "@/components/story-bible/character-editor";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -178,11 +179,19 @@ export default function StoryBible() {
                     Back to Dashboard
                   </Button>
                 </div>
-                <EnhancedBibleEditor
-                  entry={selectedEntry}
-                  projectId={projectId}
-                  onClose={handleBackToDashboard}
-                />
+                {selectedEntry.entryType === "characters" ? (
+                  <CharacterEditor
+                    entry={selectedEntry}
+                    projectId={projectId}
+                    onClose={handleBackToDashboard}
+                  />
+                ) : (
+                  <EnhancedBibleEditor
+                    entry={selectedEntry}
+                    projectId={projectId}
+                    onClose={handleBackToDashboard}
+                  />
+                )}
               </div>
             </div>
           ) : null}
