@@ -80,28 +80,39 @@ export function TaxonomySelector({
       </div>
 
       {/* Category Selection */}
-      {taxonomy && subcategories.length > 0 && (
+      <div className="space-y-2">
+        <Label htmlFor="category">Category</Label>
         <div className="space-y-2">
-          <Label htmlFor="category">Category</Label>
-          <Select 
-            value={category || ""} 
-            onValueChange={onCategoryChange}
+          {/* Free-text category input */}
+          <Input
+            value={category || ""}
+            onChange={(e) => onCategoryChange(e.target.value)}
+            placeholder="Enter custom category (e.g., Main Characters, Villains, etc.)"
             disabled={disabled}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select category..." />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="">No category</SelectItem>
-              {subcategories.map((subcat: string) => (
-                <SelectItem key={subcat} value={subcat}>
-                  {subcat}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          />
+          
+          {/* Predefined categories if available */}
+          {taxonomy && subcategories.length > 0 && (
+            <div className="text-sm text-muted-foreground">
+              <span className="font-medium">Suggested categories:</span>
+              <div className="flex flex-wrap gap-1 mt-1">
+                {subcategories.map((subcat: string) => (
+                  <Button
+                    key={subcat}
+                    variant="outline"
+                    size="sm"
+                    className="h-6 px-2 text-xs"
+                    onClick={() => onCategoryChange(subcat)}
+                    disabled={disabled}
+                  >
+                    {subcat}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
-      )}
+      </div>
 
       {/* Subcategory (Custom) */}
       <div className="space-y-2">
