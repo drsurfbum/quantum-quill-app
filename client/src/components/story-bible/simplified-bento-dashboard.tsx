@@ -11,6 +11,7 @@ import { Plus, Search, Star, Users, MapPin, Calendar, Zap, FileText, BookOpen, C
 import { StoryBibleEntry } from "@shared/schema";
 import { useStoryBibleEntries } from "@/hooks/use-story-bible";
 import { ENHANCED_TAXONOMY } from "@shared/enhanced-taxonomy";
+import { apiRequest } from "@/lib/queryClient";
 
 interface SimplifiedBentoDashboardProps {
   projectId: number;
@@ -49,21 +50,13 @@ export function SimplifiedBentoDashboard({ projectId, onCreateEntry, onEditEntry
     const newPriority = (entry.priority || 0) > 0 ? 0 : 1;
     
     try {
-      const response = await fetch(`/api/story-bible/${entryId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...entry,
-          priority: newPriority
-        })
+      await apiRequest('PUT', `/api/story-bible/${entryId}`, {
+        ...entry,
+        priority: newPriority
       });
 
-      if (response.ok) {
-        // Refresh data without full page reload
-        window.location.reload();
-      }
+      // Refresh the page to reflect the changes
+      window.location.reload();
     } catch (error) {
       console.error('Failed to toggle star:', error);
     }
