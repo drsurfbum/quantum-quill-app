@@ -33,9 +33,41 @@ export function SimplifiedBentoDashboard({ projectId, onCreateEntry, onEditEntry
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedEntryType, setSelectedEntryType] = useState<string>("all");
   const [expandedTiles, setExpandedTiles] = useState<Set<string>>(new Set());
-  const [starredEntries, setStarredEntries] = useState<Set<number>>(new Set());
 
   const { data: entries = [] } = useStoryBibleEntries(projectId);
+  
+  // Get starred entries from database (priority > 0)
+  const starredEntries = useMemo(() => {
+    return new Set(entries.filter(entry => (entry.priority || 0) > 0).map(entry => entry.id));
+  }, [entries]);
+
+  // Toggle star status by updating priority field in database
+  const toggleStarEntry = async (entryId: number) => {
+    const entry = entries.find(e => e.id === entryId);
+    if (!entry) return;
+
+    const newPriority = (entry.priority || 0) > 0 ? 0 : 1;
+    
+    try {
+      const response = await fetch(`/api/story-bible/${entryId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...entry,
+          priority: newPriority
+        })
+      });
+
+      if (response.ok) {
+        // Refresh data without full page reload
+        window.location.reload();
+      }
+    } catch (error) {
+      console.error('Failed to toggle star:', error);
+    }
+  };
 
   // Filter entries based on search and type
   const filteredEntries = useMemo(() => {
@@ -98,17 +130,7 @@ export function SimplifiedBentoDashboard({ projectId, onCreateEntry, onEditEntry
     });
   };
 
-  const toggleStarEntry = (entryId: number) => {
-    setStarredEntries(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(entryId)) {
-        newSet.delete(entryId);
-      } else {
-        newSet.add(entryId);
-      }
-      return newSet;
-    });
-  };
+
 
   const getRecentEntries = (entries: StoryBibleEntry[], limit = 2) => {
     return entries
