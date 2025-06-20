@@ -401,53 +401,29 @@ export function EnhancedBentoDashboard({ projectId, onCreateEntry, onEditEntry }
             </div>
           )}
 
-          {/* Featured/Starred Entries */}
+          {/* Featured/Starred Entries - Smart Preview */}
           {starred.length > 0 && (
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Star className="h-4 w-4 text-yellow-500" />
-                <span className="text-sm font-medium">Pinned</span>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Star className="h-4 w-4 text-amber-500" />
+                  <span className="text-sm font-semibold">Pinned</span>
+                </div>
+                {starred.length > 2 && (
+                  <span className="text-xs text-muted-foreground">+{starred.length - 2} more</span>
+                )}
               </div>
-              <div className="space-y-1">
+              <div className="space-y-2">
                 {starred.slice(0, 2).map(entry => (
                   <div
                     key={entry.id}
-                    className="flex items-center justify-between p-2 bg-muted/50 rounded cursor-pointer hover:bg-muted transition-colors"
-                    onClick={() => onEditEntry(entry)}
-                  >
-                    <span className="text-sm font-medium truncate">{entry.title}</span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleStarEntry(entry.id);
-                      }}
-                      className="h-6 w-6 p-0"
-                    >
-                      <Star className="h-3 w-3 text-yellow-500 fill-current" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Recent Entries */}
-          {recentEntries.length > 0 && (
-            <div className="space-y-2">
-              <span className="text-sm font-medium">Recent</span>
-              <div className="space-y-1">
-                {recentEntries.map(entry => (
-                  <div
-                    key={entry.id}
-                    className="flex items-center justify-between p-2 bg-muted/30 rounded cursor-pointer hover:bg-muted transition-colors"
+                    className="group flex items-center justify-between p-3 bg-gradient-to-r from-amber-50 to-transparent border border-amber-200 rounded-lg cursor-pointer hover:shadow-sm transition-all duration-200"
                     onClick={() => onEditEntry(entry)}
                   >
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium truncate">{entry.title}</div>
+                      <div className="text-sm font-medium text-amber-900 truncate">{entry.title}</div>
                       {entry.category && (
-                        <div className="text-xs text-muted-foreground">{entry.category}</div>
+                        <div className="text-xs text-amber-700 mt-1">{entry.category}</div>
                       )}
                     </div>
                     <Button
@@ -457,10 +433,63 @@ export function EnhancedBentoDashboard({ projectId, onCreateEntry, onEditEntry }
                         e.stopPropagation();
                         toggleStarEntry(entry.id);
                       }}
-                      className="h-6 w-6 p-0"
+                      className="h-6 w-6 p-0 opacity-70 group-hover:opacity-100 transition-opacity"
                     >
-                      <Star className={`h-3 w-3 ${starredEntries.has(entry.id) ? 'text-yellow-500 fill-current' : 'text-muted-foreground'}`} />
+                      <Star className="h-3 w-3 text-amber-500 fill-current" />
                     </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Recent Entries - Horizontal Carousel Style */}
+          {recentEntries.length > 0 && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-semibold">Recent Activity</span>
+                {recentEntries.length > 3 && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-6 px-2 text-xs"
+                    onClick={() => {
+                      setSelectedEntryType(taxonomy.key);
+                      setSelectedCategory("all");
+                    }}
+                  >
+                    View all
+                  </Button>
+                )}
+              </div>
+              <div className="flex gap-2 overflow-x-auto pb-2">
+                {recentEntries.slice(0, 3).map(entry => (
+                  <div
+                    key={entry.id}
+                    className="group flex-shrink-0 w-48 p-3 border rounded-lg cursor-pointer hover:shadow-sm transition-all duration-200 bg-background"
+                    onClick={() => onEditEntry(entry)}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium truncate">{entry.title}</div>
+                        {entry.category && (
+                          <Badge variant="outline" className="text-xs mt-1 border-0 bg-muted/50">
+                            {entry.category}
+                          </Badge>
+                        )}
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleStarEntry(entry.id);
+                        }}
+                        className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <Star className={`h-3 w-3 ${starredEntries.has(entry.id) ? 'text-amber-500 fill-current' : 'text-muted-foreground'}`} />
+                      </Button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -532,39 +561,50 @@ export function EnhancedBentoDashboard({ projectId, onCreateEntry, onEditEntry }
             </Collapsible>
           )}
 
-          {/* Quick Category Pills (when collapsed) */}
+          {/* Quick Category Pills (when collapsed) - Simplified */}
           {!isExpanded && Object.keys(typeCategories).length > 0 && (
-            <div className="space-y-2">
-              <span className="text-xs font-medium text-muted-foreground">Categories</span>
-              <div className="flex flex-wrap gap-1">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Categories</span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => toggleTileExpansion(taxonomy.key)}
+                  className="h-5 px-2 text-xs text-muted-foreground hover:text-foreground"
+                >
+                  Expand
+                </Button>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
                 {Object.entries(typeCategories)
                   .sort(([, a], [, b]) => b.length - a.length)
-                  .slice(0, 6) // Show top 6 categories
+                  .slice(0, 4) // Show top 4 categories in grid
                   .map(([category, categoryEntries]) => (
-                    <Button
+                    <div
                       key={category}
-                      variant="outline"
-                      size="sm"
                       onClick={() => {
                         setSelectedEntryType(taxonomy.key);
                         setSelectedCategory(category);
                       }}
-                      className={`h-6 px-2 text-xs hover:bg-muted/50 ${getCategoryColor(category)}`}
+                      className={`p-2 rounded-lg border cursor-pointer hover:shadow-sm transition-all duration-200 ${getCategoryColor(category)}`}
                     >
-                      {category} ({categoryEntries.length})
-                    </Button>
+                      <div className="text-xs font-medium truncate">{category}</div>
+                      <div className="text-xs opacity-70">{categoryEntries.length} entries</div>
+                    </div>
                   ))}
-                {Object.keys(typeCategories).length > 6 && (
+              </div>
+              {Object.keys(typeCategories).length > 4 && (
+                <div className="text-center">
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => toggleTileExpansion(taxonomy.key)}
-                    className="h-6 px-2 text-xs text-muted-foreground"
+                    className="h-6 px-3 text-xs text-muted-foreground"
                   >
-                    +{Object.keys(typeCategories).length - 6} more
+                    View {Object.keys(typeCategories).length - 4} more categories
                   </Button>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           )}
 
