@@ -4,8 +4,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { Plus, Search, Star, Users, MapPin, Calendar, Zap, FileText, BookOpen, ChevronDown, ChevronUp } from "lucide-react";
+import { Plus, Search, Star, Users, MapPin, Calendar, Zap, FileText, BookOpen, ChevronDown, ChevronUp, Edit2, MoreHorizontal, Filter } from "lucide-react";
 import { StoryBibleEntry } from "@shared/schema";
 import { useStoryBibleEntries } from "@/hooks/use-story-bible";
 import { ENHANCED_TAXONOMY } from "@shared/enhanced-taxonomy";
@@ -120,6 +122,201 @@ export function SimplifiedBentoDashboard({ projectId, onCreateEntry, onEditEntry
 
   const getStarredEntries = (entries: StoryBibleEntry[]) => {
     return entries.filter(entry => starredEntries.has(entry.id));
+  };
+
+  // Hybrid Expanded Entry Browser Component
+  const ExpandedEntryBrowser = ({ 
+    taxonomy, 
+    typeEntries, 
+    typeCategories, 
+    starredEntries, 
+    onEditEntry, 
+    onCreateEntry, 
+    toggleStarEntry 
+  }: {
+    taxonomy: any;
+    typeEntries: StoryBibleEntry[];
+    typeCategories: Record<string, StoryBibleEntry[]>;
+    starredEntries: Set<number>;
+    onEditEntry: (entry: StoryBibleEntry) => void;
+    onCreateEntry: (entryType: string) => void;
+    toggleStarEntry: (entryId: number) => void;
+  }) => {
+    const [selectedCategory, setSelectedCategory] = useState<string>("all");
+    
+    // Get entries based on category filter
+    const filteredEntries = useMemo(() => {
+      if (selectedCategory === "all") return typeEntries;
+      if (selectedCategory === "starred") return typeEntries.filter(entry => starredEntries.has(entry.id));
+      return typeCategories[selectedCategory] || [];
+    }, [typeEntries, typeCategories, selectedCategory, starredEntries]);
+
+    // Sort entries: starred first, then by recency
+    const sortedEntries = useMemo(() => {
+      return [...filteredEntries].sort((a, b) => {
+        const aStarred = starredEntries.has(a.id);
+        const bStarred = starredEntries.has(b.id);
+        
+        if (aStarred && !bStarred) return -1;
+        if (!aStarred && bStarred) return 1;
+        
+        const aDate = new Date(a.updatedAt || a.createdAt || 0);
+        const bDate = new Date(b.updatedAt || b.createdAt || 0);
+        return bDate.getTime() - aDate.getTime();
+      });
+    }, [filteredEntries, starredEntries]);
+
+    return (
+      <div className="space-y-4">
+        {/* Category Filter Tabs */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-semibold">Browse Entries</span>
+            <Badge variant="outline" className="text-xs">
+              {sortedEntries.length} {sortedEntries.length === 1 ? 'entry' : 'entries'}
+            </Badge>
+          </div>
+          
+          <Tabs value={selectedCategory} onValueChange={setSelectedCategory} className="w-full">
+            <TabsList className="grid grid-cols-3 lg:grid-cols-4 gap-1 h-auto p-1">
+              <TabsTrigger value="all" className="text-xs px-2 py-1">
+                All ({typeEntries.length})
+              </TabsTrigger>
+              <TabsTrigger value="starred" className="text-xs px-2 py-1">
+                <Star className="h-3 w-3 mr-1" />
+                Starred
+              </TabsTrigger>
+              {Object.entries(typeCategories)
+                .sort(([, a], [, b]) => b.length - a.length)
+                .slice(0, 2)
+                .map(([category, entries]) => (
+                  <TabsTrigger key={category} value={category} className="text-xs px-2 py-1">
+                    {category} ({entries.length})
+                  </TabsTrigger>
+                ))}
+            </TabsList>
+          </Tabs>
+        </div>
+
+        {/* Entry Grid */}
+        <ScrollArea className="h-64">
+          <div className="grid grid-cols-1 gap-2 pr-4">
+            {sortedEntries.slice(0, 8).map(entry => (
+              <div
+                key={entry.id}
+                className="group flex items-center justify-between p-3 border rounded-lg hover:shadow-sm transition-all duration-200 cursor-pointer"
+                onClick={() => onEditEntry(entry)}
+              >
+                <div className="flex items-start gap-3 flex-1 min-w-0">
+                  {starredEntries.has(entry.id) && (
+                    <Star className="h-4 w-4 text-amber-500 fill-current flex-shrink-0 mt-0.5" />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium truncate">{entry.title}</div>
+                    <div className="flex items-center gap-2 mt-1">
+                      {entry.category && (
+                        <Badge variant="outline" className="text-xs">
+                          {entry.category}
+                        </Badge>
+                      )}
+                      <span className="text-xs text-muted-foreground">
+                        {new Date(entry.updatedAt || entry.createdAt || 0).toLocaleDateString()}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleStarEntry(entry.id);
+                    }}
+                    className="h-6 w-6 p-0"
+                  >
+                    <Star className={`h-3 w-3 ${starredEntries.has(entry.id) ? 'text-amber-500 fill-current' : 'text-muted-foreground'}`} />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEditEntry(entry);
+                    }}
+                    className="h-6 w-6 p-0"
+                  >
+                    <Edit2 className="h-3 w-3" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+            
+            {sortedEntries.length === 0 && (
+              <div className="text-center py-8 text-muted-foreground">
+                <div className="text-sm">No entries found</div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onCreateEntry(taxonomy.key)}
+                  className="mt-2 text-xs"
+                >
+                  <Plus className="h-3 w-3 mr-1" />
+                  Create your first {taxonomy.name.slice(0, -1).toLowerCase()}
+                </Button>
+              </div>
+            )}
+          </div>
+        </ScrollArea>
+
+        {/* Category Management */}
+        {Object.keys(typeCategories).length > 0 && (
+          <div className="space-y-2 pt-2 border-t">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                Category Management
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 px-2 text-xs"
+              >
+                <MoreHorizontal className="h-3 w-3" />
+              </Button>
+            </div>
+            
+            <div className="flex flex-wrap gap-1">
+              {Object.entries(typeCategories)
+                .sort(([, a], [, b]) => b.length - a.length)
+                .map(([category, categoryEntries]) => (
+                  <Button
+                    key={category}
+                    variant={selectedCategory === category ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setSelectedCategory(category)}
+                    className="h-6 px-2 text-xs"
+                  >
+                    {category} ({categoryEntries.length})
+                  </Button>
+                ))}
+            </div>
+          </div>
+        )}
+
+        {/* Smart Add Button */}
+        <Button
+          onClick={() => onCreateEntry(taxonomy.key)}
+          className="w-full"
+          size="sm"
+        >
+          <Plus className="h-3 w-3 mr-2" />
+          Add {selectedCategory !== "all" && selectedCategory !== "starred" 
+            ? `${selectedCategory} ${taxonomy.name.slice(0, -1)}` 
+            : taxonomy.name.slice(0, -1)}
+        </Button>
+      </div>
+    );
   };
 
   // Bento Tile Component - Clean Two States
@@ -258,50 +455,23 @@ export function SimplifiedBentoDashboard({ projectId, onCreateEntry, onEditEntry
             </div>
           )}
 
-          {/* Expanded Content - Detailed Categories */}
-          {isExpanded && Object.keys(typeCategories).length > 0 && (
+          {/* Expanded Content - Entry Browser with Category Management */}
+          {isExpanded && (
             <>
               <Separator />
-              <div className="space-y-2">
-                <span className="text-sm font-medium">Category Details</span>
-                <div className="space-y-2">
-                  {Object.entries(typeCategories).map(([category, categoryEntries]) => (
-                    <div
-                      key={category}
-                      className="flex items-center justify-between p-2 bg-background border rounded hover:bg-muted/50 transition-colors"
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium">{category}</span>
-                        <Badge variant="secondary" className="text-xs">
-                          {categoryEntries.length}
-                        </Badge>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => onCreateEntry(taxonomy.key)}
-                        className="h-6 px-2 text-xs"
-                      >
-                        <Plus className="h-3 w-3 mr-1" />
-                        Add
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <ExpandedEntryBrowser 
+                taxonomy={taxonomy}
+                typeEntries={typeEntries}
+                typeCategories={typeCategories}
+                starredEntries={starredEntries}
+                onEditEntry={onEditEntry}
+                onCreateEntry={onCreateEntry}
+                toggleStarEntry={toggleStarEntry}
+              />
             </>
           )}
 
-          {/* Add Button */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onCreateEntry(taxonomy.key)}
-            className="w-full"
-          >
-            <Plus className="h-3 w-3 mr-1" />
-            Add {taxonomy.name.slice(0, -1)}
-          </Button>
+
         </CardContent>
       </Card>
     );
