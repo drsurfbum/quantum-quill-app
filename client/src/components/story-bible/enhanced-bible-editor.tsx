@@ -110,6 +110,14 @@ export function EnhancedBibleEditor({ entry, projectId, onClose }: EnhancedBible
     }
   };
 
+  const handleCategoryChange = (value: string) => {
+    setCategory(value);
+    if (!isInitialLoad) {
+      setSaveStatus('saving');
+      debouncedSave({ category: value || null });
+    }
+  };
+
   const handleSubcategoryChange = (value: string) => {
     setSubcategory(value);
     if (!isInitialLoad) {
@@ -169,7 +177,12 @@ export function EnhancedBibleEditor({ entry, projectId, onClose }: EnhancedBible
   };
 
   const togglePriority = () => {
-    setPriority(priority > 0 ? 0 : 1);
+    const newPriority = priority > 0 ? 0 : 1;
+    setPriority(newPriority);
+    if (!isInitialLoad) {
+      setSaveStatus('saving');
+      debouncedSave({ priority: newPriority });
+    }
   };
 
   return (
@@ -261,7 +274,7 @@ export function EnhancedBibleEditor({ entry, projectId, onClose }: EnhancedBible
                 subcategory={subcategory}
                 tags={tags}
                 onEntryTypeChange={handleEntryTypeChange}
-                onCategoryChange={setCategory}
+                onCategoryChange={handleCategoryChange}
                 onSubcategoryChange={handleSubcategoryChange}
                 onTagsChange={handleTagsChange}
               />
