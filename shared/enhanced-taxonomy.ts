@@ -286,6 +286,167 @@ export const ENHANCED_TAXONOMY: Record<string, TaxonomyCategory> = {
         functionalDescription: { name: "Functional Description", type: "textarea", required: false },
         limitations: { name: "Limitations", type: "text", required: false },
         adoptionLevel: { name: "Adoption Level", type: "single-select", required: false, options: ["Prototype", "Limited", "Common", "Universal"] }
+      },
+      "Religion/Ritual": {
+        coreBeliefs: { name: "Core Beliefs", type: "textarea", required: false },
+        deities: { name: "Deities", type: "text", required: false },
+        followers: { name: "Followers", type: "text", required: false },
+        ceremonies: { name: "Ceremonies", type: "textarea", required: false },
+        taboos: { name: "Taboos", type: "text", required: false }
+      },
+      Mythology: {
+        originStory: { name: "Origin Story", type: "textarea", required: false },
+        majorMyths: { name: "Major Myths", type: "textarea", required: false },
+        symbolism: { name: "Symbolism", type: "text", required: false },
+        culturalImpact: { name: "Cultural Impact", type: "textarea", required: false }
+      },
+      "Item/Artifact": {
+        creator: { name: "Creator/Origin", type: "text", required: false },
+        materials: { name: "Materials", type: "text", required: false },
+        powers: { name: "Powers/Abilities", type: "textarea", required: false },
+        knownOwners: { name: "Known Owners", type: "text", required: false },
+        currentLocation: { name: "Current Location", type: "text", required: false }
+      },
+      Language: {
+        spokenWritten: { name: "Spoken/Written", type: "single-select", required: false, options: ["Spoken Only", "Written Only", "Both", "Sign Language"] },
+        grammarNotes: { name: "Grammar Notes", type: "textarea", required: false },
+        uniquePhrases: { name: "Unique Phrases", type: "textarea", required: false },
+        scriptAppearance: { name: "Script Appearance", type: "text", required: false },
+        region: { name: "Region", type: "text", required: false }
+      },
+      System: {
+        purpose: { name: "Purpose", type: "textarea", required: false },
+        keyComponents: { name: "Key Components", type: "textarea", required: false },
+        participants: { name: "Participants", type: "text", required: false },
+        societalEffects: { name: "Effects on Society", type: "textarea", required: false }
+      },
+      Entertainment: {
+        type: { name: "Type", type: "single-select", required: false, options: ["Music", "Game", "Storytelling", "Performance", "Sport", "Other"] },
+        culturalRole: { name: "Cultural Role", type: "textarea", required: false },
+        popularity: { name: "Popularity", type: "single-select", required: false, options: ["Unknown", "Niche", "Regional", "Widespread", "Universal"] },
+        history: { name: "History", type: "textarea", required: false }
+      },
+      Clothing: {
+        materials: { name: "Materials", type: "text", required: false },
+        designMotifs: { name: "Design Motifs", type: "text", required: false },
+        occasion: { name: "Occasion", type: "text", required: false },
+        socialSignificance: { name: "Social Significance", type: "textarea", required: false }
+      },
+      Food: {
+        ingredients: { name: "Ingredients", type: "text", required: false },
+        preparation: { name: "Preparation", type: "textarea", required: false },
+        culturalSignificance: { name: "Cultural Significance", type: "textarea", required: false },
+        availability: { name: "Availability", type: "single-select", required: false, options: ["Common", "Seasonal", "Rare", "Ceremonial Only"] }
+      },
+      "Disease/Medicine": {
+        symptoms: { name: "Symptoms", type: "textarea", required: false },
+        transmission: { name: "Transmission", type: "text", required: false },
+        treatment: { name: "Cure/Treatment", type: "textarea", required: false },
+        historicalOutbreaks: { name: "Historical Outbreaks", type: "textarea", required: false }
+      },
+      "Law/Politics": {
+        governingBody: { name: "Governing Body", type: "text", required: false },
+        legalCodes: { name: "Legal Codes", type: "textarea", required: false },
+        enforcement: { name: "Enforcement", type: "text", required: false },
+        historicalChanges: { name: "Historical Changes", type: "textarea", required: false }
+      },
+      Professions: {
+        trainingRequirements: { name: "Training Requirements", type: "textarea", required: false },
+        tools: { name: "Tools", type: "text", required: false },
+        societalRole: { name: "Societal Role", type: "textarea", required: false },
+        status: { name: "Status", type: "single-select", required: false, options: ["Low", "Common", "Respected", "Elite", "Forbidden"] }
+      },
+      Astronomy: {
+        celestialType: { name: "Celestial Type", type: "single-select", required: false, options: ["Planet", "Star", "Moon", "Comet", "Constellation", "Other"] },
+        observations: { name: "Observations", type: "textarea", required: false },
+        mythologicalSignificance: { name: "Mythological Significance", type: "textarea", required: false },
+        effects: { name: "Effects", type: "text", required: false }
+      },
+      Weather: {
+        regionalPatterns: { name: "Regional Patterns", type: "textarea", required: false },
+        seasonalVariations: { name: "Seasonal Variations", type: "textarea", required: false },
+        populationEffects: { name: "Effects on Population/Environment", type: "textarea", required: false }
+      }
+    }
+  },
+
+  DETAILS: {
+    name: "Details",
+    key: "details",
+    description: "Notes, quotes, ideas, and lore hooks linked to other elements",
+    fields: {
+      linkedElements: {
+        name: "Linked Elements",
+        type: "multi-select-linked",
+        linkedTo: "any",
+        required: true
+      },
+      type: {
+        name: "Type",
+        type: "single-select",
+        required: false,
+        options: ["Note", "Quote", "Idea", "Lore Hook", "Reminder"]
+      },
+      shortDescription: {
+        name: "Short Description",
+        type: "text",
+        required: true
+      },
+      content: {
+        name: "Content",
+        type: "textarea",
+        required: true
+      },
+      visibility: {
+        name: "Visibility",
+        type: "single-select",
+        required: false,
+        options: ["Public", "Private", "Draft"]
+      }
+    }
+  },
+
+  RESEARCH: {
+    name: "Research",
+    key: "research",
+    description: "External research sources and references",
+    fields: {
+      title: {
+        name: "Title",
+        type: "text",
+        required: true
+      },
+      sourceType: {
+        name: "Source Type",
+        type: "single-select",
+        required: true,
+        options: ["Article", "Book", "Video", "Image", "Website", "Map", "Interview", "Other"]
+      },
+      urlOrReference: {
+        name: "URL or Reference",
+        type: "text",
+        required: false
+      },
+      linkedElements: {
+        name: "Linked Elements",
+        type: "multi-select-linked",
+        linkedTo: "any",
+        required: false
+      },
+      notesTaken: {
+        name: "Notes Taken?",
+        type: "checkbox",
+        required: false
+      },
+      summary: {
+        name: "Summary",
+        type: "textarea",
+        required: false
+      },
+      topic: {
+        name: "Topic/Tags",
+        type: "text",
+        required: false
       }
     }
   }

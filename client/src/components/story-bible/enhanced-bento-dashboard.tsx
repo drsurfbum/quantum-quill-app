@@ -68,8 +68,10 @@ export function EnhancedBentoDashboard({ projectId, onCreateEntry, onEditEntry }
     'groups_races': 'groups_races', 
     'locations': 'locations',
     'events': 'events',
-    'world_elements': 'world_elements'
-  }), []);
+    'world_elements': 'world_elements',
+    'details': 'details',
+    'research': 'research'
+  } as Record<string, string>), []);
 
   // Filter and search entries
   const filteredEntries = useMemo(() => {
