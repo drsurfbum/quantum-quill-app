@@ -11,7 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useCreateStoryBibleEntry } from "@/hooks/use-story-bible";
 import { StoryBibleEntry } from "@shared/schema";
 import { useState } from "react";
-import { EnhancedBentoDashboard } from "@/components/story-bible/enhanced-bento-dashboard";
+import { SimplifiedBentoDashboard } from "@/components/story-bible/simplified-bento-dashboard";
 import { EnhancedBibleEditor } from "@/components/story-bible/enhanced-bible-editor";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
