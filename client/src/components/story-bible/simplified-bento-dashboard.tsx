@@ -9,7 +9,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Plus, Search, Star, Users, MapPin, Calendar, Zap, FileText, BookOpen, ChevronDown, ChevronUp, Edit2, MoreHorizontal, Filter } from "lucide-react";
 import { StoryBibleEntry } from "@shared/schema";
-import { useStoryBibleEntries } from "@/hooks/use-story-bible";
+import { useStoryBibleEntries, useUpdateStoryBibleEntry } from "@/hooks/use-story-bible";
 import { ENHANCED_TAXONOMY } from "@shared/enhanced-taxonomy";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -36,6 +36,7 @@ export function SimplifiedBentoDashboard({ projectId, onCreateEntry, onEditEntry
   const [expandedTiles, setExpandedTiles] = useState<Set<string>>(new Set());
 
   const { data: entries = [] } = useStoryBibleEntries(projectId);
+  const updateEntryMutation = useUpdateStoryBibleEntry();
   
   // Get starred entries from database (priority > 0)
   const starredEntries = useMemo(() => {
@@ -43,23 +44,16 @@ export function SimplifiedBentoDashboard({ projectId, onCreateEntry, onEditEntry
   }, [entries]);
 
   // Toggle star status by updating priority field in database
-  const toggleStarEntry = async (entryId: number) => {
+  const toggleStarEntry = (entryId: number) => {
     const entry = entries.find(e => e.id === entryId);
     if (!entry) return;
 
     const newPriority = (entry.priority || 0) > 0 ? 0 : 1;
     
-    try {
-      await apiRequest('PUT', `/api/story-bible/${entryId}`, {
-        ...entry,
-        priority: newPriority
-      });
-
-      // Refresh the page to reflect the changes
-      window.location.reload();
-    } catch (error) {
-      console.error('Failed to toggle star:', error);
-    }
+    updateEntryMutation.mutate({
+      id: entryId,
+      priority: newPriority
+    });
   };
 
   // Filter entries based on search and type
