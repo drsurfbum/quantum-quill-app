@@ -227,11 +227,11 @@ const WorldElementsEditor = memo(({ entry, projectId, onClose }: WorldElementsEd
   const updateWorldElementData = useCallback((updates: Partial<WorldElementData>) => {
     setWorldElementData(prev => {
       const newData = { ...prev, ...updates };
-      setHasUnsavedChanges(true);
-      debouncedSave(title, newData);
       return newData;
     });
-  }, [title, debouncedSave]);
+    setHasUnsavedChanges(true);
+    debouncedSave(title, { ...worldElementDataState, ...updates });
+  }, [title, worldElementDataState, debouncedSave]);
 
   const updateNestedData = useCallback((key: keyof WorldElementData, nestedUpdates: any) => {
     setWorldElementData(prev => {
@@ -239,11 +239,15 @@ const WorldElementsEditor = memo(({ entry, projectId, onClose }: WorldElementsEd
         ...prev,
         [key]: { ...prev[key], ...nestedUpdates }
       };
-      setHasUnsavedChanges(true);
-      debouncedSave(title, newData);
       return newData;
     });
-  }, [title, debouncedSave]);
+    setHasUnsavedChanges(true);
+    const updatedData = {
+      ...worldElementDataState,
+      [key]: { ...worldElementDataState[key], ...nestedUpdates }
+    };
+    debouncedSave(title, updatedData);
+  }, [title, worldElementDataState, debouncedSave]);
 
   // Handle title changes
   const handleTitleChange = useCallback((newTitle: string) => {
