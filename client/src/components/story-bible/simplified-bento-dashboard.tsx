@@ -249,9 +249,9 @@ export function SimplifiedBentoDashboard({ projectId, onCreateEntry, onEditEntry
                               <div className="flex-1 min-w-0">
                                 <div className="text-sm font-medium truncate">{entry.title}</div>
                                 <div className="flex items-center gap-2 mt-1">
-                                  {(entry.category || (entry.entryType === "locations" && (entry.metadata as any)?.locationType)) && (
+                                  {(entry.entryType === "locations" ? (entry.metadata as any)?.locationType : entry.category) && (
                                     <Badge variant="outline" className="text-xs">
-                                      {entry.category || (entry.entryType === "locations" ? (entry.metadata as any)?.locationType : "")}
+                                      {entry.entryType === "locations" ? (entry.metadata as any)?.locationType : entry.category}
                                     </Badge>
                                   )}
                                   <div className="text-xs text-muted-foreground">
