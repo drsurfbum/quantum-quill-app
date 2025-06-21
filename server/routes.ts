@@ -1,5 +1,6 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
+import express from "express";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
@@ -75,6 +76,40 @@ User: ${req.user ? JSON.stringify({ id: req.user.id, username: req.user.username
   return res.status(401).json({ message: "Unauthorized" });
 };
 
+// Configure multer for file uploads
+const uploadDir = path.join(process.cwd(), 'uploads');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+const storage_multer = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const upload = multer({ 
+  storage: storage_multer,
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = /jpeg|jpg|png|gif|webp/;
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype);
+    
+    if (mimetype && extname) {
+      return cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed'));
+    }
+  }
+});
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Set up authentication routes and middleware
   setupAuth(app);
@@ -143,6 +178,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     });
   });
+
+  // File upload endpoint
+  app.post("/api/upload", isAuthenticated, upload.single('image'), (req: Request, res: Response) => {
+    try {
+      console.log('Upload request received:', {
+        hasFile: !!req.file,
+        file: req.file ? {
+          filename: req.file.filename,
+          originalname: req.file.originalname,
+          size: req.file.size,
+          mimetype: req.file.mimetype
+        } : null
+      });
+
+      if (!req.file) {
+        console.log('No file in request');
+        return res.status(400).json({ error: 'No file uploaded' });
+      }
+      
+      const fileUrl = `/uploads/${req.file.filename}`;
+      console.log('File uploaded successfully:', fileUrl);
+      
+      res.json({ 
+        success: true, 
+        url: fileUrl,
+        filename: req.file.filename,
+        originalName: req.file.originalname
+      });
+    } catch (error) {
+      console.error('Upload error:', error);
+      res.status(500).json({ error: 'Upload failed', details: error.message });
+    }
+  });
+
+  // Serve uploaded files
+  app.use('/uploads', express.static(uploadDir));
+
   // Projects routes
   app.get("/api/projects", isAuthenticated, async (req: Request, res: Response) => {
     const userId = req.user!.id;

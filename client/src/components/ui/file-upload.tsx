@@ -63,11 +63,12 @@ export function FileUpload({
         credentials: 'include',
       });
 
-      if (!response.ok) {
-        throw new Error('Upload failed');
-      }
-
       const data = await response.json();
+      console.log('Upload response:', data);
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || data.details || 'Upload failed');
+      }
       onImageChange(data.url, description);
       
       toast({
