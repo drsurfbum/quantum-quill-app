@@ -206,9 +206,11 @@ const EventsEditor = memo(({ entry, projectId, onClose }: EventsEditorProps) => 
 
   // Auto-save on changes
   useEffect(() => {
-    debouncedSave();
-    return () => debouncedSave.cancel();
-  }, [debouncedSave]);
+    // Only trigger save if this isn't the initial load
+    if (title !== entry.title || JSON.stringify(eventDataState) !== (entry.content || '{}')) {
+      debouncedSave();
+    }
+  }, [title, eventDataState, debouncedSave, entry.title, entry.content]);
 
   const handleDelete = async () => {
     try {

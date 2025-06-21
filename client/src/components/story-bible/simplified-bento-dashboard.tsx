@@ -98,6 +98,15 @@ export function SimplifiedBentoDashboard({ projectId, onCreateEntry, onEditEntry
       }
       const category = entry.entryType === "locations" 
         ? (entry.metadata as any)?.locationType || 'Uncategorized'
+        : entry.entryType === "events"
+        ? (() => {
+            try {
+              const eventData = JSON.parse(entry.content || '{}');
+              return eventData.eventType || 'Uncategorized';
+            } catch {
+              return 'Uncategorized';
+            }
+          })()
         : entry.category || 'Uncategorized';
       if (!grouped[entry.entryType][category]) {
         grouped[entry.entryType][category] = [];
