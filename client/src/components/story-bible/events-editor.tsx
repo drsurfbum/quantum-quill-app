@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, memo } from 'react';
+import { useState, useCallback, useMemo, memo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -205,10 +205,10 @@ const EventsEditor = memo(({ entry, projectId, onClose }: EventsEditorProps) => 
   );
 
   // Auto-save on changes
-  useState(() => {
+  useEffect(() => {
     debouncedSave();
     return () => debouncedSave.cancel();
-  });
+  }, [debouncedSave]);
 
   const handleDelete = async () => {
     try {

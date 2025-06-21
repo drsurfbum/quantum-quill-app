@@ -322,7 +322,8 @@ export class MemStorage implements IStorage {
       createdAt: now,
       updatedAt: now,
       content: insertOutlineItem.content || "",
-      parentId: insertOutlineItem.parentId || null
+      parentId: insertOutlineItem.parentId || null,
+      isCompleted: insertOutlineItem.isCompleted ?? null
     };
     this.outlineItemsMap.set(id, outlineItem);
     return outlineItem;
