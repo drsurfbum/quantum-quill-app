@@ -14,6 +14,7 @@ import { useState } from "react";
 import { SimplifiedBentoDashboard } from "@/components/story-bible/simplified-bento-dashboard";
 import { EnhancedBibleEditor } from "@/components/story-bible/enhanced-bible-editor";
 import { CharacterEditor } from "@/components/story-bible/character-editor";
+import { GroupsRacesEditor } from "@/components/story-bible/groups-races-editor";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -181,6 +182,12 @@ export default function StoryBible() {
                 </div>
                 {selectedEntry.entryType === "characters" ? (
                   <CharacterEditor
+                    entry={selectedEntry}
+                    projectId={projectId}
+                    onClose={handleBackToDashboard}
+                  />
+                ) : selectedEntry.entryType === "groups_races" ? (
+                  <GroupsRacesEditor
                     entry={selectedEntry}
                     projectId={projectId}
                     onClose={handleBackToDashboard}

@@ -1,0 +1,48 @@
+1. Groups & Races
+
+Example Flow for Groups & Races Page
+	1.	Header Area (Sticky)
+	•	Title: Group/Race Name (e.g., “Solar Peace Alliance”)
+	•	Badge(s): Category (e.g., “Institution” or “Species”), Status (Active/Defunct)
+	•	Save/Delete icons on the right.
+	2.	Main Column
+	•	Basic Info (expanded initially):
+	•	Name
+	•	Category (single-select: Species, Faction, Clan, Government, Guild)
+	•	Short Notes / Tagline
+	•	Hierarchy & Structure (collapsible):
+	•	Parent Group (link selector)
+	•	Sub-groups or child races (list with “+ Add”)
+	•	Founding Date / Era Established
+	•	Dissolution Date if defunct
+	•	Leadership & Membership (collapsible):
+	•	Notable Members (link to Characters; role tags like “Leader,” “Member”)
+	•	Leadership Structure (text or structured list)
+	•	Attributes & Traits (collapsible):
+	•	For Species: biology notes (homeworld, physiology)
+	•	For Organization: purpose, ideology, resources
+	•	For all: key characteristics or cultural notes
+	•	History & Events (collapsible):
+	•	Freeform description of origin, major milestones
+	•	Link to Event entries (e.g., “Founded in Treaty of X,” “Alliance Wars”)
+	•	Relationships (collapsible):
+	•	Alliances, rivalries, dependencies (link other Groups/Races)
+	•	Notes / Internal Comments (collapsed by default):
+	•	Writer’s ideas, future plot hooks, open questions.
+	3.	Sidebar
+	•	Classification:
+	•	Category (Species/Organization/etc.), Status
+	•	Affiliations / Links:
+	•	Home Location(s) (link to Locations)
+	•	Related World Elements (e.g., technologies they use, religious rites)
+	•	Tags (chips): e.g., “Mercenary,” “Rebel,” “Ancient”
+	•	Timestamps & Actions:
+	•	Created/Updated dates (small, de-emphasized)
+	•	Archive/Deactivate toggle
+	4.	Post-Save Suggestions
+	•	Prompt: “View related Characters or Events?”
+	•	Offer: “Create a stub Character if you referenced someone not yet defined.”
+
+Prioritization (≤150 words)
+
+Groups & Races form the backbone of relational context: they anchor Characters, shape Events, and influence Locations and World Elements. Initially focus on: name, category (species vs. faction), short summary, and parent/child hierarchy. Ensure easy linking to Characters (members, leaders) and key Events (founding, conflicts). Capture status (active/defunct) early so dashboards can filter. Defer deep cultural or biology fields until you have enough entries to see patterns; keep history and attributes as collapsible for later expansion. Strong relational linking here pays dividends: e.g., viewing all Characters in a faction or all Events involving a race. Establishing a clear taxonomy and linking approach at the outset prevents fragmentation as your world grows.
