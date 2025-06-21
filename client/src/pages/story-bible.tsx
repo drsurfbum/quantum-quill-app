@@ -17,6 +17,7 @@ import { CharacterEditor } from "@/components/story-bible/character-editor";
 import { GroupsRacesEditor } from "@/components/story-bible/groups-races-editor";
 import { LocationsEditor } from "@/components/story-bible/locations-editor";
 import { EventsEditor } from "@/components/story-bible/events-editor";
+import { WorldElementsEditor } from "@/components/story-bible/world-elements-editor";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -202,6 +203,12 @@ export default function StoryBible() {
                   />
                 ) : selectedEntry.entryType === "events" ? (
                   <EventsEditor
+                    entry={selectedEntry}
+                    projectId={projectId}
+                    onClose={handleBackToDashboard}
+                  />
+                ) : selectedEntry.entryType === "world_elements" ? (
+                  <WorldElementsEditor
                     entry={selectedEntry}
                     projectId={projectId}
                     onClose={handleBackToDashboard}

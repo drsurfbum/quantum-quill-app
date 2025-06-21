@@ -107,6 +107,15 @@ export function SimplifiedBentoDashboard({ projectId, onCreateEntry, onEditEntry
               return 'Uncategorized';
             }
           })()
+        : entry.entryType === "world_elements"
+        ? (() => {
+            try {
+              const worldElementData = JSON.parse(entry.content || '{}');
+              return worldElementData.category || 'Uncategorized';
+            } catch {
+              return 'Uncategorized';
+            }
+          })()
         : entry.category || 'Uncategorized';
       if (!grouped[entry.entryType][category]) {
         grouped[entry.entryType][category] = [];

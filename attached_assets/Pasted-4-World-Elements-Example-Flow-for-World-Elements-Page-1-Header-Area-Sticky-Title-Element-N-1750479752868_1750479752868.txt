@@ -1,0 +1,49 @@
+4. World Elements
+
+Example Flow for World Elements Page
+	1.	Header Area (Sticky)
+	•	Title: Element Name (e.g., “Drifting Bloom”)
+	•	Badges: Category (Flora, Fauna, Tech, etc.), Status (Common/Rare/Extinct)
+	•	Save/Delete icons.
+	2.	Main Column
+	•	Core Overview (expanded initially):
+	•	Name
+	•	Category dropdown
+	•	Short Notes / One-line significance
+	•	Category-Specific Details (collapsible, dynamic based on Category):
+	•	If Flora: Habitat, Growth Behavior, Uses, Threats
+	•	If Fauna: Diet, Behavior, Lifecycle, Domestication
+	•	If Technology: Inventor, Power Source, Function, Limitations
+	•	If Religion/Ritual/Mythology: Beliefs, Ceremonies, Origin Stories
+	•	Etc., for each category.
+	•	Origins & History (collapsible):
+	•	How/when discovered or invented
+	•	Major Events involving it (link to Event entries)
+	•	Usage & Impact (collapsible):
+	•	Who uses or interacts with it (link Characters/Groups)
+	•	Effects on Locations (link)
+	•	Relational Links (collapsible):
+	•	Linked Characters (discoverers, users, worshippers)
+	•	Linked Locations (where found or used)
+	•	Linked Events (key moments)
+	•	Details / Lore Hooks (collapsed by default):
+	•	Idioms, rumors, niche facts
+	•	Research References (collapsed by default):
+	•	Link to Research entries about this element.
+	3.	Sidebar
+	•	Classification:
+	•	Category, Status
+	•	Parent Element (if sub-element) and child elements list
+	•	Tags:
+	•	e.g., “Bioluminescent,” “Ancient Tech,” “Forbidden”
+	•	Links Summary:
+	•	Chips for top related entries (Characters, Locations)
+	•	Timestamps & Actions:
+	•	Created/Updated, Archive toggle
+	4.	Post-Save Suggestions
+	•	“View other elements in same category.”
+	•	“Link to new Event documenting its discovery.”
+
+Prioritization (≤150 words)
+
+World Elements enrich setting depth and interconnect with Characters, Locations, and Events. Begin with name, category, brief description, and status (common or rare). Prompt category-specific fields lightly so entries don’t feel empty but avoid overwhelming detail early. Immediate linking to where/how the element appears (Locations) and who interacts (Characters/Groups) builds a relational web. History/origin can be fleshed as story grows. Collapsing advanced details keeps the form approachable. A solid base here allows filtering (e.g., list all Technologies) and dynamic queries (“which flora appear on Mars?”). Early consistency in category handling prevents scattered or duplicated entries as your lore expands.
