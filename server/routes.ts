@@ -17,7 +17,7 @@ import { setupAuth } from "./auth";
 // Middleware to check if user is authenticated
 const isAuthenticated = (req: Request, res: Response, next: Function) => {
   // TEMPORARY: Bypass authentication for development
-  if (process.env.NODE_ENV !== 'production') {
+  if (!process.env.NODE_ENV || process.env.NODE_ENV === 'development') {
     req.user = { id: 1, username: 'DevUser' };
     return next();
   }
