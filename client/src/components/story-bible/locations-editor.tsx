@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Save, Trash2, Archive, ArchiveRestore, Star, StarOff, ChevronDown, ChevronRight, Plus, X, MapPin } from "lucide-react";
-import { useUpdateStoryBibleEntry, useDeleteStoryBibleEntry, useStoryBibleEntries } from "@/hooks/use-story-bible";
+import { useUpdateStoryBibleEntry, useDeleteStoryBibleEntry, useStoryBibleEntries, useCreateStoryBibleEntry } from "@/hooks/use-story-bible";
 import { useToast } from "@/hooks/use-toast";
 import { StoryBibleEntry } from "@shared/schema";
 import { debounce } from "lodash";
@@ -80,6 +80,7 @@ export function LocationsEditor({ entry, projectId, onClose }: LocationsEditorPr
 
   const updateMutation = useUpdateStoryBibleEntry();
   const deleteMutation = useDeleteStoryBibleEntry();
+  const createMutation = useCreateStoryBibleEntry();
   const { data: allEntries } = useStoryBibleEntries(projectId);
   const { toast } = useToast();
 
@@ -388,19 +389,54 @@ export function LocationsEditor({ entry, projectId, onClose }: LocationsEditorPr
 
                   <div className="space-y-2">
                     <Label htmlFor="parentLocation">Parent Location</Label>
-                    <Select onValueChange={(value) => {
-                      setParentLocation(value);
-                      updateMetadata({ parentLocation: value });
-                    }}>
+                    <Select 
+                      value={parentLocation} 
+                      onValueChange={async (value) => {
+                        if (value === "__create_new__") {
+                          const locationName = prompt("Enter name for new location:");
+                          if (locationName?.trim()) {
+                            try {
+                              const newLocation = await createMutation.mutateAsync({
+                                projectId,
+                                entryType: "locations",
+                                title: locationName.trim(),
+                                content: "",
+                              });
+                              const newValue = newLocation.id.toString();
+                              setParentLocation(newValue);
+                              updateMetadata({ parentLocation: newValue });
+                              toast({
+                                title: "Location created",
+                                description: `Created "${locationName.trim()}" and set as parent location`,
+                              });
+                            } catch (error) {
+                              toast({
+                                title: "Error",
+                                description: "Failed to create new location",
+                                variant: "destructive",
+                              });
+                            }
+                          }
+                        } else {
+                          const newValue = value === "none" ? "" : value;
+                          setParentLocation(newValue);
+                          updateMetadata({ parentLocation: newValue });
+                        }
+                      }}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Select parent location..." />
                       </SelectTrigger>
                       <SelectContent>
+                        <SelectItem value="none">-- No Parent Location --</SelectItem>
                         {locationEntries.map((location) => (
                           <SelectItem key={location.id} value={location.id.toString()}>
                             {location.title}
                           </SelectItem>
                         ))}
+                        <SelectItem value="__create_new__" className="text-blue-600 font-medium">
+                          + Create New Location
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
