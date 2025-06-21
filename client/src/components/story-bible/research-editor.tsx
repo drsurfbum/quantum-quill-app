@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Save, Trash2, Plus, X, ChevronDown, ChevronRight, BookOpen, Link2, Users, MapPin, Calendar, Zap, Tag, ArrowLeft, Clock, Archive, FileText, ExternalLink, CheckCircle, Eye, AlertCircle } from 'lucide-react';
+import { Save, Trash2, Plus, X, ChevronDown, ChevronRight, BookOpen, Link2, Users, MapPin, Calendar, Zap, Tag, ArrowLeft, Clock, Archive, FileText, ExternalLink, CheckCircle, Eye, AlertCircle, ImageIcon, Upload } from 'lucide-react';
 import { useUpdateStoryBibleEntry, useDeleteStoryBibleEntry, useStoryBibleEntries } from '@/hooks/use-story-bible';
 import { useToast } from '@/hooks/use-toast';
 import { StoryBibleEntry } from '@shared/schema';
@@ -17,6 +17,10 @@ import { debounce } from 'lodash';
 
 // Research data structure based on specification
 interface ResearchData {
+  // Image
+  imageUrl?: string;
+  imageDescription?: string;
+  
   // Core Info (expanded initially)
   sourceType: string; // Article, Book, Video, Map, Website, Interview
   urlOrReference: string;
@@ -745,6 +749,63 @@ const ResearchEditor = memo(({ entry, projectId, onClose }: ResearchEditorProps)
                   <p className="text-sm text-muted-foreground">No linked elements</p>
                 )}
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Research Image */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <ImageIcon className="h-5 w-5" />
+                Research Image
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {researchDataState.imageUrl ? (
+                <div className="space-y-2">
+                  <img 
+                    src={researchDataState.imageUrl} 
+                    alt={researchDataState.imageDescription || title}
+                    className="w-full h-48 object-cover rounded-md"
+                  />
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => updateResearchData({ imageUrl: '', imageDescription: '' })}
+                    className="w-full"
+                  >
+                    <X className="h-4 w-4 mr-2" />
+                    Remove Image
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <div className="border-2 border-dashed border-muted-foreground/25 rounded-md p-6 text-center">
+                    <ImageIcon className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground mb-2">Add research image</p>
+                  </div>
+                  <Input
+                    placeholder="Image URL..."
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        updateResearchData({ imageUrl: e.currentTarget.value });
+                        e.currentTarget.value = '';
+                      }
+                    }}
+                  />
+                </div>
+              )}
+              {researchDataState.imageUrl && (
+                <div>
+                  <Label htmlFor="imageDescription">Image Description</Label>
+                  <Input
+                    id="imageDescription"
+                    value={researchDataState.imageDescription || ''}
+                    onChange={(e) => updateResearchData({ imageDescription: e.target.value })}
+                    placeholder="Describe the image..."
+                  />
+                </div>
+              )}
             </CardContent>
           </Card>
 

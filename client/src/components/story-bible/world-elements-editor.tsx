@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Save, Trash2, Plus, X, ChevronDown, ChevronRight, Zap, Tag, ArrowLeft, Clock, Users, MapPin, Calendar, Archive, Book } from 'lucide-react';
+import { Save, Trash2, Plus, X, ChevronDown, ChevronRight, Zap, Tag, ArrowLeft, Clock, Users, MapPin, Calendar, Archive, Book, ImageIcon, Upload } from 'lucide-react';
 import { useUpdateStoryBibleEntry, useDeleteStoryBibleEntry, useStoryBibleEntries } from '@/hooks/use-story-bible';
 import { useToast } from '@/hooks/use-toast';
 import { StoryBibleEntry } from '@shared/schema';
@@ -17,6 +17,10 @@ import { debounce } from 'lodash';
 
 // World Element data structure based on specification
 interface WorldElementData {
+  // Image
+  imageUrl?: string;
+  imageDescription?: string;
+  
   // Core Overview (expanded initially)
   category?: string;
   shortNotes?: string;
@@ -775,6 +779,63 @@ const WorldElementsEditor = memo(({ entry, projectId, onClose }: WorldElementsEd
 
         {/* Sidebar */}
         <div className="w-80 space-y-4">
+          {/* World Element Image */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <ImageIcon className="h-5 w-5" />
+                Element Image
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {worldElementDataState.imageUrl ? (
+                <div className="space-y-2">
+                  <img 
+                    src={worldElementDataState.imageUrl} 
+                    alt={worldElementDataState.imageDescription || title}
+                    className="w-full h-48 object-cover rounded-md"
+                  />
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => updateWorldElementData({ imageUrl: '', imageDescription: '' })}
+                    className="w-full"
+                  >
+                    <X className="h-4 w-4 mr-2" />
+                    Remove Image
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <div className="border-2 border-dashed border-muted-foreground/25 rounded-md p-6 text-center">
+                    <ImageIcon className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground mb-2">Add element image</p>
+                  </div>
+                  <Input
+                    placeholder="Image URL..."
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        updateWorldElementData({ imageUrl: e.currentTarget.value });
+                        e.currentTarget.value = '';
+                      }
+                    }}
+                  />
+                </div>
+              )}
+              {worldElementDataState.imageUrl && (
+                <div>
+                  <Label htmlFor="imageDescription">Image Description</Label>
+                  <Input
+                    id="imageDescription"
+                    value={worldElementDataState.imageDescription || ''}
+                    onChange={(e) => updateWorldElementData({ imageDescription: e.target.value })}
+                    placeholder="Describe the image..."
+                  />
+                </div>
+              )}
+            </CardContent>
+          </Card>
+          
           {/* Classification */}
           <Card>
             <CardHeader>

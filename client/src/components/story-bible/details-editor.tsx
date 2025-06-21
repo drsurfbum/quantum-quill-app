@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Save, Trash2, Plus, X, ChevronDown, ChevronRight, FileText, Link2, Users, MapPin, Calendar, Zap, Tag, ArrowLeft, Clock, Archive, Lightbulb, MessageSquare, Eye, EyeOff } from 'lucide-react';
+import { Save, Trash2, Plus, X, ChevronDown, ChevronRight, FileText, Link2, Users, MapPin, Calendar, Zap, Tag, ArrowLeft, Clock, Archive, Lightbulb, MessageSquare, Eye, EyeOff, ImageIcon, Upload } from 'lucide-react';
 import { useUpdateStoryBibleEntry, useDeleteStoryBibleEntry, useStoryBibleEntries } from '@/hooks/use-story-bible';
 import { useToast } from '@/hooks/use-toast';
 import { StoryBibleEntry } from '@shared/schema';
@@ -17,6 +17,10 @@ import { debounce } from 'lodash';
 
 // Detail data structure based on specification
 interface DetailData {
+  // Image
+  imageUrl?: string;
+  imageDescription?: string;
+  
   // Core Link (expanded initially)
   linkedElements: Array<{
     id: number;
@@ -584,6 +588,63 @@ const DetailsEditor = memo(({ entry, projectId, onClose }: DetailsEditorProps) =
                   </Badge>
                 )}
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Detail Image */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <ImageIcon className="h-5 w-5" />
+                Detail Image
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {detailDataState.imageUrl ? (
+                <div className="space-y-2">
+                  <img 
+                    src={detailDataState.imageUrl} 
+                    alt={detailDataState.imageDescription || title}
+                    className="w-full h-48 object-cover rounded-md"
+                  />
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => updateDetailData({ imageUrl: '', imageDescription: '' })}
+                    className="w-full"
+                  >
+                    <X className="h-4 w-4 mr-2" />
+                    Remove Image
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <div className="border-2 border-dashed border-muted-foreground/25 rounded-md p-6 text-center">
+                    <ImageIcon className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground mb-2">Add detail image</p>
+                  </div>
+                  <Input
+                    placeholder="Image URL..."
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        updateDetailData({ imageUrl: e.currentTarget.value });
+                        e.currentTarget.value = '';
+                      }
+                    }}
+                  />
+                </div>
+              )}
+              {detailDataState.imageUrl && (
+                <div>
+                  <Label htmlFor="imageDescription">Image Description</Label>
+                  <Input
+                    id="imageDescription"
+                    value={detailDataState.imageDescription || ''}
+                    onChange={(e) => updateDetailData({ imageDescription: e.target.value })}
+                    placeholder="Describe the image..."
+                  />
+                </div>
+              )}
             </CardContent>
           </Card>
 
