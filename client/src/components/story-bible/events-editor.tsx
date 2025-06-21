@@ -116,6 +116,7 @@ const EventsEditor = memo(({ entry, projectId, onClose }: EventsEditorProps) => 
 
   const [title, setTitle] = useState(entry.title);
   const [isSaving, setIsSaving] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   // Collapsible states - Date & Era and Core Summary expanded initially
   const [dateEraExpanded, setDateEraExpanded] = useState(true);
@@ -127,13 +128,30 @@ const EventsEditor = memo(({ entry, projectId, onClose }: EventsEditorProps) => 
   const [notesExpanded, setNotesExpanded] = useState(false);
 
   // Parse event data from content
-  const eventData = useMemo(() => {
-    if (!entry.content) return {} as EventData;
+  const initialEventData = useMemo(() => {
+    if (!entry.content) return {
+      date: { year: '', isApproximate: false },
+      charactersInvolved: [],
+      groupsRacesInvolved: [],
+      locations: [],
+      worldElements: [],
+      tags: [],
+      includeOnTimeline: true
+    } as EventData;
     
     try {
       const parsed = JSON.parse(entry.content);
       if (typeof parsed === 'object' && parsed !== null) {
-        return parsed as EventData;
+        return {
+          date: { year: '', isApproximate: false },
+          charactersInvolved: [],
+          groupsRacesInvolved: [],
+          locations: [],
+          worldElements: [],
+          tags: [],
+          includeOnTimeline: true,
+          ...parsed
+        } as EventData;
       }
     } catch {
       return {
@@ -148,19 +166,18 @@ const EventsEditor = memo(({ entry, projectId, onClose }: EventsEditorProps) => 
       } as EventData;
     }
     
-    return {} as EventData;
+    return {
+      date: { year: '', isApproximate: false },
+      charactersInvolved: [],
+      groupsRacesInvolved: [],
+      locations: [],
+      worldElements: [],
+      tags: [],
+      includeOnTimeline: true
+    } as EventData;
   }, [entry.content]);
 
-  const [eventDataState, setEventData] = useState<EventData>({
-    date: { year: '', isApproximate: false },
-    charactersInvolved: [],
-    groupsRacesInvolved: [],
-    locations: [],
-    worldElements: [],
-    tags: [],
-    includeOnTimeline: true,
-    ...eventData
-  });
+  const [eventDataState, setEventData] = useState<EventData>(initialEventData);
 
   // Available entries for linking
   const characterEntries = (allEntries || []).filter(e => e.entryType === 'characters');
@@ -169,27 +186,17 @@ const EventsEditor = memo(({ entry, projectId, onClose }: EventsEditorProps) => 
   const worldElementEntries = (allEntries || []).filter(e => e.entryType === 'world_elements');
   const eventEntries = (allEntries || []).filter(e => e.entryType === 'events' && e.id !== entry.id);
 
-  const updateEventData = useCallback((updates: Partial<EventData>) => {
-    setEventData(prev => ({ ...prev, ...updates }));
-  }, []);
-
-  const updateNestedData = useCallback((key: keyof EventData, nestedUpdates: any) => {
-    setEventData(prev => ({
-      ...prev,
-      [key]: { ...prev[key], ...nestedUpdates }
-    }));
-  }, []);
-
-  // Debounced save function
+  // Debounced save function - stable reference
   const debouncedSave = useMemo(
-    () => debounce(async () => {
+    () => debounce(async (titleToSave: string, dataToSave: EventData) => {
       setIsSaving(true);
       try {
         await updateStoryBibleEntry.mutateAsync({
           id: entry.id,
-          title,
-          content: JSON.stringify(eventDataState),
+          title: titleToSave,
+          content: JSON.stringify(dataToSave),
         });
+        setHasUnsavedChanges(false);
       } catch (error) {
         console.error('Failed to save:', error);
         toast({
@@ -200,17 +207,44 @@ const EventsEditor = memo(({ entry, projectId, onClose }: EventsEditorProps) => 
       } finally {
         setIsSaving(false);
       }
-    }, 1000),
-    [entry.id, title, eventDataState, updateStoryBibleEntry, toast]
+    }, 1500),
+    [entry.id, updateStoryBibleEntry, toast]
   );
 
-  // Auto-save on changes
+  const updateEventData = useCallback((updates: Partial<EventData>) => {
+    setEventData(prev => {
+      const newData = { ...prev, ...updates };
+      setHasUnsavedChanges(true);
+      debouncedSave(title, newData);
+      return newData;
+    });
+  }, [title, debouncedSave]);
+
+  const updateNestedData = useCallback((key: keyof EventData, nestedUpdates: any) => {
+    setEventData(prev => {
+      const newData = {
+        ...prev,
+        [key]: { ...prev[key], ...nestedUpdates }
+      };
+      setHasUnsavedChanges(true);
+      debouncedSave(title, newData);
+      return newData;
+    });
+  }, [title, debouncedSave]);
+
+  // Handle title changes
+  const handleTitleChange = useCallback((newTitle: string) => {
+    setTitle(newTitle);
+    setHasUnsavedChanges(true);
+    debouncedSave(newTitle, eventDataState);
+  }, [eventDataState, debouncedSave]);
+
+  // Reset state when entry changes
   useEffect(() => {
-    // Only trigger save if this isn't the initial load
-    if (title !== entry.title || JSON.stringify(eventDataState) !== (entry.content || '{}')) {
-      debouncedSave();
-    }
-  }, [title, eventDataState, debouncedSave, entry.title, entry.content]);
+    setTitle(entry.title);
+    setEventData(initialEventData);
+    setHasUnsavedChanges(false);
+  }, [entry.id, entry.title, initialEventData]);
 
   const handleDelete = async () => {
     try {
@@ -264,7 +298,7 @@ const EventsEditor = memo(({ entry, projectId, onClose }: EventsEditorProps) => 
             <div className="flex items-center gap-3">
               <Input
                 value={title}
-                onChange={(e) => setTitle(e.target.value)}
+                onChange={(e) => handleTitleChange(e.target.value)}
                 className="text-2xl font-bold border-none p-0 h-auto bg-transparent"
                 placeholder="Event Name (e.g., Battle of Black Crater)"
               />
@@ -282,6 +316,7 @@ const EventsEditor = memo(({ entry, projectId, onClose }: EventsEditorProps) => 
           </div>
           <div className="flex items-center gap-2">
             {isSaving && <span className="text-sm text-muted-foreground">Saving...</span>}
+            {hasUnsavedChanges && !isSaving && <span className="text-sm text-muted-foreground">Unsaved changes</span>}
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button variant="outline" size="sm">
