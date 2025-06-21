@@ -143,7 +143,7 @@ const WORLD_ELEMENT_STATUS = [
 
 const WorldElementsEditor = memo(({ entry, projectId, onClose }: WorldElementsEditorProps) => {
   const { toast } = useToast();
-  const updateStoryBibleEntry = useUpdateStoryBibleEntry();
+  const updateStoryBibleEntry = useUpdateStoryBibleEntry({ skipInvalidation: true });
   const deleteStoryBibleEntry = useDeleteStoryBibleEntry();
   const { data: allEntries } = useStoryBibleEntries(projectId);
 

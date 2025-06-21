@@ -79,7 +79,7 @@ export function GroupsRacesEditor({ entry, projectId, onClose }: GroupsRacesEdit
   const [relationshipsExpanded, setRelationshipsExpanded] = useState(false);
   const [notesExpanded, setNotesExpanded] = useState(false);
 
-  const updateMutation = useUpdateStoryBibleEntry();
+  const updateMutation = useUpdateStoryBibleEntry({ skipInvalidation: true });
   const deleteMutation = useDeleteStoryBibleEntry();
   const { data: allEntries } = useStoryBibleEntries(projectId);
   const { toast } = useToast();

@@ -82,7 +82,7 @@ export function LocationsEditor({ entry, projectId, onClose }: LocationsEditorPr
   const [relationalExpanded, setRelationalExpanded] = useState(false);
   const [notesExpanded, setNotesExpanded] = useState(false);
 
-  const updateMutation = useUpdateStoryBibleEntry();
+  const updateMutation = useUpdateStoryBibleEntry({ skipInvalidation: true });
   const deleteMutation = useDeleteStoryBibleEntry();
   const createMutation = useCreateStoryBibleEntry();
   const { data: allEntries } = useStoryBibleEntries(projectId);

@@ -72,7 +72,7 @@ export function CharacterEditor({ entry, projectId, onClose }: CharacterEditorPr
   const [backstoryExpanded, setBackstoryExpanded] = useState(false);
   const [researchExpanded, setResearchExpanded] = useState(false);
 
-  const updateMutation = useUpdateStoryBibleEntry();
+  const updateMutation = useUpdateStoryBibleEntry({ skipInvalidation: true });
   const deleteMutation = useDeleteStoryBibleEntry();
   const { data: allEntries } = useStoryBibleEntries(projectId);
   const { toast } = useToast();

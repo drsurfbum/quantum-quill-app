@@ -39,7 +39,7 @@ export const useCreateStoryBibleEntry = () => {
 };
 
 // Update a story bible entry
-export const useUpdateStoryBibleEntry = () => {
+export const useUpdateStoryBibleEntry = (options?: { skipInvalidation?: boolean }) => {
   return useMutation({
     mutationFn: async ({ id, ...data }: { 
       id: number | string,

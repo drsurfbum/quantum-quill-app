@@ -110,7 +110,7 @@ const OUTCOME_TYPES = [
 
 const EventsEditor = memo(({ entry, projectId, onClose }: EventsEditorProps) => {
   const { toast } = useToast();
-  const updateStoryBibleEntry = useUpdateStoryBibleEntry();
+  const updateStoryBibleEntry = useUpdateStoryBibleEntry({ skipInvalidation: true });
   const deleteStoryBibleEntry = useDeleteStoryBibleEntry();
   const { data: allEntries } = useStoryBibleEntries(projectId);
 
