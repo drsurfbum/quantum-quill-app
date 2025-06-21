@@ -9,8 +9,8 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Save, Trash2, Plus, X, ChevronDown, ChevronRight, Calendar, Users, MapPin, Cpu, Flag, Tag } from 'lucide-react';
-import { useUpdateStoryBibleEntry, useDeleteStoryBibleEntry } from '@/hooks/use-story-bible';
+import { Save, Trash2, Plus, X, ChevronDown, ChevronRight, Calendar, Users, MapPin, Cpu, Flag, Tag, ArrowLeft, Clock, Zap, Users2 } from 'lucide-react';
+import { useUpdateStoryBibleEntry, useDeleteStoryBibleEntry, useStoryBibleEntries } from '@/hooks/use-story-bible';
 import { useToast } from '@/hooks/use-toast';
 import { StoryBibleEntry } from '@shared/schema';
 import { debounce } from 'lodash';
@@ -71,23 +71,32 @@ interface EventData {
 interface EventSheetProps {
   entry: StoryBibleEntry;
   projectId: number;
+  onClose?: () => void;
 }
 
 // Event types for the dropdown
 const EVENT_TYPES = [
-  'Battle', 'Discovery', 'Meeting', 'Birth', 'Death', 'Collapse', 'Formation',
+  'Battle', 'Discovery', 'Treaty', 'Meeting', 'Birth', 'Death', 'Collapse', 'Formation',
   'Arrival', 'Departure', 'Betrayal', 'Alliance', 'Conflict', 'Resolution',
   'Revelation', 'Transformation', 'Ceremony', 'Disaster', 'Victory', 'Defeat',
-  'Negotiation', 'Treaty', 'War', 'Peace', 'Other'
+  'Negotiation', 'War', 'Peace', 'Rebellion', 'Other'
 ];
 
 // Event status options
 const EVENT_STATUS_OPTIONS = [
-  'Historical', 'Speculative', 'Canonical', 'Unverified', 'Planned', 'Draft'
+  'Canonical', 'Rumor', 'Historical', 'Speculative', 'Unverified', 'Planned', 'Draft'
 ];
 
 // Character role options
 const CHARACTER_ROLES = [
+  'Leader', 'Victim', 'Witness', 'Participant', 'Instigator', 'Bystander', 'Hero', 'Villain'
+];
+
+// Outcome types
+const OUTCOME_TYPES = [
+  'Victory', 'Defeat', 'Alliance Formed', 'Cataclysm', 'Treaty Signed', 'War Declared',
+  'Discovery Made', 'Secret Revealed', 'Betrayal', 'Sacrifice', 'Transformation', 'Other'
+];
   'Protagonist', 'Antagonist', 'Witness', 'Victim', 'Commander', 'Leader',
   'Advisor', 'Messenger', 'Bystander', 'Instigator', 'Mediator', 'Other'
 ];

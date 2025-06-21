@@ -1,0 +1,46 @@
+3. Events
+
+Example Flow for Events Page
+	1.	Header Area (Sticky)
+	•	Title: Event Name (e.g., “Battle of Black Crater”)
+	•	Badges: Type (Battle/Discovery/Treaty/etc.), Status (Canonical/Rumor)
+	•	Save/Delete icons.
+	2.	Main Column
+	•	Date & Era (expanded initially):
+	•	Year (required if known)
+	•	Month/Day or fictional calendar fields
+	•	Approximate toggle
+	•	Core Summary (expanded initially):
+	•	Short Summary (one-liner)
+	•	Type dropdown
+	•	Location(s) (link selector)
+	•	Narrative Context (collapsible):
+	•	Detailed description: causes, participants, outcomes
+	•	Participants (collapsible):
+	•	Characters involved (link with role tags: Leader, Victim, Witness)
+	•	Groups/Races involved (link)
+	•	Consequences & Follow-ups (collapsible):
+	•	Outcome tags (Victory, Defeat, Alliance Formed, Cataclysm)
+	•	Linked subsequent Events or chained sequences
+	•	Related World Elements (collapsible):
+	•	Technologies used or discovered, mythic significance, etc.
+	•	Notes / GM/Writer Annotations (collapsed by default):
+	•	Hidden details, alternative versions, research reminders.
+	3.	Sidebar
+	•	Classification:
+	•	Type, Status
+	•	Date Summary:
+	•	Display formatted date/era prominently
+	•	Links:
+	•	Quick chips for linked Locations, Characters, Groups
+	•	Tags:
+	•	e.g., “War,” “Diplomacy,” “Rebellion”
+	•	Timestamps & Actions:
+	•	Created/Updated, Include on Timeline toggle
+	4.	Post-Save Suggestions
+	•	“Plot this on the timeline once the dashboard is ready.”
+	•	“Notify: link to Characters’ personal arcs affected by this event.”
+
+Prioritization (≤150 words)
+
+Events drive your plot and interlink all other elements: they tie Characters, Locations, Groups, and World Elements together in time. First, capture date (even approximate), name, type, and primary Location(s). Early linking of participants (Characters and Groups) ensures you can query “where was X during this event?” or “which Events involve this faction?” Detailed narrative can be deferred until you flesh out major plot beats. Marking outcomes/status aids timeline filtering. Collapsible context sections keep the entry uncluttered. Establishing a clear Event template now sets up a robust timeline view later, making it easy to track story progression and character arcs.
