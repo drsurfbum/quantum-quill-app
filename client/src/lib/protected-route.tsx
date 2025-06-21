@@ -14,6 +14,11 @@ export function ProtectedRoute({ path, component: Component }: ProtectedRoutePro
     <Route
       path={path}
       component={() => {
+        // TEMPORARY: Bypass auth for development
+        if (import.meta.env.DEV) {
+          return <Component />;
+        }
+
         if (isLoading) {
           return (
             <div className="flex items-center justify-center min-h-screen">
