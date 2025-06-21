@@ -948,15 +948,16 @@ export function LocationsEditor({ entry, projectId, onClose }: LocationsEditorPr
                       <div key={id} className="flex items-center justify-between p-2 bg-muted rounded-lg">
                         <div className="flex-1">
                           <div className="font-medium text-sm">{relatedEntry.title}</div>
-                          <div className="text-xs text-muted-foreground">
-                            {relatedEntry.entryType}
+                          <div className="text-xs text-muted-foreground capitalize">
+                            {relatedEntry.entryType.replace('_', ' ')}
                           </div>
                         </div>
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => handleRemoveRelatedEntry(id)}
-                          className="h-6 w-6 p-0"
+                          className="h-6 w-6 p-0 hover:bg-destructive/10 hover:text-destructive"
+                          title="Unlink entry"
                         >
                           <X className="h-3 w-3" />
                         </Button>
