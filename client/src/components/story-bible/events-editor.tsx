@@ -684,52 +684,19 @@ const EventsEditor = memo(({ entry, projectId, onClose }: EventsEditorProps) => 
                 Event Image
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              {eventDataState.imageUrl ? (
-                <div className="space-y-2">
-                  <img 
-                    src={eventDataState.imageUrl} 
-                    alt={eventDataState.imageDescription || title}
-                    className="w-full h-48 object-cover rounded-md"
-                  />
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => updateEventData({ imageUrl: '', imageDescription: '' })}
-                    className="w-full"
-                  >
-                    <X className="h-4 w-4 mr-2" />
-                    Remove Image
-                  </Button>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  <div className="border-2 border-dashed border-muted-foreground/25 rounded-md p-6 text-center">
-                    <ImageIcon className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground mb-2">Add event image</p>
-                  </div>
-                  <Input
-                    placeholder="Image URL..."
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        updateEventData({ imageUrl: e.currentTarget.value });
-                        e.currentTarget.value = '';
-                      }
-                    }}
-                  />
-                </div>
-              )}
-              {eventDataState.imageUrl && (
-                <div>
-                  <Label htmlFor="imageDescription">Image Description</Label>
-                  <Input
-                    id="imageDescription"
-                    value={eventDataState.imageDescription || ''}
-                    onChange={(e) => updateEventData({ imageDescription: e.target.value })}
-                    placeholder="Describe the image..."
-                  />
-                </div>
-              )}
+            <CardContent>
+              <FileUpload
+                imageUrl={eventDataState.imageUrl}
+                imageDescription={eventDataState.imageDescription}
+                onImageChange={(url, description) => {
+                  updateEventData({ imageUrl: url, imageDescription: description || "" });
+                }}
+                onRemoveImage={() => {
+                  updateEventData({ imageUrl: "", imageDescription: "" });
+                }}
+                title="Event Image"
+                placeholder="Add event image"
+              />
             </CardContent>
           </Card>
 

@@ -760,52 +760,19 @@ const ResearchEditor = memo(({ entry, projectId, onClose }: ResearchEditorProps)
                 Research Image
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              {researchDataState.imageUrl ? (
-                <div className="space-y-2">
-                  <img 
-                    src={researchDataState.imageUrl} 
-                    alt={researchDataState.imageDescription || title}
-                    className="w-full h-48 object-cover rounded-md"
-                  />
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => updateResearchData({ imageUrl: '', imageDescription: '' })}
-                    className="w-full"
-                  >
-                    <X className="h-4 w-4 mr-2" />
-                    Remove Image
-                  </Button>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  <div className="border-2 border-dashed border-muted-foreground/25 rounded-md p-6 text-center">
-                    <ImageIcon className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground mb-2">Add research image</p>
-                  </div>
-                  <Input
-                    placeholder="Image URL..."
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        updateResearchData({ imageUrl: e.currentTarget.value });
-                        e.currentTarget.value = '';
-                      }
-                    }}
-                  />
-                </div>
-              )}
-              {researchDataState.imageUrl && (
-                <div>
-                  <Label htmlFor="imageDescription">Image Description</Label>
-                  <Input
-                    id="imageDescription"
-                    value={researchDataState.imageDescription || ''}
-                    onChange={(e) => updateResearchData({ imageDescription: e.target.value })}
-                    placeholder="Describe the image..."
-                  />
-                </div>
-              )}
+            <CardContent>
+              <FileUpload
+                imageUrl={researchDataState.imageUrl}
+                imageDescription={researchDataState.imageDescription}
+                onImageChange={(url, description) => {
+                  updateResearchData({ imageUrl: url, imageDescription: description || "" });
+                }}
+                onRemoveImage={() => {
+                  updateResearchData({ imageUrl: "", imageDescription: "" });
+                }}
+                title="Research Image"
+                placeholder="Add research image"
+              />
             </CardContent>
           </Card>
 

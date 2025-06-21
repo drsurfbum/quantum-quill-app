@@ -57,12 +57,15 @@ export const useUpdateStoryBibleEntry = (options?: { skipInvalidation?: boolean 
       const res = await apiRequest('PUT', `/api/story-bible/${id}`, data);
       const result = await res.json();
       
-      // Silent cache update after successful save
-      queryClient.setQueryData([`/api/story-bible/${id}`], result);
-      queryClient.setQueryData([`/api/projects/${result.projectId}/story-bible`], (old: StoryBibleEntry[] | undefined) => {
-        if (!old) return [result];
-        return old.map(entry => entry.id === result.id ? result : entry);
-      });
+      // Only update cache if skipInvalidation is not set
+      if (!options?.skipInvalidation) {
+        // Silent cache update after successful save
+        queryClient.setQueryData([`/api/story-bible/${id}`], result);
+        queryClient.setQueryData([`/api/projects/${result.projectId}/story-bible`], (old: StoryBibleEntry[] | undefined) => {
+          if (!old) return [result];
+          return old.map(entry => entry.id === result.id ? result : entry);
+        });
+      }
       
       return result;
     }

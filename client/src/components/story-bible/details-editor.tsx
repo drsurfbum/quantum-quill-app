@@ -599,52 +599,19 @@ const DetailsEditor = memo(({ entry, projectId, onClose }: DetailsEditorProps) =
                 Detail Image
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              {detailDataState.imageUrl ? (
-                <div className="space-y-2">
-                  <img 
-                    src={detailDataState.imageUrl} 
-                    alt={detailDataState.imageDescription || title}
-                    className="w-full h-48 object-cover rounded-md"
-                  />
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => updateDetailData({ imageUrl: '', imageDescription: '' })}
-                    className="w-full"
-                  >
-                    <X className="h-4 w-4 mr-2" />
-                    Remove Image
-                  </Button>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  <div className="border-2 border-dashed border-muted-foreground/25 rounded-md p-6 text-center">
-                    <ImageIcon className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground mb-2">Add detail image</p>
-                  </div>
-                  <Input
-                    placeholder="Image URL..."
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        updateDetailData({ imageUrl: e.currentTarget.value });
-                        e.currentTarget.value = '';
-                      }
-                    }}
-                  />
-                </div>
-              )}
-              {detailDataState.imageUrl && (
-                <div>
-                  <Label htmlFor="imageDescription">Image Description</Label>
-                  <Input
-                    id="imageDescription"
-                    value={detailDataState.imageDescription || ''}
-                    onChange={(e) => updateDetailData({ imageDescription: e.target.value })}
-                    placeholder="Describe the image..."
-                  />
-                </div>
-              )}
+            <CardContent>
+              <FileUpload
+                imageUrl={detailDataState.imageUrl}
+                imageDescription={detailDataState.imageDescription}
+                onImageChange={(url, description) => {
+                  updateDetailData({ imageUrl: url, imageDescription: description || "" });
+                }}
+                onRemoveImage={() => {
+                  updateDetailData({ imageUrl: "", imageDescription: "" });
+                }}
+                title="Detail Image"
+                placeholder="Add detail image"
+              />
             </CardContent>
           </Card>
 
