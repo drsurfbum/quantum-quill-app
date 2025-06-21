@@ -31,6 +31,9 @@ export default function StoryBible() {
   const [isCollapsed, setIsCollapsed] = useState(isMobile);
   const [selectedEntry, setSelectedEntry] = useState<StoryBibleEntry | null>(null);
   const [view, setView] = useState<"dashboard" | "editor">("dashboard");
+  
+  // Create a stable reference to the selected entry ID to prevent re-renders from closing the editor
+  const [selectedEntryId, setSelectedEntryId] = useState<number | null>(null);
 
   const projectId = parseInt(id!);
   const { data: project, isLoading: projectLoading } = useProject(projectId);
@@ -47,6 +50,7 @@ export default function StoryBible() {
 
       if (result.success) {
         setSelectedEntry(result.data);
+        setSelectedEntryId(result.data.id);
         setView("editor");
         toast({
           title: "Entry Created",
@@ -64,11 +68,13 @@ export default function StoryBible() {
 
   const handleEditEntry = (entry: StoryBibleEntry) => {
     setSelectedEntry(entry);
+    setSelectedEntryId(entry.id);
     setView("editor");
   };
 
   const handleBackToDashboard = () => {
     setSelectedEntry(null);
+    setSelectedEntryId(null);
     setView("dashboard");
   };
 
