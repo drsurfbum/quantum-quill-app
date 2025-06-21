@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Save, Trash2, Archive, ArchiveRestore, Star, StarOff, ChevronDown, ChevronRight, Plus, X, Users } from "lucide-react";
+import { Save, Trash2, Archive, ArchiveRestore, Star, StarOff, ChevronDown, ChevronRight, Plus, X, Users, ImageIcon } from "lucide-react";
 import { useUpdateStoryBibleEntry, useDeleteStoryBibleEntry, useStoryBibleEntries } from "@/hooks/use-story-bible";
 import { useToast } from "@/hooks/use-toast";
 import { StoryBibleEntry } from "@shared/schema";
@@ -59,6 +59,10 @@ export function GroupsRacesEditor({ entry, projectId, onClose }: GroupsRacesEdit
   // Relationships
   const [alliances, setAlliances] = useState<string[]>((metadata as any)?.alliances || []);
   const [rivalries, setRivalries] = useState<string[]>((metadata as any)?.rivalries || []);
+  
+  // Image
+  const [imageUrl, setImageUrl] = useState((metadata as any)?.imageUrl || "");
+  const [imageDescription, setImageDescription] = useState((metadata as any)?.imageDescription || "");
   
   // Form helpers
   const [newSubGroup, setNewSubGroup] = useState("");

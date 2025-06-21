@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Save, Trash2, Archive, ArchiveRestore, Star, StarOff, ChevronDown, ChevronRight, Plus, X, MapPin } from "lucide-react";
+import { Save, Trash2, Archive, ArchiveRestore, Star, StarOff, ChevronDown, ChevronRight, Plus, X, MapPin, ImageIcon } from "lucide-react";
 import { useUpdateStoryBibleEntry, useDeleteStoryBibleEntry, useStoryBibleEntries, useCreateStoryBibleEntry } from "@/hooks/use-story-bible";
 import { useToast } from "@/hooks/use-toast";
 import { StoryBibleEntry } from "@shared/schema";
@@ -63,6 +63,10 @@ export function LocationsEditor({ entry, projectId, onClose }: LocationsEditorPr
   // Relational Connections
   const [nearbyLocations, setNearbyLocations] = useState<number[]>((metadata as any)?.nearbyLocations || []);
   const [worldElements, setWorldElements] = useState<string[]>((metadata as any)?.worldElements || []);
+  
+  // Image
+  const [imageUrl, setImageUrl] = useState((metadata as any)?.imageUrl || "");
+  const [imageDescription, setImageDescription] = useState((metadata as any)?.imageDescription || "");
   
   // Form helpers
   const [newKeyFeature, setNewKeyFeature] = useState("");
