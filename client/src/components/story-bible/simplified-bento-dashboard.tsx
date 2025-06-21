@@ -96,7 +96,9 @@ export function SimplifiedBentoDashboard({ projectId, onCreateEntry, onEditEntry
       if (!grouped[entry.entryType]) {
         grouped[entry.entryType] = {};
       }
-      const category = entry.category || 'Uncategorized';
+      const category = entry.entryType === "locations" 
+        ? (entry.metadata as any)?.locationType || 'Uncategorized'
+        : entry.category || 'Uncategorized';
       if (!grouped[entry.entryType][category]) {
         grouped[entry.entryType][category] = [];
       }
