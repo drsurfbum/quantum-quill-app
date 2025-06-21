@@ -56,6 +56,10 @@ export function CharacterEditor({ entry, projectId, onClose }: CharacterEditorPr
   // Abilities
   const [abilities, setAbilities] = useState<string[]>((metadata as any)?.abilities || []);
   const [newAbility, setNewAbility] = useState("");
+  
+  // Image
+  const [imageUrl, setImageUrl] = useState((metadata as any)?.imageUrl || "");
+  const [imageDescription, setImageDescription] = useState((metadata as any)?.imageDescription || "");
 
   // Section collapse states - smart defaults based on entry content
   const isNewEntry = !entry.id || entry.id === 0;
