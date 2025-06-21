@@ -125,6 +125,15 @@ export function SimplifiedBentoDashboard({ projectId, onCreateEntry, onEditEntry
               return 'Uncategorized';
             }
           })()
+        : entry.entryType === "research"
+        ? (() => {
+            try {
+              const researchData = JSON.parse(entry.content || '{}');
+              return researchData.sourceType || 'Uncategorized';
+            } catch {
+              return 'Uncategorized';
+            }
+          })()
         : entry.category || 'Uncategorized';
       if (!grouped[entry.entryType][category]) {
         grouped[entry.entryType][category] = [];

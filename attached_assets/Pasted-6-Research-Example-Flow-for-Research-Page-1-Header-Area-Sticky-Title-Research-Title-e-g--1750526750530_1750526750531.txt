@@ -1,0 +1,43 @@
+6. Research
+
+Example Flow for Research Page
+	1.	Header Area (Sticky)
+	•	Title: Research Title (e.g., “Asteroid Mining Techniques”)
+	•	Badge: Source Type (Article, Book, Video, Map, Website, Interview)
+	•	Save/Delete icons.
+	2.	Main Column
+	•	Core Info (expanded initially):
+	•	Title
+	•	Source Type dropdown
+	•	URL or Reference details
+	•	Short Summary of findings (one-liner or few sentences)
+	•	Linked Applications (collapsible):
+	•	Link to Elements where this research applies (Locations, World Elements, Events, etc.)
+	•	Suggest likely links (e.g., if title contains “Phobos,” suggest linking to Phobos Location)
+	•	Detailed Notes (collapsible):
+	•	Multi-line rich text with key points, quotes, data captured
+	•	Utility & Actions (collapsible):
+	•	Status: Reviewed, To Review, Archived
+	•	Next Steps: To incorporate into which entry? E.g., “Use in World Element: Low-gravity agriculture”
+	•	Attachments (collapsed by default):
+	•	Option to upload files or embed images/snippets (if QQ supports file storage)
+	•	Tags & Topics (expanded initially or in sidebar):
+	•	E.g., “Engineering,” “Cultural Customs,” “Biology”
+	•	Notes for Team/You (collapsed by default):
+	•	Reminders: “Check deeper data on soil composition,” etc.
+	3.	Sidebar
+	•	Classification:
+	•	Source Type, Status
+	•	Links Summary:
+	•	Chips for linked entries
+	•	Tags:
+	•	Topic tags for filtering research
+	•	Timestamps & Actions:
+	•	Created/Updated, Archive toggle
+	4.	Post-Save Suggestions
+	•	“Apply this research to create a new World Element or Location detail.”
+	•	“Notify if linked entries change (e.g., if you update Phobos Location, remind to revisit this research).”
+
+Prioritization (≤150 words)
+
+Research entries gather external references and factual groundwork supporting your fiction. Initially capture title, source type, URL/reference, and a concise summary. Early linking to relevant entries (Locations, World Elements, Events) anchors research in context. Detailed notes can expand later, so collapse until actively working on that topic. Tagging by topic ensures quick retrieval (e.g., “Asteroid Mining”). Recording status (Reviewed vs. To Review) prevents forgotten leads. A solid Research template prevents scattering reference material, making it easy to apply real-world insights to world-building. Relational linking ensures research informs multiple entries and updates propagate awareness across the story bible.

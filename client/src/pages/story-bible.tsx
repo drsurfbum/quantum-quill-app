@@ -19,6 +19,7 @@ import { LocationsEditor } from "@/components/story-bible/locations-editor";
 import { EventsEditor } from "@/components/story-bible/events-editor";
 import { WorldElementsEditor } from "@/components/story-bible/world-elements-editor";
 import { DetailsEditor } from "@/components/story-bible/details-editor";
+import { ResearchEditor } from "@/components/story-bible/research-editor";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -216,6 +217,12 @@ export default function StoryBible() {
                   />
                 ) : selectedEntry.entryType === "details" ? (
                   <DetailsEditor
+                    entry={selectedEntry}
+                    projectId={projectId}
+                    onClose={handleBackToDashboard}
+                  />
+                ) : selectedEntry.entryType === "research" ? (
+                  <ResearchEditor
                     entry={selectedEntry}
                     projectId={projectId}
                     onClose={handleBackToDashboard}
