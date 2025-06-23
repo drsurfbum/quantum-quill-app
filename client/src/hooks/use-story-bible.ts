@@ -59,14 +59,16 @@ export const useUpdateStoryBibleEntry = (options?: { skipInvalidation?: boolean 
       const res = await apiRequest('PUT', `/api/story-bible/${id}`, data);
       const result = await res.json();
       
-      // Use setTimeout to defer cache updates and prevent immediate re-renders
+      // Only update individual entry cache immediately, defer list cache update
+      queryClient.setQueryData([`/api/story-bible/${id}`], result);
+      
+      // Defer the list cache update to prevent dashboard re-renders
       setTimeout(() => {
-        queryClient.setQueryData([`/api/story-bible/${id}`], result);
         queryClient.setQueryData([`/api/projects/${result.projectId}/story-bible`], (old: StoryBibleEntry[] | undefined) => {
           if (!old) return [result];
           return old.map(entry => entry.id === result.id ? result : entry);
         });
-      }, 200); // Increased delay to ensure UI stability
+      }, 500); // Longer delay for list updates
       
       return result;
     }

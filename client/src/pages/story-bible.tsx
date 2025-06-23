@@ -29,13 +29,44 @@ export default function StoryBible() {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const [isCollapsed, setIsCollapsed] = useState(isMobile);
-  const [selectedEntry, setSelectedEntry] = useState<StoryBibleEntry | null>(null);
-  const [view, setView] = useState<"dashboard" | "editor">("dashboard");
-  
-  // Create stable references to prevent re-renders from closing the editor
-  const [selectedEntryId, setSelectedEntryId] = useState<number | null>(null);
-  const selectedEntryRef = useRef<StoryBibleEntry | null>(null);
-  const editorMountKey = useRef<string>('');
+
+  // Stable editor renderer component to prevent re-mounting
+  const EditorRenderer = useCallback(({ entry, projectId, onClose }: {
+    entry: StoryBibleEntry;
+    projectId: number;
+    onClose: () => void;
+  }) => {
+    switch (entry.entryType) {
+      case "characters":
+        return <CharacterEditor entry={entry} projectId={projectId} onClose={onClose} />;
+      case "groups_races":
+        return <GroupsRacesEditor entry={entry} projectId={projectId} onClose={onClose} />;
+      case "locations":
+        return <LocationsEditor entry={entry} projectId={projectId} onClose={onClose} />;
+      case "events":
+        return <EventsEditor entry={entry} projectId={projectId} onClose={onClose} />;
+      case "world_elements":
+        return <WorldElementsEditor entry={entry} projectId={projectId} onClose={onClose} />;
+      case "details":
+        return <DetailsEditor entry={entry} projectId={projectId} onClose={onClose} />;
+      case "research":
+        return <ResearchEditor entry={entry} projectId={projectId} onClose={onClose} />;
+      default:
+        return <EnhancedBibleEditor entry={entry} projectId={projectId} onClose={onClose} />;
+    }
+  }, []);
+  // Use a more robust state machine approach
+  const [editorState, setEditorState] = useState<{
+    mode: "dashboard" | "editor";
+    entryId: number | null;
+    entryData: StoryBibleEntry | null;
+    mountKey: string;
+  }>({
+    mode: "dashboard",
+    entryId: null,
+    entryData: null,
+    mountKey: ""
+  });
 
   const projectId = parseInt(id!);
   const { data: project, isLoading: projectLoading } = useProject(projectId);
@@ -52,12 +83,12 @@ export default function StoryBible() {
 
       if (result.success) {
         const mountKey = `${entryType}-${result.data.id}-${Date.now()}`;
-        editorMountKey.current = mountKey;
-        
-        selectedEntryRef.current = result.data;
-        setSelectedEntry(result.data);
-        setSelectedEntryId(result.data.id);
-        setView("editor");
+        setEditorState({
+          mode: "editor",
+          entryId: result.data.id,
+          entryData: result.data,
+          mountKey
+        });
         toast({
           title: "Entry Created",
           description: `New ${entryType} entry created successfully`,
@@ -73,22 +104,22 @@ export default function StoryBible() {
   };
 
   const handleEditEntry = useCallback((entry: StoryBibleEntry) => {
-    // Create a stable mount key to prevent unwanted re-mounts
     const mountKey = `${entry.entryType}-${entry.id}-${Date.now()}`;
-    editorMountKey.current = mountKey;
-    
-    selectedEntryRef.current = entry;
-    setSelectedEntry(entry);
-    setSelectedEntryId(entry.id);
-    setView("editor");
+    setEditorState({
+      mode: "editor",
+      entryId: entry.id,
+      entryData: entry,
+      mountKey
+    });
   }, []);
 
   const handleBackToDashboard = useCallback(() => {
-    selectedEntryRef.current = null;
-    editorMountKey.current = '';
-    setSelectedEntry(null);
-    setSelectedEntryId(null);
-    setView("dashboard");
+    setEditorState({
+      mode: "dashboard",
+      entryId: null,
+      entryData: null,
+      mountKey: ""
+    });
   }, []);
 
   if (projectLoading) {
@@ -183,7 +214,7 @@ export default function StoryBible() {
 
         {/* Main Content */}
         <div className="flex-1 overflow-hidden">
-          {view === "dashboard" ? (
+          {editorState.mode === "dashboard" ? (
             <div className="h-full p-6">
               <SimplifiedBentoDashboard
                 projectId={projectId}
@@ -191,8 +222,8 @@ export default function StoryBible() {
                 onEditEntry={handleEditEntry}
               />
             </div>
-          ) : selectedEntry && selectedEntryId ? (
-            <div className="h-full overflow-auto" key={editorMountKey.current}>
+          ) : editorState.mode === "editor" && editorState.entryData ? (
+            <div className="h-full overflow-auto" key={editorState.mountKey}>
               <div className="p-6">
                 <div className="mb-4">
                   <Button
@@ -204,55 +235,11 @@ export default function StoryBible() {
                     Back to Dashboard
                   </Button>
                 </div>
-                {selectedEntry.entryType === "characters" ? (
-                  <CharacterEditor
-                    entry={selectedEntry}
-                    projectId={projectId}
-                    onClose={handleBackToDashboard}
-                  />
-                ) : selectedEntry.entryType === "groups_races" ? (
-                  <GroupsRacesEditor
-                    entry={selectedEntry}
-                    projectId={projectId}
-                    onClose={handleBackToDashboard}
-                  />
-                ) : selectedEntry.entryType === "locations" ? (
-                  <LocationsEditor
-                    entry={selectedEntry}
-                    projectId={projectId}
-                    onClose={handleBackToDashboard}
-                  />
-                ) : selectedEntry.entryType === "events" ? (
-                  <EventsEditor
-                    entry={selectedEntry}
-                    projectId={projectId}
-                    onClose={handleBackToDashboard}
-                  />
-                ) : selectedEntry.entryType === "world_elements" ? (
-                  <WorldElementsEditor
-                    entry={selectedEntry}
-                    projectId={projectId}
-                    onClose={handleBackToDashboard}
-                  />
-                ) : selectedEntry.entryType === "details" ? (
-                  <DetailsEditor
-                    entry={selectedEntry}
-                    projectId={projectId}
-                    onClose={handleBackToDashboard}
-                  />
-                ) : selectedEntry.entryType === "research" ? (
-                  <ResearchEditor
-                    entry={selectedEntry}
-                    projectId={projectId}
-                    onClose={handleBackToDashboard}
-                  />
-                ) : (
-                  <EnhancedBibleEditor
-                    entry={selectedEntry}
-                    projectId={projectId}
-                    onClose={handleBackToDashboard}
-                  />
-                )}
+                <EditorRenderer 
+                  entry={editorState.entryData}
+                  projectId={projectId}
+                  onClose={handleBackToDashboard}
+                />
               </div>
             </div>
           ) : null}
