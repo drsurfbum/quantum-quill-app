@@ -66,7 +66,7 @@ export const useUpdateStoryBibleEntry = (options?: { skipInvalidation?: boolean 
           if (!old) return [result];
           return old.map(entry => entry.id === result.id ? result : entry);
         });
-      }, 100); // Small delay to allow UI to settle
+      }, 200); // Increased delay to ensure UI stability
       
       return result;
     }
