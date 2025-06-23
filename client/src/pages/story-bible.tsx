@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCreateStoryBibleEntry } from "@/hooks/use-story-bible";
 import { StoryBibleEntry } from "@shared/schema";
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { SimplifiedBentoDashboard } from "@/components/story-bible/simplified-bento-dashboard";
 import { EnhancedBibleEditor } from "@/components/story-bible/enhanced-bible-editor";
 import { CharacterEditor } from "@/components/story-bible/character-editor";
@@ -32,8 +32,10 @@ export default function StoryBible() {
   const [selectedEntry, setSelectedEntry] = useState<StoryBibleEntry | null>(null);
   const [view, setView] = useState<"dashboard" | "editor">("dashboard");
   
-  // Create a stable reference to the selected entry ID to prevent re-renders from closing the editor
+  // Create stable references to prevent re-renders from closing the editor
   const [selectedEntryId, setSelectedEntryId] = useState<number | null>(null);
+  const selectedEntryRef = useRef<StoryBibleEntry | null>(null);
+  const editorMountKey = useRef<string>('');
 
   const projectId = parseInt(id!);
   const { data: project, isLoading: projectLoading } = useProject(projectId);
@@ -49,6 +51,10 @@ export default function StoryBible() {
       });
 
       if (result.success) {
+        const mountKey = `${entryType}-${result.data.id}-${Date.now()}`;
+        editorMountKey.current = mountKey;
+        
+        selectedEntryRef.current = result.data;
         setSelectedEntry(result.data);
         setSelectedEntryId(result.data.id);
         setView("editor");
@@ -66,17 +72,24 @@ export default function StoryBible() {
     }
   };
 
-  const handleEditEntry = (entry: StoryBibleEntry) => {
+  const handleEditEntry = useCallback((entry: StoryBibleEntry) => {
+    // Create a stable mount key to prevent unwanted re-mounts
+    const mountKey = `${entry.entryType}-${entry.id}-${Date.now()}`;
+    editorMountKey.current = mountKey;
+    
+    selectedEntryRef.current = entry;
     setSelectedEntry(entry);
     setSelectedEntryId(entry.id);
     setView("editor");
-  };
+  }, []);
 
-  const handleBackToDashboard = () => {
+  const handleBackToDashboard = useCallback(() => {
+    selectedEntryRef.current = null;
+    editorMountKey.current = '';
     setSelectedEntry(null);
     setSelectedEntryId(null);
     setView("dashboard");
-  };
+  }, []);
 
   if (projectLoading) {
     return (
@@ -178,8 +191,8 @@ export default function StoryBible() {
                 onEditEntry={handleEditEntry}
               />
             </div>
-          ) : selectedEntry ? (
-            <div className="h-full overflow-auto">
+          ) : selectedEntry && selectedEntryId ? (
+            <div className="h-full overflow-auto" key={editorMountKey.current}>
               <div className="p-6">
                 <div className="mb-4">
                   <Button

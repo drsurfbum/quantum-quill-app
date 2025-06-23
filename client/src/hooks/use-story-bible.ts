@@ -3,10 +3,12 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { type StoryBibleEntry } from "@shared/schema";
 
 // Get all story bible entries for a project
-export const useStoryBibleEntries = (projectId: string | number) => {
+export const useStoryBibleEntries = (projectId: string | number, options?: { staleTime?: number }) => {
   return useQuery<StoryBibleEntry[]>({
     queryKey: [`/api/projects/${projectId}/story-bible`],
-    enabled: !!projectId
+    enabled: !!projectId,
+    staleTime: options?.staleTime || 30000, // Keep data fresh for 30 seconds to reduce refetches
+    refetchOnWindowFocus: false, // Prevent refetch on window focus
   });
 };
 
@@ -57,12 +59,14 @@ export const useUpdateStoryBibleEntry = (options?: { skipInvalidation?: boolean 
       const res = await apiRequest('PUT', `/api/story-bible/${id}`, data);
       const result = await res.json();
       
-      // Always update cache silently but avoid invalidation to prevent re-renders
-      queryClient.setQueryData([`/api/story-bible/${id}`], result);
-      queryClient.setQueryData([`/api/projects/${result.projectId}/story-bible`], (old: StoryBibleEntry[] | undefined) => {
-        if (!old) return [result];
-        return old.map(entry => entry.id === result.id ? result : entry);
-      });
+      // Use setTimeout to defer cache updates and prevent immediate re-renders
+      setTimeout(() => {
+        queryClient.setQueryData([`/api/story-bible/${id}`], result);
+        queryClient.setQueryData([`/api/projects/${result.projectId}/story-bible`], (old: StoryBibleEntry[] | undefined) => {
+          if (!old) return [result];
+          return old.map(entry => entry.id === result.id ? result : entry);
+        });
+      }, 100); // Small delay to allow UI to settle
       
       return result;
     }

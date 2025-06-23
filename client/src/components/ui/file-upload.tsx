@@ -69,7 +69,10 @@ export function FileUpload({
       if (!response.ok || !data.success) {
         throw new Error(data.error || data.details || 'Upload failed');
       }
-      onImageChange(data.url, description);
+      // Defer the image change callback to prevent immediate re-renders
+      setTimeout(() => {
+        onImageChange(data.url, description);
+      }, 50);
       
       toast({
         title: "Success",

@@ -35,8 +35,8 @@ export function SimplifiedBentoDashboard({ projectId, onCreateEntry, onEditEntry
   const [selectedEntryType, setSelectedEntryType] = useState<string>("all");
   const [expandedTiles, setExpandedTiles] = useState<Set<string>>(new Set());
 
-  const { data: entries = [] } = useStoryBibleEntries(projectId);
-  const updateEntryMutation = useUpdateStoryBibleEntry();
+  const { data: entries = [] } = useStoryBibleEntries(projectId, { staleTime: 60000 });
+  const updateEntryMutation = useUpdateStoryBibleEntry({ skipInvalidation: true });
   
   // Get starred entries from database (priority > 0)
   const starredEntries = useMemo(() => {
