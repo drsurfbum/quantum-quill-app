@@ -530,13 +530,13 @@ export function getTaxonomyByKey(key: string) {
 
 export function getTaxonomySubcategories(entryType: string) {
   const taxonomy = getTaxonomyByKey(entryType.toUpperCase());
-  return taxonomy?.subcategories || {};
+  return (taxonomy && 'subcategories' in taxonomy) ? taxonomy.subcategories : {};
 }
 
 export function getAllSubcategories() {
   const allSubcategories: Record<string, string> = {};
   Object.values(STORY_BIBLE_TAXONOMY).forEach(taxonomy => {
-    if (taxonomy.subcategories) {
+    if ('subcategories' in taxonomy && taxonomy.subcategories) {
       Object.assign(allSubcategories, taxonomy.subcategories);
     }
   });
@@ -550,7 +550,7 @@ export function getEntryTypeDisplayName(key: string) {
 
 export function getTaxonomyFields(entryType: string) {
   const taxonomy = getTaxonomyByKey(entryType.toUpperCase());
-  return taxonomy?.fields || {};
+  return (taxonomy && 'fields' in taxonomy) ? taxonomy.fields : {};
 }
 
 export function getCategorySpecificFields(entryType: string, category?: string) {
@@ -572,11 +572,7 @@ export const ENTRY_TYPE_SCHEMA = {
   locations: STORY_BIBLE_TAXONOMY.LOCATIONS,
   events: STORY_BIBLE_TAXONOMY.EVENTS,
   world_elements: STORY_BIBLE_TAXONOMY.WORLD_ELEMENTS,
-  flora: STORY_BIBLE_TAXONOMY.FLORA,
-  fauna: STORY_BIBLE_TAXONOMY.FAUNA,
-  religion_ritual: STORY_BIBLE_TAXONOMY.RELIGION_RITUAL,
-  mythology: STORY_BIBLE_TAXONOMY.MYTHOLOGY,
-  item_artifact: STORY_BIBLE_TAXONOMY.ITEM_ARTIFACT,
+
   language: STORY_BIBLE_TAXONOMY.LANGUAGE,
   system: STORY_BIBLE_TAXONOMY.SYSTEM,
   entertainment: STORY_BIBLE_TAXONOMY.ENTERTAINMENT,
