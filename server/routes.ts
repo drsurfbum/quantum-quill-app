@@ -288,6 +288,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     const success = await storage.deleteProject(id);
+    
+    if (!success) {
+      return res.status(500).json({ message: "Failed to delete project" });
+    }
+    
     res.status(204).send();
   });
 

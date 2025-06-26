@@ -35,6 +35,10 @@ A comprehensive web platform for AI-enhanced creative writing, featuring advance
 - **Component Consistency**: Updated Groups/Races and Locations editors to use consistent field names
 - **Data Model Alignment**: Ensured UI components align with taxonomy field definitions
 
+### API Bug Fix (June 26, 2025)
+- **Delete Project Route**: Fixed bug where route ignored storage.deleteProject() return value
+- **Error Handling**: Now properly returns 500 error when deletion fails instead of always returning 204
+
 ### File Upload System
 - **Comprehensive Integration**: Added to all 7 editor types
 - **Dual Input Methods**: URL input and device file upload
