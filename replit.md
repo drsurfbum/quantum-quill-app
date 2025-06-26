@@ -30,6 +30,11 @@ A comprehensive web platform for AI-enhanced creative writing, featuring advance
 - **Mount Key Strategy**: Unique keys prevent unwanted component re-mounting
 - **Deferred Updates**: setTimeout strategy for cache updates to prevent re-render conflicts
 
+### Field Name Corrections (June 26, 2025)
+- **Taxonomy Spelling Fix**: Corrected `eraDisolved` to `eraDissolved` in both taxonomy files
+- **Component Consistency**: Updated Groups/Races and Locations editors to use consistent field names
+- **Data Model Alignment**: Ensured UI components align with taxonomy field definitions
+
 ### File Upload System
 - **Comprehensive Integration**: Added to all 7 editor types
 - **Dual Input Methods**: URL input and device file upload

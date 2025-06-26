@@ -53,7 +53,7 @@ export function LocationsEditor({ entry, projectId, onClose }: LocationsEditorPr
   const [keyFeatures, setKeyFeatures] = useState<string[]>((metadata as any)?.keyFeatures || []);
   
   // History & Timeline
-  const [foundingDate, setFoundingDate] = useState((metadata as any)?.foundingDate || "");
+  const [eraEstablished, setEraEstablished] = useState((metadata as any)?.eraEstablished || "");
   const [statusChanges, setStatusChanges] = useState((metadata as any)?.statusChanges || "");
   
   // Inhabitants & Governance
@@ -686,13 +686,13 @@ export function LocationsEditor({ entry, projectId, onClose }: LocationsEditorPr
                 <CardContent className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="foundingDate">Founding/Creation Date</Label>
+                      <Label htmlFor="eraEstablished">Founding/Creation Date</Label>
                       <Input
-                        id="foundingDate"
-                        value={foundingDate}
+                        id="eraEstablished"
+                        value={eraEstablished}
                         onChange={(e) => {
-                          setFoundingDate(e.target.value);
-                          updateMetadata({ foundingDate: e.target.value });
+                          setEraEstablished(e.target.value);
+                          updateMetadata({ eraEstablished: e.target.value });
                         }}
                         placeholder="2387 CE, First Age, etc."
                       />
