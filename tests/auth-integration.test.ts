@@ -54,8 +54,10 @@ describe('Authentication Integration Tests', () => {
           })
           .expect(200);
 
-        const sessionCookie = (loginResponse.headers['set-cookie'] as string[])
-          .find((cookie: string) => cookie.startsWith('quill_sid=')) || '';
+        const cookies = loginResponse.headers['set-cookie'];
+        const sessionCookie = Array.isArray(cookies) 
+          ? cookies.find((cookie: string) => cookie.startsWith('quill_sid=')) || ''
+          : '';
 
         // Step 3: Access protected resource
         const userResponse = await request(app)
@@ -128,8 +130,10 @@ describe('Authentication Integration Tests', () => {
         })
         .expect(200);
 
-      const sessionCookie = loginResponse.headers['set-cookie']
-        .find((cookie: string) => cookie.startsWith('quill_sid='));
+      const cookies = loginResponse.headers['set-cookie'];
+      const sessionCookie = Array.isArray(cookies) 
+        ? cookies.find((cookie: string) => cookie.startsWith('quill_sid=')) || ''
+        : '';
 
       // Make multiple authenticated requests
       const requests = [
@@ -174,8 +178,10 @@ describe('Authentication Integration Tests', () => {
           password: testUser.password
         });
 
-      const sessionCookie = loginResponse.headers['set-cookie']
-        .find((cookie: string) => cookie.startsWith('quill_sid='));
+      const cookies = loginResponse.headers['set-cookie'];
+      const sessionCookie = Array.isArray(cookies) 
+        ? cookies.find((cookie: string) => cookie.startsWith('quill_sid=')) || ''
+        : '';
 
       const validToken = `user-${testUserId}-${Date.now()}`;
 
