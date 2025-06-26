@@ -101,7 +101,7 @@ export const ENHANCED_TAXONOMY: Record<string, TaxonomyCategory> = {
         type: "text",
         required: false
       },
-      eraDisolved: {
+      eraDissolved: {
         name: "Era Dissolved",
         type: "text",
         required: false

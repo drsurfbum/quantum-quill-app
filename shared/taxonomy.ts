@@ -100,7 +100,7 @@ export const STORY_BIBLE_TAXONOMY = {
         type: "text",
         required: false
       },
-      eraDisolved: {
+      eraDissolved: {
         name: "Era Dissolved",
         type: "text",
         required: false

@@ -42,8 +42,8 @@ export function GroupsRacesEditor({ entry, projectId, onClose }: GroupsRacesEdit
   // Hierarchy & Structure
   const [parentGroup, setParentGroup] = useState((metadata as any)?.parentGroup || "");
   const [subGroups, setSubGroups] = useState<string[]>((metadata as any)?.subGroups || []);
-  const [foundingDate, setFoundingDate] = useState((metadata as any)?.foundingDate || "");
-  const [dissolutionDate, setDissolutionDate] = useState((metadata as any)?.dissolutionDate || "");
+  const [eraEstablished, setEraEstablished] = useState((metadata as any)?.eraEstablished || "");
+  const [eraDissolved, setEraDissolved] = useState((metadata as any)?.eraDissolved || "");
   
   // Leadership & Membership
   const [notableMembers, setNotableMembers] = useState<{id: number, role: string}[]>((metadata as any)?.notableMembers || []);
@@ -474,25 +474,25 @@ export function GroupsRacesEditor({ entry, projectId, onClose }: GroupsRacesEdit
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="foundingDate">Founding Date / Era Established</Label>
+                      <Label htmlFor="eraEstablished">Founding Date / Era Established</Label>
                       <Input
-                        id="foundingDate"
-                        value={foundingDate}
+                        id="eraEstablished"
+                        value={eraEstablished}
                         onChange={(e) => {
-                          setFoundingDate(e.target.value);
-                          updateMetadata({ foundingDate: e.target.value });
+                          setEraEstablished(e.target.value);
+                          updateMetadata({ eraEstablished: e.target.value });
                         }}
                         placeholder="2387 CE, First Age, etc."
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="dissolutionDate">Dissolution Date (if defunct)</Label>
+                      <Label htmlFor="eraDissolved">Dissolution Date (if defunct)</Label>
                       <Input
-                        id="dissolutionDate"
-                        value={dissolutionDate}
+                        id="eraDissolved"
+                        value={eraDissolved}
                         onChange={(e) => {
-                          setDissolutionDate(e.target.value);
-                          updateMetadata({ dissolutionDate: e.target.value });
+                          setEraDissolved(e.target.value);
+                          updateMetadata({ eraDissolved: e.target.value });
                         }}
                         placeholder="Leave empty if still active"
                       />
