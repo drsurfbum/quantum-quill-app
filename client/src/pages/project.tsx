@@ -465,7 +465,14 @@ export default function Project() {
                             <h4 className="text-sm font-medium text-muted-foreground mb-1">Last Updated</h4>
                             <p className="text-sm font-bold">
                               {chapters && chapters.length > 0 
-                                ? format(new Date(Math.max(...chapters.map(ch => ch.updatedAt ? new Date(ch.updatedAt).getTime() : 0))), 'MMM d')
+                                ? (() => {
+                                    const validDates = chapters
+                                      .map(ch => ch.updatedAt ? new Date(ch.updatedAt).getTime() : 0)
+                                      .filter(time => time > 0);
+                                    return validDates.length > 0 
+                                      ? format(new Date(Math.max(...validDates)), 'MMM d')
+                                      : 'Never';
+                                  })()
                                 : 'Never'
                               }
                             </p>
