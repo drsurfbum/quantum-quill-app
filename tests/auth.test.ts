@@ -17,14 +17,8 @@ describe('Authentication System', () => {
   });
 
   afterAll(async () => {
-    // Clean up test user if created
-    if (testUserId) {
-      try {
-        await storage.deleteUser(testUserId);
-      } catch (error) {
-        console.warn('Failed to clean up test user:', error);
-      }
-    }
+    // Note: No deleteUser method available in storage interface
+    // Test users will remain in database for manual cleanup if needed
   });
 
   describe('User Registration', () => {

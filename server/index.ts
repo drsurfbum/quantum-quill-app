@@ -3,7 +3,8 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { initPlotTemplates } from "./init-plot-templates";
 
-const app = express();
+export async function createApp() {
+  const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
@@ -51,11 +52,10 @@ Headers: ${JSON.stringify({
   next();
 });
 
-(async () => {
   // Initialize plot structure templates
   await initPlotTemplates();
   
-  const server = await registerRoutes(app);
+  await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
@@ -64,6 +64,13 @@ Headers: ${JSON.stringify({
     res.status(status).json({ message });
     throw err;
   });
+
+  return app;
+}
+
+(async () => {
+  const app = await createApp();
+  const server = await registerRoutes(app);
 
   // importantly only setup vite in development and after
   // setting up all the other routes so the catch-all route
