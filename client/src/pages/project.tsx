@@ -272,61 +272,73 @@ export default function Project() {
                 </TabsList>
                 
                 <TabsContent value="overview" className="mt-6">
-                  {/* Enhanced Project Description Card */}
-                  <Card className="mb-6 shadow-sm border border-border/50">
-                    <CardHeader className="border-b border-border/50 bg-muted/20">
-                      <CardTitle className="text-lg">Project Description</CardTitle>
-                      <CardDescription>Overview and details about your project</CardDescription>
-                    </CardHeader>
-                    <CardContent className="pt-6">
-                      <p className="mb-6 text-foreground leading-relaxed">{project?.description || "No description provided."}</p>
-                      
-                      {/* Enhanced Project Tools Grid */}
-                      <div className="space-y-4">
-                        <h3 className="text-lg font-semibold mb-4">Project Tools</h3>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                          <Button 
-                            onClick={() => setLocation(`/project/${id}/write`)}
-                            className="h-auto flex flex-col items-center gap-2 py-4 bg-primary hover:bg-primary/90 text-primary-foreground"
-                          >
-                            <PenTool className="h-6 w-6" />
-                            <span className="font-medium">Start Writing</span>
-                            <span className="text-xs opacity-90">Create and edit chapters</span>
-                          </Button>
-                          
-                          <Button 
-                            variant="outline" 
-                            onClick={() => setLocation(`/project/${id}/storyboard`)}
-                            className="h-auto flex flex-col items-center gap-2 py-4 hover:bg-muted/50"
-                          >
-                            <Layers className="h-6 w-6" />
-                            <span className="font-medium">Storyboard</span>
-                            <span className="text-xs text-muted-foreground">Visual story planning</span>
-                          </Button>
-                          
-                          <Button 
-                            variant="outline" 
-                            onClick={() => setLocation(`/project/${id}/outline`)}
-                            className="h-auto flex flex-col items-center gap-2 py-4 hover:bg-muted/50"
-                          >
-                            <ListTree className="h-6 w-6" />
-                            <span className="font-medium">Outline</span>
-                            <span className="text-xs text-muted-foreground">Structure your story</span>
-                          </Button>
-                          
-                          <Button 
-                            variant="outline" 
-                            onClick={() => setLocation(`/project/${id}/story-bible`)}
-                            className="h-auto flex flex-col items-center gap-2 py-4 hover:bg-muted/50"
-                          >
-                            <BookOpen className="h-6 w-6" />
-                            <span className="font-medium">Story Bible</span>
-                            <span className="text-xs text-muted-foreground">Characters & world</span>
-                          </Button>
+                  {/* Project Description Section */}
+                  <div className="mb-8 space-y-6">
+                    {/* Description Card - Simplified */}
+                    <Card className="border border-border/50">
+                      <CardContent className="pt-6">
+                        <div className="mb-4">
+                          <h3 className="text-base font-medium text-muted-foreground mb-3">About This Project</h3>
+                          <p className="text-foreground leading-relaxed text-base">
+                            {project?.description || "No description provided yet. Click 'Edit Project' to add a description."}
+                          </p>
                         </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* Project Tools Section */}
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold text-foreground">Writing Tools</h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <Button 
+                          onClick={() => setLocation(`/project/${id}/write`)}
+                          className="h-auto flex flex-col items-center gap-3 py-6 bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm hover:shadow-md transition-all"
+                        >
+                          <PenTool className="h-6 w-6" />
+                          <div className="text-center">
+                            <span className="font-medium block">Start Writing</span>
+                            <span className="text-xs opacity-90">Create and edit chapters</span>
+                          </div>
+                        </Button>
+                        
+                        <Button 
+                          variant="outline" 
+                          onClick={() => setLocation(`/project/${id}/storyboard`)}
+                          className="h-auto flex flex-col items-center gap-3 py-6 hover:bg-muted/50 hover:border-muted-foreground/50 transition-all"
+                        >
+                          <Layers className="h-6 w-6" />
+                          <div className="text-center">
+                            <span className="font-medium block">Storyboard</span>
+                            <span className="text-xs text-muted-foreground">Visual story planning</span>
+                          </div>
+                        </Button>
+                        
+                        <Button 
+                          variant="outline" 
+                          onClick={() => setLocation(`/project/${id}/outline`)}
+                          className="h-auto flex flex-col items-center gap-3 py-6 hover:bg-muted/50 hover:border-muted-foreground/50 transition-all"
+                        >
+                          <ListTree className="h-6 w-6" />
+                          <div className="text-center">
+                            <span className="font-medium block">Outline</span>
+                            <span className="text-xs text-muted-foreground">Structure your story</span>
+                          </div>
+                        </Button>
+                        
+                        <Button 
+                          variant="outline" 
+                          onClick={() => setLocation(`/project/${id}/story-bible`)}
+                          className="h-auto flex flex-col items-center gap-3 py-6 hover:bg-muted/50 hover:border-muted-foreground/50 transition-all"
+                        >
+                          <BookOpen className="h-6 w-6" />
+                          <div className="text-center">
+                            <span className="font-medium block">Story Bible</span>
+                            <span className="text-xs text-muted-foreground">Characters & world</span>
+                          </div>
+                        </Button>
                       </div>
-                    </CardContent>
-                  </Card>
+                    </div>
+                  </div>
                 </TabsContent>
                 
                 <TabsContent value="chapters" className="mt-6">
@@ -571,10 +583,10 @@ export default function Project() {
               </div>
             </div>
           )}
-        </main>
+          </main>
+        </div>
       </div>
-    </div>
-
+      
       {/* Edit Project Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
         <DialogContent>
