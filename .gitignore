@@ -1,6 +1,69 @@
 node_modules
 dist
 .DS_Store
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Build outputs
+dist/
+build/
+
+# Server files
 server/public
+
+# Vite
 vite.config.ts.*
+
+# Uploads (exclude uploaded files)
+uploads/
+!uploads/.gitkeep
+
+# Database
+*.db
+*.sqlite
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+
+# Cache directories
+.cache/
+.parcel-cache/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
 *.tar.gz
+
+# Replit specific
+.replit
+replit.nix
+.upm/
+.config/
+
+# Attached assets (development only)
+attached_assets/
