@@ -2,7 +2,8 @@ import { useParams, useLocation, Link, Route, Switch } from "wouter";
 import SidebarNavigation from "@/components/sidebar-navigation";
 import { 
   Edit3, Grid, ListTree, BookOpen, 
-  ExternalLink, Share2, Loader2, Pencil
+  ExternalLink, Share2, Loader2, Pencil, MoreHorizontal,
+  TrendingUp, FileText, Clock, Layers, PenTool
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -15,6 +16,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Progress } from "@/components/ui/progress";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -149,90 +152,255 @@ export default function Project() {
 
           {/* Show project overview on base route */}
           {location === `/project/${id}` ? (
-            <div className="p-6 max-w-5xl mx-auto w-full">
+            <div className="p-6 max-w-6xl mx-auto w-full">
+              {/* Enhanced Header with better hierarchy */}
               <div className="mb-8 flex justify-between items-start">
-                <div>
-                  <h1 className="text-3xl font-bold mb-2">{project?.title}</h1>
-                  <p className="text-muted-foreground">
+                <div className="flex-1">
+                  <h1 className="text-4xl font-bold mb-2 text-foreground">{project?.title}</h1>
+                  <p className="text-sm text-muted-foreground opacity-75">
                     Created on {formattedDate}
                   </p>
                 </div>
-                <Button 
-                  variant="outline"
-                  size="sm"
-                  className="flex items-center gap-1"
-                  onClick={handleOpenEditDialog}
-                >
-                  <Pencil className="h-4 w-4" />
-                  <span>Edit Project</span>
-                </Button>
+                
+                {/* Streamlined toolbar */}
+                <div className="flex items-center gap-2">
+                  <Button 
+                    onClick={handleOpenEditDialog}
+                    className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                  >
+                    <Pencil className="h-4 w-4 mr-2" />
+                    Edit Project
+                  </Button>
+                  
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="icon">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => {
+                        toast({
+                          title: "Coming Soon",
+                          description: "Share functionality will be available in a future update.",
+                        });
+                      }}>
+                        <Share2 className="h-4 w-4 mr-2" />
+                        Share
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => {
+                        toast({
+                          title: "Coming Soon", 
+                          description: "Export functionality will be available in a future update.",
+                        });
+                      }}>
+                        <ExternalLink className="h-4 w-4 mr-2" />
+                        Export
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem className="text-destructive">
+                        Delete Project
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
               </div>
 
-              <Tabs value={selectedTab} onValueChange={setSelectedTab}>
-                <TabsList>
-                  <TabsTrigger value="overview">Overview</TabsTrigger>
-                  <TabsTrigger value="chapters">Chapters</TabsTrigger>
-                  <TabsTrigger value="statistics">Statistics</TabsTrigger>
+              {/* Project Progress Section */}
+              <div className="mb-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                  <Card className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-blue-100 dark:bg-blue-900/20 rounded-lg">
+                        <FileText className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Word Count</p>
+                        <p className="text-xl font-semibold">{chapters?.reduce((acc, ch) => acc + (ch.content?.length || 0), 0) || 0}</p>
+                      </div>
+                    </div>
+                  </Card>
+                  
+                  <Card className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-green-100 dark:bg-green-900/20 rounded-lg">
+                        <BookOpen className="h-5 w-5 text-green-600 dark:text-green-400" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Chapters</p>
+                        <p className="text-xl font-semibold">{chapters?.length || 0}</p>
+                      </div>
+                    </div>
+                  </Card>
+                  
+                  <Card className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-purple-100 dark:bg-purple-900/20 rounded-lg">
+                        <Clock className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Last Updated</p>
+                        <p className="text-xl font-semibold">{project?.updatedAt ? format(new Date(project.updatedAt), 'MMM d') : 'Never'}</p>
+                      </div>
+                    </div>
+                  </Card>
+                </div>
+                
+                {/* Progress Bar */}
+                <div className="mb-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium">Project Progress</span>
+                    <span className="text-sm text-muted-foreground">{Math.min(100, Math.floor((chapters?.length || 0) * 8.33))}% complete</span>
+                  </div>
+                  <Progress value={Math.min(100, Math.floor((chapters?.length || 0) * 8.33))} className="h-2" />
+                </div>
+              </div>
+
+              {/* Enhanced Tabs */}
+              <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
+                <TabsList className="grid w-full grid-cols-3 mb-6">
+                  <TabsTrigger value="overview" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                    Overview
+                  </TabsTrigger>
+                  <TabsTrigger value="chapters" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                    Chapters ({chapters?.length || 0})
+                  </TabsTrigger>
+                  <TabsTrigger value="statistics" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                    <TrendingUp className="h-4 w-4 mr-2" />
+                    Statistics
+                  </TabsTrigger>
                 </TabsList>
                 
                 <TabsContent value="overview" className="mt-6">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Project Description</CardTitle>
-                      <CardDescription>Details about your project</CardDescription>
+                  {/* Enhanced Project Description Card */}
+                  <Card className="mb-6 shadow-sm border border-border/50">
+                    <CardHeader className="border-b border-border/50 bg-muted/20">
+                      <CardTitle className="text-lg">Project Description</CardTitle>
+                      <CardDescription>Overview and details about your project</CardDescription>
                     </CardHeader>
-                    <CardContent>
-                      <p className="mb-4">{project?.description || "No description provided."}</p>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mt-6">
-                        <Button onClick={() => setLocation(`/project/${id}/write`)}>
-                          <Edit3 className="mr-2 h-4 w-4" /> Start Writing
-                        </Button>
-                        <Button variant="outline" onClick={() => setLocation(`/project/${id}/outline`)}>
-                          <ListTree className="mr-2 h-4 w-4" /> View Outline
-                        </Button>
-                        <Button variant="outline" onClick={() => setLocation(`/project/${id}/story-bible`)}>
-                          <BookOpen className="mr-2 h-4 w-4" /> Story Bible
-                        </Button>
+                    <CardContent className="pt-6">
+                      <p className="mb-6 text-foreground leading-relaxed">{project?.description || "No description provided."}</p>
+                      
+                      {/* Enhanced Project Tools Grid */}
+                      <div className="space-y-4">
+                        <h3 className="text-lg font-semibold mb-4">Project Tools</h3>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                          <Button 
+                            onClick={() => setLocation(`/project/${id}/write`)}
+                            className="h-auto flex flex-col items-center gap-2 py-4 bg-primary hover:bg-primary/90 text-primary-foreground"
+                          >
+                            <PenTool className="h-6 w-6" />
+                            <span className="font-medium">Start Writing</span>
+                            <span className="text-xs opacity-90">Create and edit chapters</span>
+                          </Button>
+                          
+                          <Button 
+                            variant="outline" 
+                            onClick={() => setLocation(`/project/${id}/storyboard`)}
+                            className="h-auto flex flex-col items-center gap-2 py-4 hover:bg-muted/50"
+                          >
+                            <Layers className="h-6 w-6" />
+                            <span className="font-medium">Storyboard</span>
+                            <span className="text-xs text-muted-foreground">Visual story planning</span>
+                          </Button>
+                          
+                          <Button 
+                            variant="outline" 
+                            onClick={() => setLocation(`/project/${id}/outline`)}
+                            className="h-auto flex flex-col items-center gap-2 py-4 hover:bg-muted/50"
+                          >
+                            <ListTree className="h-6 w-6" />
+                            <span className="font-medium">Outline</span>
+                            <span className="text-xs text-muted-foreground">Structure your story</span>
+                          </Button>
+                          
+                          <Button 
+                            variant="outline" 
+                            onClick={() => setLocation(`/project/${id}/story-bible`)}
+                            className="h-auto flex flex-col items-center gap-2 py-4 hover:bg-muted/50"
+                          >
+                            <BookOpen className="h-6 w-6" />
+                            <span className="font-medium">Story Bible</span>
+                            <span className="text-xs text-muted-foreground">Characters & world</span>
+                          </Button>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
                 </TabsContent>
                 
                 <TabsContent value="chapters" className="mt-6">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Chapters</CardTitle>
-                      <CardDescription>Manage your project chapters</CardDescription>
+                  <Card className="shadow-sm border border-border/50">
+                    <CardHeader className="border-b border-border/50 bg-muted/20">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <CardTitle className="text-lg">Chapters</CardTitle>
+                          <CardDescription>Manage your project chapters</CardDescription>
+                        </div>
+                        <Button 
+                          onClick={() => setLocation(`/project/${id}/write`)}
+                          size="sm"
+                          className="bg-primary hover:bg-primary/90"
+                        >
+                          <Edit3 className="h-4 w-4 mr-2" />
+                          New Chapter
+                        </Button>
+                      </div>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="pt-6">
                       {chaptersLoading ? (
                         <div className="flex justify-center py-10">
                           <Loader2 className="h-8 w-8 animate-spin text-primary" />
                         </div>
                       ) : chapters && chapters.length > 0 ? (
                         <div className="space-y-3">
-                          {chapters.map((chapter) => (
-                            <div key={chapter.id} className="border rounded-md p-3 flex justify-between items-center">
-                              <div>
-                                <h4 className="font-medium">{chapter.title}</h4>
-                                <p className="text-sm text-muted-foreground">
-                                  {chapter.isDraft ? "Draft" : "Published"}
-                                </p>
+                          {chapters.map((chapter, index) => (
+                            <div key={chapter.id} className="border rounded-lg p-4 hover:bg-muted/30 transition-colors">
+                              <div className="flex justify-between items-start">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <span className="text-xs font-mono bg-muted text-muted-foreground px-2 py-1 rounded">
+                                      {index + 1}
+                                    </span>
+                                    <h4 className="font-semibold">{chapter.title}</h4>
+                                    {chapter.isDraft && (
+                                      <span className="text-xs bg-yellow-100 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400 px-2 py-1 rounded">
+                                        Draft
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                                    <span>{chapter.content ? `${chapter.content.replace(/<[^>]*>/g, '').length} characters` : '0 characters'}</span>
+                                    <span>Updated {chapter.updatedAt ? format(new Date(chapter.updatedAt), 'MMM d, yyyy') : 'Unknown'}</span>
+                                  </div>
+                                </div>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => setLocation(`/project/${id}/write?chapter=${chapter.id}`)}
+                                  className="hover:bg-primary hover:text-primary-foreground"
+                                >
+                                  <Edit3 className="h-4 w-4 mr-2" />
+                                  Edit
+                                </Button>
                               </div>
-                              <Button 
-                                variant="ghost" 
-                                size="sm"
-                                onClick={() => setLocation(`/project/${id}/write?chapter=${chapter.id}`)}
-                              >
-                                Edit
-                              </Button>
                             </div>
                           ))}
                         </div>
                       ) : (
-                        <div className="text-center py-8">
-                          <p className="mb-4">No chapters yet.</p>
-                          <Button onClick={() => setLocation(`/project/${id}/write`)}>
+                        <div className="text-center py-12">
+                          <div className="mb-4">
+                            <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                            <h3 className="text-lg font-semibold mb-2">No chapters yet</h3>
+                            <p className="text-muted-foreground max-w-sm mx-auto">
+                              Start writing your story by creating your first chapter.
+                            </p>
+                          </div>
+                          <Button 
+                            onClick={() => setLocation(`/project/${id}/write`)}
+                            className="bg-primary hover:bg-primary/90"
+                          >
+                            <Edit3 className="h-4 w-4 mr-2" />
                             Create First Chapter
                           </Button>
                         </div>
@@ -242,28 +410,115 @@ export default function Project() {
                 </TabsContent>
                 
                 <TabsContent value="statistics" className="mt-6">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Project Statistics</CardTitle>
-                      <CardDescription>Insights about your writing progress</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-                        <div className="border rounded-md p-4">
-                          <h4 className="text-sm font-medium text-muted-foreground mb-1">Chapters</h4>
-                          <p className="text-2xl font-bold">{chapters?.length || 0}</p>
+                  <div className="space-y-6">
+                    {/* Writing Progress Card */}
+                    <Card className="shadow-sm border border-border/50">
+                      <CardHeader className="border-b border-border/50 bg-muted/20">
+                        <CardTitle className="text-lg flex items-center gap-2">
+                          <TrendingUp className="h-5 w-5" />
+                          Writing Progress
+                        </CardTitle>
+                        <CardDescription>Track your writing achievements</CardDescription>
+                      </CardHeader>
+                      <CardContent className="pt-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                          <div className="border rounded-lg p-4 text-center">
+                            <div className="flex items-center justify-center mb-2">
+                              <div className="p-2 bg-blue-100 dark:bg-blue-900/20 rounded-lg">
+                                <BookOpen className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                              </div>
+                            </div>
+                            <h4 className="text-sm font-medium text-muted-foreground mb-1">Total Chapters</h4>
+                            <p className="text-2xl font-bold">{chapters?.length || 0}</p>
+                          </div>
+                          
+                          <div className="border rounded-lg p-4 text-center">
+                            <div className="flex items-center justify-center mb-2">
+                              <div className="p-2 bg-green-100 dark:bg-green-900/20 rounded-lg">
+                                <FileText className="h-5 w-5 text-green-600 dark:text-green-400" />
+                              </div>
+                            </div>
+                            <h4 className="text-sm font-medium text-muted-foreground mb-1">Total Characters</h4>
+                            <p className="text-2xl font-bold">
+                              {chapters?.reduce((acc, ch) => acc + (ch.content?.replace(/<[^>]*>/g, '').length || 0), 0).toLocaleString() || 0}
+                            </p>
+                          </div>
+                          
+                          <div className="border rounded-lg p-4 text-center">
+                            <div className="flex items-center justify-center mb-2">
+                              <div className="p-2 bg-purple-100 dark:bg-purple-900/20 rounded-lg">
+                                <Edit3 className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                              </div>
+                            </div>
+                            <h4 className="text-sm font-medium text-muted-foreground mb-1">Draft Chapters</h4>
+                            <p className="text-2xl font-bold">
+                              {chapters?.filter(ch => ch.isDraft).length || 0}
+                            </p>
+                          </div>
+                          
+                          <div className="border rounded-lg p-4 text-center">
+                            <div className="flex items-center justify-center mb-2">
+                              <div className="p-2 bg-orange-100 dark:bg-orange-900/20 rounded-lg">
+                                <Clock className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                              </div>
+                            </div>
+                            <h4 className="text-sm font-medium text-muted-foreground mb-1">Last Updated</h4>
+                            <p className="text-sm font-bold">
+                              {chapters && chapters.length > 0 
+                                ? format(new Date(Math.max(...chapters.map(ch => ch.updatedAt ? new Date(ch.updatedAt).getTime() : 0))), 'MMM d')
+                                : 'Never'
+                              }
+                            </p>
+                          </div>
                         </div>
-                        <div className="border rounded-md p-4">
-                          <h4 className="text-sm font-medium text-muted-foreground mb-1">Words</h4>
-                          <p className="text-2xl font-bold">Coming soon</p>
-                        </div>
-                        <div className="border rounded-md p-4">
-                          <h4 className="text-sm font-medium text-muted-foreground mb-1">Estimated Pages</h4>
-                          <p className="text-2xl font-bold">Coming soon</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+                      </CardContent>
+                    </Card>
+
+                    {/* Chapter Breakdown */}
+                    {chapters && chapters.length > 0 && (
+                      <Card className="shadow-sm border border-border/50">
+                        <CardHeader className="border-b border-border/50 bg-muted/20">
+                          <CardTitle className="text-lg">Chapter Breakdown</CardTitle>
+                          <CardDescription>Individual chapter statistics</CardDescription>
+                        </CardHeader>
+                        <CardContent className="pt-6">
+                          <div className="space-y-3">
+                            {chapters
+                              .sort((a, b) => a.order - b.order)
+                              .map((chapter, index) => {
+                                const characterCount = chapter.content?.replace(/<[^>]*>/g, '').length || 0;
+                                const maxChars = Math.max(...chapters.map(ch => ch.content?.replace(/<[^>]*>/g, '').length || 0));
+                                const percentage = maxChars > 0 ? (characterCount / maxChars) * 100 : 0;
+                                
+                                return (
+                                  <div key={chapter.id} className="flex items-center gap-4 p-3 border rounded-lg hover:bg-muted/30 transition-colors">
+                                    <span className="text-xs font-mono bg-muted text-muted-foreground px-2 py-1 rounded min-w-[2rem] text-center">
+                                      {index + 1}
+                                    </span>
+                                    <div className="flex-1">
+                                      <div className="flex items-center justify-between mb-1">
+                                        <span className="font-medium">{chapter.title}</span>
+                                        <span className="text-sm text-muted-foreground">
+                                          {characterCount.toLocaleString()} characters
+                                        </span>
+                                      </div>
+                                      <div className="flex items-center gap-2">
+                                        <Progress value={percentage} className="h-2 flex-1" />
+                                        {chapter.isDraft && (
+                                          <span className="text-xs bg-yellow-100 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400 px-2 py-1 rounded">
+                                            Draft
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+                  </div>
                 </TabsContent>
               </Tabs>
             </div>
