@@ -4,8 +4,7 @@ import ThemeToggle from "@/components/ui/theme-toggle";
 import ExportModal from "@/components/export-modal";
 import { useProject } from "@/hooks/use-project";
 import { Button } from "@/components/ui/button";
-import { BookOpen, Plus, ArrowLeft } from "lucide-react";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { BookOpen, Plus, ArrowLeft, Edit3, Grid, ListTree } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCreateStoryBibleEntry } from "@/hooks/use-story-bible";
@@ -28,7 +27,7 @@ export default function StoryBible() {
   const [location] = useLocation();
   const { toast } = useToast();
   const isMobile = useIsMobile();
-  const [isCollapsed, setIsCollapsed] = useState(isMobile);
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   // Stable editor renderer component to prevent re-mounting
   const EditorRenderer = useCallback(({ entry, projectId, onClose }: {
@@ -125,7 +124,7 @@ export default function StoryBible() {
   if (projectLoading) {
     return (
       <div className="flex min-h-screen">
-        <SidebarNavigation isCollapsed={isCollapsed} setIsCollapsed={setIsCollapsed} />
+        <SidebarNavigation onCollapsedChange={setIsCollapsed} />
         <div className="flex-1 flex flex-col">
           <div className="flex-1 p-6">
             <div className="space-y-4">
@@ -141,7 +140,7 @@ export default function StoryBible() {
   if (!project) {
     return (
       <div className="flex min-h-screen">
-        <SidebarNavigation isCollapsed={isCollapsed} setIsCollapsed={setIsCollapsed} />
+        <SidebarNavigation onCollapsedChange={setIsCollapsed} />
         <div className="flex-1 flex flex-col">
           <div className="flex-1 p-6">
             <div className="text-center">
@@ -155,95 +154,95 @@ export default function StoryBible() {
   }
 
   return (
-    <div className="flex min-h-screen">
-      <SidebarNavigation isCollapsed={isCollapsed} setIsCollapsed={setIsCollapsed} />
-      
-      <div className="flex-1 flex flex-col">
-        {/* Header */}
-        <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
-          <div className="flex h-14 items-center px-6 gap-4">
-            <div className="flex items-center gap-2">
-              <BookOpen className="h-5 w-5" />
-              <h1 className="font-semibold">{project.title}</h1>
+    <div className="h-screen flex flex-col overflow-hidden bg-background">
+      <div className="flex flex-row flex-1 w-full h-full overflow-hidden">
+        <SidebarNavigation onCollapsedChange={setIsCollapsed} />
+        
+        <main className="flex-grow overflow-auto flex flex-col w-full" style={{ marginLeft: isMobile && isCollapsed ? '56px' : '0' }}>
+          <header className="min-h-16 border-b border-neutral-200 dark:border-neutral-800 flex flex-wrap items-center justify-between px-4 sm:px-6 py-3 sticky top-0 bg-background z-10">
+            <div className="flex items-center mr-4">
+              <h1 className="text-lg sm:text-xl font-semibold truncate max-w-[200px] sm:max-w-xs">{project?.title}</h1>
             </div>
-
-            <Tabs value={location} className="flex-1">
-              <TabsList className="grid w-fit grid-cols-6 bg-transparent p-0 h-auto">
-                <Link href={`/project/${id}`}>
-                  <TabsTrigger value={`/project/${id}`} className={cn(
-                    "data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none",
-                    location === `/project/${id}` ? "border-b-2 border-primary" : ""
-                  )}>
-                    Project
-                  </TabsTrigger>
-                </Link>
-                <Link href={`/project/${id}/chapters`}>
-                  <TabsTrigger value={`/project/${id}/chapters`} className={cn(
-                    "data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none",
-                    location === `/project/${id}/chapters` ? "border-b-2 border-primary" : ""
-                  )}>
-                    Chapters
-                  </TabsTrigger>
-                </Link>
-                <Link href={`/project/${id}/outline`}>
-                  <TabsTrigger value={`/project/${id}/outline`} className={cn(
-                    "data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none",
-                    location === `/project/${id}/outline` ? "border-b-2 border-primary" : ""
-                  )}>
-                    Outline
-                  </TabsTrigger>
-                </Link>
-                <Link href={`/project/${id}/story-bible`}>
-                  <TabsTrigger value={`/project/${id}/story-bible`} className={cn(
-                    "data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none",
-                    location === `/project/${id}/story-bible` ? "border-b-2 border-primary" : ""
-                  )}>
-                    <BookOpen className="mr-1 h-4 w-4" /> Story Bible
-                  </TabsTrigger>
-                </Link>
-
-              </TabsList>
-            </Tabs>
-
-            <div className="flex items-center gap-2">
+            <div className="flex items-center space-x-2 sm:space-x-4">
               <ExportModal projectId={projectId} projectTitle={project?.title || "Project"} />
               <ThemeToggle />
             </div>
-          </div>
-        </div>
+          </header>
 
-        {/* Main Content */}
-        <div className="flex-1 overflow-hidden">
-          {editorState.mode === "dashboard" ? (
-            <div className="h-full p-6">
-              <SimplifiedBentoDashboard
-                projectId={projectId}
-                onCreateEntry={handleCreateEntry}
-                onEditEntry={handleEditEntry}
-              />
-            </div>
-          ) : editorState.mode === "editor" && editorState.entryData ? (
-            <div className="h-full overflow-auto" key={editorState.mountKey}>
-              <div className="p-6">
-                <div className="mb-4">
-                  <Button
-                    variant="ghost"
-                    onClick={handleBackToDashboard}
-                    className="mb-4"
-                  >
-                    <ArrowLeft className="h-4 w-4 mr-2" />
-                    Back to Dashboard
-                  </Button>
+          {/* Navigation tabs matching other pages */}
+          <div className="border-b border-neutral-200 dark:border-neutral-800 overflow-x-auto">
+            <div className="flex min-w-max mx-2 md:mx-4 h-10 w-auto">
+              <Link href={`/project/${id}/write`}>
+                <div className={cn(
+                  "flex items-center gap-1 px-2 sm:px-3 py-2 rounded-none cursor-pointer whitespace-nowrap",
+                  location === `/project/${id}/write` ? "border-b-2 border-primary" : ""
+                )}>
+                  <span className="hidden xs:inline">Write</span>
                 </div>
-                <EditorRenderer 
-                  entry={editorState.entryData}
+              </Link>
+              
+              <Link href={`/project/${id}/storyboard`}>
+                <div className={cn(
+                  "flex items-center gap-1 px-2 sm:px-3 py-2 rounded-none cursor-pointer whitespace-nowrap",
+                  location === `/project/${id}/storyboard` ? "border-b-2 border-primary" : ""
+                )}>
+                  <span className="hidden xs:inline">Storyboard</span>
+                </div>
+              </Link>
+              
+              <Link href={`/project/${id}/outline`}>
+                <div className={cn(
+                  "flex items-center gap-1 px-2 sm:px-3 py-2 rounded-none cursor-pointer whitespace-nowrap",
+                  location === `/project/${id}/outline` ? "border-b-2 border-primary" : ""
+                )}>
+                  <span className="hidden xs:inline">Outline</span>
+                </div>
+              </Link>
+              
+              <Link href={`/project/${id}/story-bible`}>
+                <div className={cn(
+                  "flex items-center gap-1 px-2 sm:px-3 py-2 rounded-none cursor-pointer whitespace-nowrap",
+                  location === `/project/${id}/story-bible` ? "border-b-2 border-primary" : ""
+                )}>
+                  <BookOpen className="h-4 w-4 sm:mr-1" /> <span className="hidden xs:inline">Story Bible</span>
+                </div>
+              </Link>
+            </div>
+          </div>
+
+          {/* Main Content */}
+          <div className="flex-1 overflow-hidden">
+            {editorState.mode === "dashboard" ? (
+              <div className="h-full p-6">
+                <SimplifiedBentoDashboard
                   projectId={projectId}
-                  onClose={handleBackToDashboard}
+                  onCreateEntry={handleCreateEntry}
+                  onEditEntry={handleEditEntry}
                 />
               </div>
-            </div>
-          ) : null}
-        </div>
+            ) : editorState.mode === "editor" && editorState.entryData ? (
+              <div className="h-full overflow-auto" key={editorState.mountKey}>
+                <div className="p-6">
+                  <div className="mb-4">
+                    <Button
+                      variant="ghost"
+                      onClick={handleBackToDashboard}
+                      className="mb-4"
+                    >
+                      <ArrowLeft className="h-4 w-4 mr-2" />
+                      Back to Dashboard
+                    </Button>
+                  </div>
+                  <EditorRenderer 
+                    entry={editorState.entryData}
+                    projectId={projectId}
+                    onClose={handleBackToDashboard}
+                  />
+                </div>
+              </div>
+            ) : null}
+          </div>
+        </main>
       </div>
     </div>
   );
