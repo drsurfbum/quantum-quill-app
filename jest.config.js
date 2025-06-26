@@ -1,5 +1,6 @@
-module.exports = {
-  preset: 'ts-jest',
+export default {
+  preset: 'ts-jest/presets/default-esm',
+  extensionsToTreatAsEsm: ['.ts'],
   testEnvironment: 'node',
   roots: ['<rootDir>/tests'],
   testMatch: ['**/__tests__/**/*.test.ts', '**/?(*.)+(spec|test).ts'],
@@ -12,5 +13,10 @@ module.exports = {
   testTimeout: 30000,
   moduleNameMapping: {
     '^@shared/(.*)$': '<rootDir>/shared/$1'
+  },
+  globals: {
+    'ts-jest': {
+      useESM: true
+    }
   }
 };
