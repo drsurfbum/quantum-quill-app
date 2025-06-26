@@ -11,6 +11,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Save, Trash2, Archive, ArchiveRestore, Star, StarOff, ChevronDown, ChevronRight, Plus, X, MapPin, ImageIcon } from "lucide-react";
 import { useUpdateStoryBibleEntry, useDeleteStoryBibleEntry, useStoryBibleEntries, useCreateStoryBibleEntry } from "@/hooks/use-story-bible";
 import { useToast } from "@/hooks/use-toast";
+import { FileUpload } from "@/components/ui/file-upload";
 import { StoryBibleEntry } from "@shared/schema";
 import { debounce } from "lodash";
 
@@ -406,7 +407,7 @@ export function LocationsEditor({ entry, projectId, onClose }: LocationsEditorPr
                                 title: locationName.trim(),
                                 content: "",
                               });
-                              const newValue = newLocation.id.toString();
+                              const newValue = (newLocation as any).id.toString();
                               setParentLocation(newValue);
                               updateMetadata({ parentLocation: newValue });
                               toast({
@@ -928,7 +929,7 @@ export function LocationsEditor({ entry, projectId, onClose }: LocationsEditorPr
               <FileUpload
                 imageUrl={imageUrl}
                 imageDescription={imageDescription}
-                onImageChange={(url, description) => {
+                onImageChange={(url: string, description?: string) => {
                   setImageUrl(url);
                   setImageDescription(description || "");
                   updateMetadata({ imageUrl: url, imageDescription: description || "" });

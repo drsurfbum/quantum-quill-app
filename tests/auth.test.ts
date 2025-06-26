@@ -118,8 +118,8 @@ describe('Authentication System', () => {
           password: testUser.password
         });
 
-      const cookies = loginResponse.headers['set-cookie'] as string[];
-      sessionCookie = cookies.find((cookie: string) => cookie.startsWith('quill_sid=')) || '';
+      const cookies = loginResponse.headers['set-cookie'] as string[] | undefined;
+      sessionCookie = cookies?.find((cookie: string) => cookie.startsWith('quill_sid=')) || '';
     });
 
     it('should access protected endpoint with valid session', async () => {
@@ -211,8 +211,8 @@ describe('Authentication System', () => {
           password: testUser.password
         });
 
-      const cookies = loginResponse.headers['set-cookie'] as string[];
-      sessionCookie = cookies.find((cookie: string) => cookie.startsWith('quill_sid=')) || '';
+      const cookies = loginResponse.headers['set-cookie'] as string[] | undefined;
+      sessionCookie = cookies?.find((cookie: string) => cookie.startsWith('quill_sid=')) || '';
     });
 
     it('should logout and destroy session', async () => {
