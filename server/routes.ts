@@ -22,7 +22,7 @@ import { setupAuth } from "./auth";
 const isAuthenticated = (req: Request, res: Response, next: Function) => {
   // TEMPORARY: Bypass authentication for development
   if (!process.env.NODE_ENV || process.env.NODE_ENV === 'development') {
-    req.user = { id: 1, username: 'DevUser' };
+    req.user = { id: 1, username: 'DevUser', email: 'dev@example.com', password: '', createdAt: null };
     return next();
   }
 
@@ -208,7 +208,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error('Upload error:', error);
-      res.status(500).json({ error: 'Upload failed', details: error.message });
+      res.status(500).json({ error: 'Upload failed', details: (error as Error).message });
     }
   });
 

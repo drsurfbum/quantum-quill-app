@@ -529,14 +529,14 @@ export function getTaxonomyByKey(key: string) {
 }
 
 export function getTaxonomySubcategories(entryType: string) {
-  const taxonomy = getTaxonomyByKey(entryType.toUpperCase());
-  return (taxonomy && 'subcategories' in taxonomy) ? taxonomy.subcategories : {};
+  const taxonomy = getTaxonomyByKey(entryType.toUpperCase()) as any;
+  return taxonomy?.subcategories || {};
 }
 
 export function getAllSubcategories() {
   const allSubcategories: Record<string, string> = {};
-  Object.values(STORY_BIBLE_TAXONOMY).forEach(taxonomy => {
-    if ('subcategories' in taxonomy && taxonomy.subcategories) {
+  Object.values(STORY_BIBLE_TAXONOMY).forEach((taxonomy: any) => {
+    if (taxonomy.subcategories) {
       Object.assign(allSubcategories, taxonomy.subcategories);
     }
   });
