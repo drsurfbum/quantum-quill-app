@@ -5,6 +5,7 @@ import ExportModal from "@/components/export-modal";
 import { useProject } from "@/hooks/use-project";
 import { Button } from "@/components/ui/button";
 import { BookOpen, Plus, ArrowLeft, Edit3, Grid, ListTree } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCreateStoryBibleEntry } from "@/hooks/use-story-bible";
@@ -159,55 +160,62 @@ export default function StoryBible() {
         <SidebarNavigation onCollapsedChange={setIsCollapsed} />
         
         <main className="flex-grow overflow-auto flex flex-col w-full" style={{ marginLeft: isMobile && isCollapsed ? '56px' : '0' }}>
-          <header className="min-h-16 border-b border-neutral-200 dark:border-neutral-800 flex flex-wrap items-center justify-between px-4 sm:px-6 py-3 sticky top-0 bg-background z-10">
-            <div className="flex items-center mr-4">
-              <h1 className="text-lg sm:text-xl font-semibold truncate max-w-[200px] sm:max-w-xs">{project?.title}</h1>
+          <header className="h-16 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between px-4 sm:px-6">
+            <div className="flex items-center">
+              {projectLoading ? (
+                <Skeleton className="h-6 w-48" />
+              ) : (
+                <div className="flex items-center space-x-2">
+                  <h1 className="text-xl font-semibold">{project?.title}</h1>
+                </div>
+              )}
             </div>
             <div className="flex items-center space-x-2 sm:space-x-4">
-              <ExportModal projectId={projectId} projectTitle={project?.title || "Project"} />
               <ThemeToggle />
+              <ExportModal projectId={projectId} projectTitle={project?.title || "Project"} />
             </div>
           </header>
 
-          {/* Navigation tabs matching other pages */}
-          <div className="border-b border-neutral-200 dark:border-neutral-800 overflow-x-auto">
-            <div className="flex min-w-max mx-2 md:mx-4 h-10 w-auto">
-              <Link href={`/project/${id}/write`}>
-                <div className={cn(
-                  "flex items-center gap-1 px-2 sm:px-3 py-2 rounded-none cursor-pointer whitespace-nowrap",
-                  location === `/project/${id}/write` ? "border-b-2 border-primary" : ""
-                )}>
-                  <span className="hidden xs:inline">Write</span>
-                </div>
-              </Link>
-              
-              <Link href={`/project/${id}/storyboard`}>
-                <div className={cn(
-                  "flex items-center gap-1 px-2 sm:px-3 py-2 rounded-none cursor-pointer whitespace-nowrap",
-                  location === `/project/${id}/storyboard` ? "border-b-2 border-primary" : ""
-                )}>
-                  <span className="hidden xs:inline">Storyboard</span>
-                </div>
-              </Link>
-              
-              <Link href={`/project/${id}/outline`}>
-                <div className={cn(
-                  "flex items-center gap-1 px-2 sm:px-3 py-2 rounded-none cursor-pointer whitespace-nowrap",
-                  location === `/project/${id}/outline` ? "border-b-2 border-primary" : ""
-                )}>
-                  <span className="hidden xs:inline">Outline</span>
-                </div>
-              </Link>
-              
-              <Link href={`/project/${id}/story-bible`}>
-                <div className={cn(
-                  "flex items-center gap-1 px-2 sm:px-3 py-2 rounded-none cursor-pointer whitespace-nowrap",
-                  location === `/project/${id}/story-bible` ? "border-b-2 border-primary" : ""
-                )}>
-                  <BookOpen className="h-4 w-4 sm:mr-1" /> <span className="hidden xs:inline">Story Bible</span>
-                </div>
-              </Link>
-            </div>
+          <div className="border-b border-neutral-200 dark:border-neutral-800">
+            <Tabs defaultValue="story-bible">
+              <TabsList className="mx-4 h-10 w-auto">
+                <Link href={`/project/${id}/write`}>
+                  <TabsTrigger value="write" className={cn(
+                    "data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none",
+                    location.startsWith(`/project/${id}/write`) ? "border-b-2 border-primary" : ""
+                  )}>
+                    <Edit3 className="mr-1 h-4 w-4" /> Write
+                  </TabsTrigger>
+                </Link>
+                
+                <Link href={`/project/${id}/storyboard`}>
+                  <TabsTrigger value="storyboard" className={cn(
+                    "data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none",
+                    location.startsWith(`/project/${id}/storyboard`) ? "border-b-2 border-primary" : ""
+                  )}>
+                    <Grid className="mr-1 h-4 w-4" /> Storyboard
+                  </TabsTrigger>
+                </Link>
+                
+                <Link href={`/project/${id}/outline`}>
+                  <TabsTrigger value="outline" className={cn(
+                    "data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none",
+                    location.startsWith(`/project/${id}/outline`) ? "border-b-2 border-primary" : ""
+                  )}>
+                    <ListTree className="mr-1 h-4 w-4" /> Outline
+                  </TabsTrigger>
+                </Link>
+                
+                <Link href={`/project/${id}/story-bible`}>
+                  <TabsTrigger value="story-bible" className={cn(
+                    "data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none",
+                    location.startsWith(`/project/${id}/story-bible`) ? "border-b-2 border-primary" : ""
+                  )}>
+                    <BookOpen className="mr-1 h-4 w-4" /> Story Bible
+                  </TabsTrigger>
+                </Link>
+              </TabsList>
+            </Tabs>
           </div>
 
           {/* Main Content */}
