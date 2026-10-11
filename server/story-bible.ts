@@ -1,3 +1,4 @@
+import { matchesBase } from "@shared/draft";
 import type { IStorage } from "./storage";
 import type { StoryBibleEntry } from "@shared/schema";
 import { bibleLinks, prepareBiblePatch, type BibleLink } from "@shared/story-bible";
@@ -44,6 +45,7 @@ export async function updateBibleEntry(storage: IStorage, id: number, patch: Par
   const entry = await storage.getStoryBibleEntry(id); if (!entry) return;
   return storage.withProjectLock(entry.projectId, async scoped => {
     const current = await scoped.getStoryBibleEntry(id); if (!current) return;
+    if (!matchesBase(current, base)) return;
     const prepared = prepareBiblePatch(current, patch);
     await validateLinks(scoped, current, { ...current, ...prepared });
     // Derived mirrored fields participate in the same atomic update too.

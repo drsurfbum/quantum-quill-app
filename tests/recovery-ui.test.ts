@@ -22,28 +22,28 @@ async function click(label: string) {
   await act(async () => button.click());
 }
 it("shows recovered writing only after explicit review, then restores through the checked base", async () => {
-  const fetch = jest.spyOn(global, "fetch").mockResolvedValueOnce(new Response(JSON.stringify({ id: 700, content: "Original" }), { status: 200 })).mockResolvedValueOnce(new Response(JSON.stringify({ id: 700, content: "Private offline writing" }), { status: 200 }));
+  const fetch = jest.spyOn(global, "fetch").mockResolvedValueOnce(new Response(JSON.stringify({ id: 700, revision: 0, content: "Original" }), { status: 200 })).mockResolvedValueOnce(new Response(JSON.stringify({ id: 700, revision: 0, content: "Private offline writing" }), { status: 200 }));
   await mount(); expect(fetch).not.toHaveBeenCalled();
   await click("Review 1 saved draft"); await click("Review");
   expect(document.body.textContent).toContain("No conflicting changes found");
   await click("Restore draft");
-  expect(JSON.parse(fetch.mock.calls[1][1]!.body as string)).toEqual({ content: "Private offline writing", _base: { content: "Original" } });
+  expect(JSON.parse(fetch.mock.calls[1][1]!.body as string)).toEqual({ content: "Private offline writing", _revision: 0, _base: { content: "Original" } });
   expect(journal.read(700)).toEqual([]); expect(document.body.textContent).toContain("Draft restored");
 });
 it("keeps a conflicting draft if a second change arrives after review", async () => {
-  jest.spyOn(global, "fetch").mockResolvedValueOnce(new Response(JSON.stringify({ id: 700, content: "Newer writing" }), { status: 200 })).mockResolvedValueOnce(new Response(JSON.stringify({ message: "Changed again" }), { status: 409 }));
+  jest.spyOn(global, "fetch").mockResolvedValueOnce(new Response(JSON.stringify({ id: 700, revision: 0, content: "Newer writing" }), { status: 200 })).mockResolvedValueOnce(new Response(JSON.stringify({ message: "Changed again" }), { status: 409 }));
   await mount(); await click("Review 1 saved draft"); await click("Review");
   expect(document.body.textContent).toContain("Newer writing");
   await click("Replace these fields with my draft");
   expect(document.body.textContent).toContain("Changed again"); expect(journal.read(700)).toHaveLength(1);
 });
 it("discards only the selected draft and never writes to the server", async () => {
-  const fetch = jest.spyOn(global, "fetch").mockResolvedValue(new Response(JSON.stringify({ id: 700, content: "Original" }), { status: 200 }));
+  const fetch = jest.spyOn(global, "fetch").mockResolvedValue(new Response(JSON.stringify({ id: 700, revision: 0, content: "Original" }), { status: 200 }));
   await mount(); await click("Review 1 saved draft"); await click("Review"); await click("Discard this draft");
   expect(journal.read(700)).toEqual([]); expect(fetch.mock.calls.every(([, options]) => options?.method === "GET")).toBe(true);
 });
 it("hides a previously reviewed private draft when the account changes", async () => {
-  jest.spyOn(global, "fetch").mockResolvedValue(new Response(JSON.stringify({ id: 700, content: "Original" }), { status: 200 }));
+  jest.spyOn(global, "fetch").mockResolvedValue(new Response(JSON.stringify({ id: 700, revision: 0, content: "Original" }), { status: 200 }));
   await mount(); await click("Review 1 saved draft"); await click("Review");
   expect(document.body.textContent).toContain("Private offline writing");
   await act(async () => { queryClient.setQueryData(["/api/user"], { id: 701 }); });

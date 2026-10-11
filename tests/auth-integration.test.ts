@@ -23,7 +23,7 @@ describe("Project ownership and writable fields", () => {
     await agent.put(url).send({ id: 900 }).expect(400);
     await agent.put(url).send({ createdAt: "2000-01-01" }).expect(400);
     const update = route === "whiteboards" ? { name: "Saved board" } : { title: "Saved title" };
-    await agent.put(url).send(update).expect(200);
+    await agent.put(url).send({ ...update, _revision: created.body.revision }).expect(200);
     const persisted = await agent.get(url).expect(200);
     expect(persisted.body).toMatchObject(update);
     expect(persisted.body.projectId).toBe(project.id);
@@ -47,7 +47,7 @@ describe("Project ownership and writable fields", () => {
     await other.post("/api/plot-structure-sections").send({ plotStructureId: plot.id, sectionKey: "other", title: "Stolen", order: 1 }).expect(403);
     await agent.put(`/api/plot-structure-sections/${section.id}`).send({ plotStructureId: 900 }).expect(400);
     await agent.put(`/api/plot-structures/${plot.id}`).send({ templateId: 900 }).expect(400);
-    await agent.put(`/api/plot-structure-sections/${section.id}`).send({ content: "Saved scene" }).expect(200);
+    await agent.put(`/api/plot-structure-sections/${section.id}`).send({ content: "Saved scene", _revision: section.revision }).expect(200);
     expect((await agent.get(`/api/plot-structure-sections/${section.id}`)).body.content).toBe("Saved scene");
     await agent.delete(`/api/plot-structures/${plot.id}`).expect(409);
     await agent.delete(`/api/plot-structure-sections/${section.id}`).expect(204);

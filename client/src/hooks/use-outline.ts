@@ -92,15 +92,16 @@ export const useCreateOutlineItem = () => {
 export const useUpdateOutlineItem = () => {
   return useMutation<OutlineItemResult, Error, { 
     id: number | string,
+    revision: number,
     title?: string, 
     content?: string,
     parentId?: number | null,
     order?: number,
     isCompleted?: boolean
   }>({
-    mutationFn: async ({ id, ...data }) => {
+    mutationFn: async ({ id, revision, ...data }) => {
       try {
-        const res = await apiRequest('PUT', `/api/outline/${id}`, data);
+        const res = await apiRequest('PUT', `/api/outline/${id}`, { ...data, _revision: revision });
         const jsonData = await res.json();
         return { success: true, data: jsonData } as OutlineItemSuccess;
       } catch (error) {

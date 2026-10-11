@@ -8,6 +8,7 @@ import { randomBytes } from "crypto";
 import { createApp } from "../server/app";
 import { MemStorage } from "../server/storage";
 import { hashPassword } from "../server/auth";
+import { legacyBible } from "./fixtures/legacy-writing";
 import { plotTemplates } from "../server/data/plot-templates";
 
 const storage = new MemStorage();
@@ -15,6 +16,10 @@ const storage = new MemStorage();
 storage.sessionStore = new session.MemoryStore();
 const user = await storage.createUser({ username: "smoke-writer", password: await hashPassword("synthetic-smoke-password"), email: "smoke@example.test" });
 const project = await storage.createProject({ title: "Stabilization smoke project", userId: user.id });
+const other = await storage.createUser({ username: "other-writer", password: await hashPassword("synthetic-smoke-password"), email: "other@example.test" });
+await storage.createProject({ title: "Second account private project", userId: other.id });
+await storage.createProject({ title: "Second project draft scope", userId: user.id });
+for (const item of legacyBible) await storage.createStoryBibleEntry({ projectId: project.id, title: `Legacy: ${item.name}`, entryType: item.entryType, content: item.content, metadata: structuredClone(item.metadata) });
 for (let i = 1; i <= 2; i++) await storage.createChapter({ projectId: project.id, title: `Chapter ${i}`, content: `<p>Synthetic chapter ${i}.</p>`, order: i });
 for (const entryType of ["characters", "groups_races", "locations", "events", "world_elements", "details", "research"]) {
   await storage.createStoryBibleEntry({ projectId: project.id, title: `Smoke ${entryType}`, entryType, content: "", metadata: {} });
@@ -28,6 +33,7 @@ await storage.createWhiteboard({ projectId: project.id, name: "Smoke whiteboard"
 
 // One-shot save failure for manual recovery testing; SIGUSR2 affects only this process.
 let failNextChapterSave = false;
+let writesOffline = false;
 process.on("SIGUSR2", () => { failNextChapterSave = true; });
 const updateChapter = storage.updateChapter.bind(storage);
 storage.updateChapter = async (...args) => {
@@ -40,11 +46,25 @@ if (!Number.isFinite(saveDelay) || saveDelay < 0 || saveDelay > 10000) throw new
 for (const name of ["updateChapter", "updateOutlineItem", "updateStoryBibleEntry", "updatePlotStructureSection"] as const) {
   const original = storage[name].bind(storage);
   storage[name] = (async (id: number, patch: any, base?: Record<string, unknown>) => {
+    if (writesOffline) throw Object.assign(new Error("Synthetic write outage. Your draft is kept."), { status: 503 });
     if (saveDelay) await new Promise(resolve => setTimeout(resolve, saveDelay));
     return original(id, patch, base);
   }) as typeof storage[typeof name];
 }
 const app = createApp({ storage, secret: randomBytes(32).toString("hex"), uploadDir: mkdtempSync(path.join(tmpdir(), "qq-smoke-uploads-")) });
+// Fixture-only controls on the loopback synthetic server. Never mounted in the app.
+app.get("/__fixture", async (_req, res) => {
+  const chapter = await storage.getChapter(1);
+  res.type("html").send(`<html><body><h1>Quantum Quill synthetic recovery fixture</h1><p>Writes: ${writesOffline ? "offline" : "online"}. Chapter revision: ${chapter?.revision}.</p><p>Accounts: smoke-writer and other-writer. Password: synthetic-smoke-password.</p><form method="post" action="/__fixture/offline"><button>Simulate write outage</button></form><form method="post" action="/__fixture/online"><button>Reconnect writes</button></form><form method="post" action="/__fixture/concurrent"><button>Save newer server writing</button></form><form method="post" action="/__fixture/fail"><button>Fail next chapter save</button></form><a href="/project/1/write">Open writer</a></body></html>`);
+});
+app.post("/__fixture/:action", async (req, res) => {
+  if (req.params.action === "offline") writesOffline = true;
+  else if (req.params.action === "online") writesOffline = false;
+  else if (req.params.action === "fail") failNextChapterSave = true;
+  else if (req.params.action === "concurrent") await updateChapter(1, { content: "<p>Newer writing from a second device. Preserve this until reviewed.</p>" });
+  else { res.sendStatus(400); return; }
+  res.redirect("/__fixture");
+});
 app.use(express.static(path.resolve("dist/public")));
 app.get("*", (_req, res) => res.sendFile(path.resolve("dist/public/index.html")));
 app.listen(5057, "127.0.0.1", () => console.log(`Synthetic smoke app: http://localhost:5057 (PID ${process.pid})`));

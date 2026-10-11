@@ -5,7 +5,7 @@ import {
   useMutation,
   UseMutationResult,
 } from "@tanstack/react-query";
-import { apiRequest, getQueryFn, queryClient } from "@/lib/queryClient";
+import { apiRequest, getQueryFn, queryClient, clearAccount, currentAccount } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
 type User = {
@@ -39,7 +39,17 @@ export const AuthContext = createContext<AuthContextType | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
   
-  useEffect(() => { localStorage.removeItem("authToken"); }, []);
+  useEffect(() => {
+    try { localStorage.removeItem("authToken"); } catch { /* Draft UI explains storage limitations. */ }
+    const sync = (event: StorageEvent) => {
+      if (event.key !== "quantum-quill:session") return;
+      clearAccount(currentAccount());
+      void queryClient.cancelQueries({ queryKey: ["/api/user"] }).then(() => queryClient.invalidateQueries({ queryKey: ["/api/user"] }));
+    };
+    window.addEventListener("storage", sync);
+    return () => window.removeEventListener("storage", sync);
+  }, []);
+  const announceSession = () => { try { localStorage.setItem("quantum-quill:session", crypto.randomUUID()); } catch { /* Account request headers still guard stale tabs. */ } };
   const {
     data: user,
     error,
@@ -48,6 +58,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     queryKey: ["/api/user"],
     queryFn: getQueryFn({ on401: "returnNull" }),
     retry: false,
+    refetchOnWindowFocus: true,
+    staleTime: 0,
   });
 
   const loginMutation = useMutation({
@@ -68,7 +80,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await queryClient.cancelQueries();
       queryClient.clear();
       queryClient.setQueryData(["/api/user"], user);
-      await flushPendingSaves();
+      announceSession();
       toast({
         title: "Login successful",
         description: `Welcome back, ${user.username}!`,
@@ -101,7 +113,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await queryClient.cancelQueries();
       queryClient.clear();
       queryClient.setQueryData(["/api/user"], user);
-      await flushPendingSaves();
+      announceSession();
       toast({
         title: "Registration successful",
         description: `Welcome, ${user.username}!`,
@@ -125,6 +137,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await queryClient.cancelQueries();
       queryClient.clear();
       queryClient.setQueryData(["/api/user"], null);
+      announceSession();
       toast({ title: "Logged out", description: "You have been logged out successfully" });
     },
     onError: (error: Error) => {

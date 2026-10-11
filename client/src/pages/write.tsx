@@ -214,6 +214,8 @@ export default function Write() {
                   projectId={selectedChapter.projectId}
                   content={selectedChapter.content}
                   chapterId={selectedChapter.id}
+                  revision={selectedChapter.revision}
+                  title={selectedChapter.title}
                 />
               </div>
             )}

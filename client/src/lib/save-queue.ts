@@ -1,4 +1,4 @@
-export type SaveStatus = "saved" | "typing" | "saving" | "error";
+export type SaveStatus = "saved" | "typing" | "saving" | "error" | "conflict";
 export type SavePatch = Record<string, unknown>;
 
 /** One serial writer per record. Pending edits survive editor unmounts. */
@@ -24,6 +24,7 @@ export class SaveQueue {
 
   enqueue = (patch: SavePatch) => {
     this.pending = { ...this.pending, ...patch };
+    if (this.status === "conflict") { this.notify("conflict"); return; }
     this.error = null;
     this.notify(this.running ? "saving" : "typing");
     clearTimeout(this.timer);
@@ -39,6 +40,7 @@ export class SaveQueue {
   }
   flush = (): Promise<boolean> => {
     this.clearTimers();
+    if (this.status === "conflict") return Promise.resolve(false);
     if (this.running) return this.running;
     if (!this.pending) return Promise.resolve(true);
     this.running = this.drain().finally(() => { this.running = null; });
@@ -58,7 +60,7 @@ export class SaveQueue {
         this.inFlight = null;
         this.error = error instanceof Error ? error : new Error("Unable to save");
         this.clearTimers();
-        this.notify("error");
+        this.notify(["REVISION_CONFLICT", "REVISION_REQUIRED"].includes((error as { code?: string })?.code || "") ? "conflict" : "error");
         return false;
       }
       this.inFlight = null;

@@ -104,7 +104,7 @@ export default function ChapterSidebar({ projectId, selectedChapterId, isVisible
     
     updateChapter(
       {
-        id: chapterToRename.id,
+        id: chapterToRename.id, revision: chapterToRename.revision,
         title: newChapterTitle
       },
       {
@@ -130,7 +130,7 @@ export default function ChapterSidebar({ projectId, selectedChapterId, isVisible
   const handleToggleChapterStatus = (chapter: Chapter) => {
     updateChapter(
       {
-        id: chapter.id,
+        id: chapter.id, revision: chapter.revision,
         isDraft: !chapter.isDraft
       },
       {

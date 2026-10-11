@@ -5,6 +5,7 @@ import { apiRequest } from '@/lib/queryClient';
 
 export interface OutlineItem {
   id: number;
+  revision: number;
   projectId: number;
   title: string;
   content: string;

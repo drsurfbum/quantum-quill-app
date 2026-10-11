@@ -79,7 +79,7 @@ export function NewOutlineItem({
   
   const handleRename = () => {
     updateItem(
-      { id: item.id, title: newTitle },
+      { id: item.id, revision: item.revision, title: newTitle },
       {
         onSuccess: (result) => {
           if (!result.success) {

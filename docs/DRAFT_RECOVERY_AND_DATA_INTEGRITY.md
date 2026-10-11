@@ -1,14 +1,14 @@
 # Durable drafts and Story Bible integrity
 
-October 11, 2026. Follow-up to the field audit. This pass implements durable recovery first, then compatible schema handling and relationship integrity. No schema migration or recovered writing was changed.
+October 11, 2026. Follow-up to the field audit. This pass implements durable recovery first, then compatible schema handling and relationship integrity. The latest stabilization adds server revision metadata; recovered writing is not normalized or reclassified.
 
 ## Writing recovery
 
 Chapters, outlines, plot sections and all active Story Bible editors synchronously checkpoint unacknowledged edits in browser localStorage before the network debounce. Account, project (including plot-section ownership), resource and unique page identifiers separate drafts. Separate tabs have separate journal records. In-flight edits remain recoverable until their own server acknowledgment; newer edits cannot be erased by an older acknowledgment. Storage quota/unavailability is reported while the in-memory draft remains available.
 
-After a reload, the account sees **Review saved drafts**. Recovery is explicit: inspect the current server fields, restore, discard, or download the draft as JSON. Restoring uses an atomic server comparison of the reviewed field values. A conflicting second write is rejected rather than silently replacing newer work. A missing/deleted record or failed request leaves the draft available. Account changes hide both the draft list and an already-open private preview. Existing edits to the same entry must be resolved before an older draft is restored.
+After a reload, the account sees **Review saved drafts**. Recovery is explicit: inspect the current server fields, restore, discard, or download the draft as JSON. Restoring uses an atomic comparison of the reviewed server revision and field values. A conflicting second write is rejected rather than silently replacing newer work. A missing/deleted record or failed request leaves the draft available. Account changes hide both the draft list and an already-open private preview. Existing edits to the same entry must be resolved before an older draft is restored.
 
-Every active autosave sends the fields it originally loaded in a `_base` envelope. PostgreSQL compares and updates in one statement; unrelated top-level fields can change independently. The memory test implementation follows the same semantics. Incoming cache/render changes cannot silently rebase a stale open editor. An absent baseline is a visible save failure with a recoverable draft. Legacy API callers can still send ordinary PUT requests; this is not a full collaboration/version-history system.
+Every active autosave sends its loaded `_revision` and original fields in `_base`. PostgreSQL checks the version and increments it in the same update statement. Every successful writing update advances the record revision, including A→B→A changes. The memory test implementation follows the same semantics. Incoming cache/render changes cannot silently rebase a stale open editor. An absent baseline is a visible save failure with a recoverable draft. Unversioned writing PUT requests receive 428. Stale versions receive 409 with REVISION_CONFLICT; the client stops background retries until explicit review. This is conflict protection, not full version history.
 
 Metadata and JSON content are compared as complete top-level fields. Conflicting nested edits require review; no speculative text merge is attempted. Browser storage is tied to the original origin/profile, and clearing site data removes its drafts. It is a recovery aid, not a database backup. Large/full or unavailable storage is explicitly reported. The legacy unrouted whiteboard is outside this text-editor recovery scope.
 
@@ -56,3 +56,15 @@ Reproduce the checks with the commands in [README-Testing.md](../README-Testing.
 ## Next work
 
 Rehearse the historical type/field migration and resolve the 31 orphan plot sections without guessing their parentage. Then complete one Event participant/location/follow-up workflow and extend typed roles/context to the other sections. Upload ownership/content validation, dependency review and production session/rate-limit checks remain deployment gates. See [the roadmap](STORY_BIBLE_ROADMAP.md).
+
+## Stabilization baseline adoption — October 11, 2026
+
+Baseline checkpoint: `b8719f0`. The writing-protection follow-up adds monotonic revisions to chapters, outlines, Story Bible entries, plot structures/sections and whiteboards. `0002_writing_revisions.sql` is additive and repeatable; scratch PostgreSQL checks compare all original field values before/after. Browser draft v1 records remain readable without being rewritten on load.
+
+The client includes its expected account on API requests. Cookie/account mismatches are rejected before reads or writes. Cross-tab login/logout immediately clears private caches and previews; late responses cannot refill the new account's cache. Recovery validates the project and current draft, and refuses a draft already restored/discarded elsewhere. Conflict queues retain continued typing without automatic retries.
+
+Synthetic browser walkthrough at localhost:5057 passed: failed saves, a newer server version followed by reconnect, side-by-side conflict review, explicit replacement, an immediate reload during a write outage, recovery of the unsent text, cross-tab logout/login hiding the open preview, original-account draft retention, and discard leaving server writing unchanged. Reload warnings apply only when pending writing lacks an intact browser checkpoint. The fixture can simulate write outages through `/__fixture`; it never uses a recovered database.
+
+Legacy fixtures cover prose, scalar/array/broken/structured JSON, metadata, unknown nested fields, malformed historical fields and future versions. Chapter/outline prose keeps literal angle brackets and blank lines without initialization writes. Full suite: 233 passing before the final reload-warning test (which adds one case); TypeScript, production build and scratch PostgreSQL passed. See subsequent validation totals for the completed data-contract phase.
+
+Limits: drafts are protected within this browser origin/profile; localStorage is not encrypted storage against someone who controls the same OS/browser profile. An app-shell offline cache is not implemented: draft data survives a full network outage, but loading the application itself may require reconnecting. Storage/quota failures keep the in-memory draft and warn before leaving; download remains available. Original recovery backups remain the rollback baseline.

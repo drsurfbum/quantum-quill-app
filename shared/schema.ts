@@ -56,6 +56,7 @@ export type Project = typeof projects.$inferSelect;
 // Chapter schema
 export const chapters = pgTable("chapters", {
   id: serial("id").primaryKey(),
+  revision: integer("revision").notNull().default(0),
   title: text("title").notNull(),
   content: text("content").default(""),
   projectId: integer("project_id").notNull(),
@@ -79,6 +80,7 @@ export type Chapter = typeof chapters.$inferSelect;
 // Whiteboard schema - stores canvas objects as JSON
 export const whiteboards = pgTable("whiteboards", {
   id: serial("id").primaryKey(),
+  revision: integer("revision").notNull().default(0),
   projectId: integer("project_id").notNull(),
   name: text("name").notNull(),
   canvasData: jsonb("canvas_data").default({}),
@@ -98,6 +100,7 @@ export type Whiteboard = typeof whiteboards.$inferSelect;
 // Outline schema - hierarchical structure for story outlining
 export const outlineItems = pgTable("outline_items", {
   id: serial("id").primaryKey(),
+  revision: integer("revision").notNull().default(0),
   projectId: integer("project_id").notNull(),
   title: text("title").notNull(),
   content: text("content").default(""),
@@ -123,6 +126,7 @@ export type OutlineItem = typeof outlineItems.$inferSelect;
 // Story Bible schema - for storing character/setting/etc. info
 export const storyBibleEntries = pgTable("story_bible_entries", {
   id: serial("id").primaryKey(),
+  revision: integer("revision").notNull().default(0),
   projectId: integer("project_id").notNull(),
   entryType: text("entry_type").notNull(), // Primary taxonomy category
   title: text("title").notNull(),
@@ -181,6 +185,7 @@ export type PlotStructureTemplate = typeof plotStructureTemplates.$inferSelect;
 // Plot Structures (user instances of templates)
 export const plotStructures = pgTable("plot_structures", {
   id: serial("id").primaryKey(),
+  revision: integer("revision").notNull().default(0),
   projectId: integer("project_id").notNull(),
   templateId: integer("template_id").notNull(), // References plotStructureTemplates.id
   name: text("name").notNull(),
@@ -206,6 +211,7 @@ export type PlotStructure = typeof plotStructures.$inferSelect;
 // Plot Structure Sections (actual content for each section)
 export const plotStructureSections = pgTable("plot_structure_sections", {
   id: serial("id").primaryKey(),
+  revision: integer("revision").notNull().default(0),
   plotStructureId: integer("plot_structure_id").notNull(), // References plotStructures.id
   sectionKey: varchar("section_key", { length: 100 }).notNull(), // Key to match against template section
   title: text("title").notNull(),

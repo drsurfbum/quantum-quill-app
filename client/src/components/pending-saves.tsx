@@ -1,11 +1,12 @@
 import { useEffect } from "react";
-import { flushPendingSaves, pendingSaveCount, usePendingSaves } from "@/hooks/use-autosave";
+import { flushPendingSaves, pendingSaveCount, hasUnprotectedPendingSaves, usePendingSaves } from "@/hooks/use-autosave";
 export function PendingSaves() {
-  const { pending, failed, retry, storageError } = usePendingSaves();
+  const { pending, failed, conflicted, retry, storageError } = usePendingSaves();
   useEffect(() => {
     const warn = (event: BeforeUnloadEvent) => {
       if (!pendingSaveCount()) return;
       void flushPendingSaves();
+      if (!hasUnprotectedPendingSaves()) return;
       event.preventDefault();
       event.returnValue = "";
     };
@@ -25,8 +26,8 @@ export function PendingSaves() {
     };
   }, []);
   if (!pending) return null;
-  return <div role={failed ? "alert" : "status"} className="fixed bottom-4 left-4 z-[100] rounded-md border bg-background p-3 shadow-lg text-sm max-w-sm">
-    {failed ? "Some changes could not be saved. Keep this tab open and retry." : "Saving your changes…"}
+  return <div role={failed || conflicted ? "alert" : "status"} className="fixed bottom-4 left-4 z-[100] rounded-md border bg-background p-3 shadow-lg text-sm max-w-sm">
+    {conflicted ? "Another version was saved. Review your draft before replacing any writing." : failed ? "Changes could not reach the server. Your draft is kept for recovery." : "Saving your changes…"}
     {storageError && <p role="alert" className="mt-2">{storageError}</p>}
     {failed && <button type="button" className="ml-2 underline" onClick={() => void retry()}>Retry saves</button>}
   </div>;

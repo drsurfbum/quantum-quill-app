@@ -1,3 +1,4 @@
+import { editorContent } from "@/lib/editor-content";
 import { useAutosave, withPendingEdits } from "@/hooks/use-autosave";
 import { SaveStatus } from "@/components/save-status";
 import { useEditor } from '@tiptap/react';
@@ -71,7 +72,7 @@ export default function OutlineRichEditor({ item, projectId }: OutlineRichEditor
       }),
       Image,
     ],
-    content: item.content || "",
+    content: editorContent(item.content),
     onUpdate: ({ editor }) => { autosave.save({ content: editor.getHTML() }); },
     // Only auto-focus on desktop devices
     autofocus: false,
@@ -80,7 +81,7 @@ export default function OutlineRichEditor({ item, projectId }: OutlineRichEditor
   useEffect(() => {
     setTitle(item.title);
     setIsCompleted(item.isCompleted || false);
-    editor?.commands.setContent(item.content || "", false, { preserveWhitespace: "full" });
+    editor?.commands.setContent(editorContent(item.content), false, { preserveWhitespace: "full" });
   }, [item.id, editor]);
   const handleTitleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setTitle(event.target.value);

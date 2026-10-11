@@ -78,3 +78,4 @@ recovery/
 
 # Keep the schema migration in version control; database dumps remain ignored.
 !migrations/0001_writing_styles.sql
+!migrations/0002_writing_revisions.sql

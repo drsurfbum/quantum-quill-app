@@ -77,8 +77,8 @@ export function usePlotStructureActions() {
 
   // Update plot structure
   const updatePlotStructureMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: number, data: Partial<PlotStructure> }) => {
-      const res = await apiRequest('PUT', `/api/plot-structures/${id}`, data);
+    mutationFn: async ({ id, revision, data }: { id: number, revision: number, data: Partial<PlotStructure> }) => {
+      const res = await apiRequest('PUT', `/api/plot-structures/${id}`, { ...data, _revision: revision });
       return await res.json() as PlotStructure;
     },
     onSettled: (data, error, variables) => {
@@ -151,8 +151,8 @@ export function usePlotStructureActions() {
 
   // Update section
   const updateSectionMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: number, data: Partial<PlotStructureSection> }) => {
-      const res = await apiRequest('PUT', `/api/plot-structure-sections/${id}`, data);
+    mutationFn: async ({ id, revision, data }: { id: number, revision: number, data: Partial<PlotStructureSection> }) => {
+      const res = await apiRequest('PUT', `/api/plot-structure-sections/${id}`, { ...data, _revision: revision });
       const result = await res.json() as PlotStructureSection;
       
       // Silent cache update after successful save

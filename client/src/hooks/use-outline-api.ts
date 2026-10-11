@@ -12,6 +12,7 @@ interface CreateOutlineItemData {
 // Type for updating an outline item
 interface UpdateOutlineItemData {
   id: number;
+  revision: number;
   title?: string;
   content?: string;
   isCompleted?: boolean;
@@ -44,7 +45,8 @@ export function useUpdateOutlineItem() {
   return useMutation({
     mutationFn: async (data: UpdateOutlineItemData): Promise<ApiResponse> => {
       try {
-        const response = await apiRequest('PUT', `/api/outline/${data.id}`, data);
+        const { id, revision, ...patch } = data;
+        const response = await apiRequest('PUT', `/api/outline/${id}`, { ...patch, _revision: revision });
         
         if (!response.ok) {
           console.error('Update operation failed:', response.status, response.statusText);

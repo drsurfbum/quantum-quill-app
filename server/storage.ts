@@ -257,6 +257,7 @@ export class MemStorage implements IStorage {
     const chapter: Chapter = {
       ...insertChapter,
       id,
+      revision: 0,
       createdAt: now,
       updatedAt: now,
       content: insertChapter.content || "",
@@ -273,6 +274,7 @@ export class MemStorage implements IStorage {
     const updatedChapter = {
       ...chapter,
       ...chapterUpdate,
+      revision: chapter.revision + 1,
       updatedAt: new Date()
     };
     this.chaptersMap.set(id, updatedChapter);
@@ -299,6 +301,7 @@ export class MemStorage implements IStorage {
     const whiteboard: Whiteboard = {
       ...insertWhiteboard,
       id,
+      revision: 0,
       createdAt: now,
       updatedAt: now,
       canvasData: insertWhiteboard.canvasData || {}
@@ -314,6 +317,7 @@ export class MemStorage implements IStorage {
     const updatedWhiteboard = {
       ...whiteboard,
       ...whiteboardUpdate,
+      revision: whiteboard.revision + 1,
       updatedAt: new Date()
     };
     this.whiteboardsMap.set(id, updatedWhiteboard);
@@ -341,6 +345,7 @@ export class MemStorage implements IStorage {
     const outlineItem: OutlineItem = {
       ...insertOutlineItem,
       id,
+      revision: 0,
       createdAt: now,
       updatedAt: now,
       content: insertOutlineItem.content || "",
@@ -358,6 +363,7 @@ export class MemStorage implements IStorage {
     const updatedOutlineItem = {
       ...outlineItem,
       ...outlineItemUpdate,
+      revision: outlineItem.revision + 1,
       updatedAt: new Date()
     };
     this.outlineItemsMap.set(id, updatedOutlineItem);
@@ -384,6 +390,7 @@ export class MemStorage implements IStorage {
     const entry: StoryBibleEntry = {
       ...insertEntry,
       id,
+      revision: 0,
       createdAt: now,
       updatedAt: now,
       content: insertEntry.content || "",
@@ -406,6 +413,7 @@ export class MemStorage implements IStorage {
     const updatedEntry = {
       ...entry,
       ...entryUpdate,
+      revision: entry.revision + 1,
       updatedAt: new Date()
     };
     this.storyBibleEntriesMap.set(id, updatedEntry);
@@ -479,6 +487,7 @@ export class MemStorage implements IStorage {
     // Create the structure with all required fields explicitly set
     const newStructure: PlotStructure = {
       id,
+      revision: 0,
       projectId: structure.projectId,
       templateId: structure.templateId,
       name: structure.name,
@@ -500,6 +509,7 @@ export class MemStorage implements IStorage {
     const updatedStructure = {
       ...structure,
       ...structureUpdate,
+      revision: structure.revision + 1,
       updatedAt: new Date()
     };
     this.plotStructuresMap.set(id, updatedStructure);
@@ -528,6 +538,7 @@ export class MemStorage implements IStorage {
     // Create the section with all required fields explicitly set
     const newSection: PlotStructureSection = {
       id,
+      revision: 0,
       plotStructureId: section.plotStructureId,
       sectionKey: section.sectionKey,
       title: section.title,
@@ -548,6 +559,7 @@ export class MemStorage implements IStorage {
     const updatedSection = {
       ...section,
       ...sectionUpdate,
+      revision: section.revision + 1,
       updatedAt: new Date()
     };
     this.plotStructureSectionsMap.set(id, updatedSection);

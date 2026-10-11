@@ -61,8 +61,8 @@ export const useCreateChapter = () => {
 // Update chapter
 export const useUpdateChapter = () => {
   return useMutation({
-    mutationFn: async ({ id, ...data }: { id: number | string } & Partial<Chapter>) => {
-      const res = await apiRequest('PUT', `/api/chapters/${id}`, data);
+    mutationFn: async ({ id, revision, ...data }: { id: number | string; revision: number } & Partial<Chapter>) => {
+      const res = await apiRequest('PUT', `/api/chapters/${id}`, { ...data, _revision: revision });
       return res.json();
     },
     onSuccess: (data) => {

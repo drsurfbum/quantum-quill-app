@@ -18,7 +18,7 @@ export function ProtectedRoute({ path, component: Component }: ProtectedRoutePro
         <div className="flex items-center justify-center min-h-screen">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
-      ) : !user ? <Redirect to="/auth" /> : <Component />}
+      ) : !user ? <Redirect to="/auth" /> : <Component key={user.id} />}
     </Route>
   );
 }

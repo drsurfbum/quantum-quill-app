@@ -149,7 +149,7 @@ export class DatabaseStorage implements IStorage {
   async updateChapter(id: number, chapterUpdate: Partial<Chapter>, base?: Record<string, unknown>): Promise<Chapter | undefined> {
     const [updatedChapter] = await this.database
       .update(chapters)
-      .set({ ...chapterUpdate, updatedAt: new Date() })
+      .set({ ...chapterUpdate, revision: sql`${chapters.revision} + 1`, updatedAt: new Date() })
       .where(and(eq(chapters.id, id), baseCondition(chapters, base)))
       .returning();
     return updatedChapter;
@@ -181,7 +181,7 @@ export class DatabaseStorage implements IStorage {
   async updateWhiteboard(id: number, whiteboardUpdate: Partial<Whiteboard>, base?: Record<string, unknown>): Promise<Whiteboard | undefined> {
     const [updatedWhiteboard] = await this.database
       .update(whiteboards)
-      .set({ ...whiteboardUpdate, updatedAt: new Date() })
+      .set({ ...whiteboardUpdate, revision: sql`${whiteboards.revision} + 1`, updatedAt: new Date() })
       .where(and(eq(whiteboards.id, id), baseCondition(whiteboards, base)))
       .returning();
     return updatedWhiteboard;
@@ -214,7 +214,7 @@ export class DatabaseStorage implements IStorage {
   async updateOutlineItem(id: number, outlineItemUpdate: Partial<OutlineItem>, base?: Record<string, unknown>): Promise<OutlineItem | undefined> {
     const [updatedOutlineItem] = await this.database
       .update(outlineItems)
-      .set({ ...outlineItemUpdate, updatedAt: new Date() })
+      .set({ ...outlineItemUpdate, revision: sql`${outlineItems.revision} + 1`, updatedAt: new Date() })
       .where(and(eq(outlineItems.id, id), baseCondition(outlineItems, base)))
       .returning();
     return updatedOutlineItem;
@@ -246,7 +246,7 @@ export class DatabaseStorage implements IStorage {
   async updateStoryBibleEntry(id: number, entryUpdate: Partial<StoryBibleEntry>, base?: Record<string, unknown>): Promise<StoryBibleEntry | undefined> {
     const [updatedEntry] = await this.database
       .update(storyBibleEntries)
-      .set({ ...entryUpdate, updatedAt: new Date() })
+      .set({ ...entryUpdate, revision: sql`${storyBibleEntries.revision} + 1`, updatedAt: new Date() })
       .where(and(eq(storyBibleEntries.id, id), baseCondition(storyBibleEntries, base)))
       .returning();
     return updatedEntry;
@@ -307,7 +307,7 @@ export class DatabaseStorage implements IStorage {
   async updatePlotStructure(id: number, structureUpdate: Partial<PlotStructure>, base?: Record<string, unknown>): Promise<PlotStructure | undefined> {
     const [updatedStructure] = await this.database
       .update(plotStructures)
-      .set({ ...structureUpdate, updatedAt: new Date() })
+      .set({ ...structureUpdate, revision: sql`${plotStructures.revision} + 1`, updatedAt: new Date() })
       .where(and(eq(plotStructures.id, id), baseCondition(plotStructures, base)))
       .returning();
     return updatedStructure;
@@ -340,7 +340,7 @@ export class DatabaseStorage implements IStorage {
   async updatePlotStructureSection(id: number, sectionUpdate: Partial<PlotStructureSection>, base?: Record<string, unknown>): Promise<PlotStructureSection | undefined> {
     const [updatedSection] = await this.database
       .update(plotStructureSections)
-      .set({ ...sectionUpdate, updatedAt: new Date() })
+      .set({ ...sectionUpdate, revision: sql`${plotStructureSections.revision} + 1`, updatedAt: new Date() })
       .where(and(eq(plotStructureSections.id, id), baseCondition(plotStructureSections, base)))
       .returning();
     return updatedSection;

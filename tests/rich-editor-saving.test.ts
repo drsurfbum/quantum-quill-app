@@ -36,7 +36,7 @@ beforeEach(() => {
     if (init?.method !== "PUT") throw new Error(`Unexpected read ${url}`);
     const key = String(url); const patch = JSON.parse(init.body as string);
     await block;
-    records[key] = { ...records[key], ...patch };
+    records[key] = { ...records[key], ...patch, revision: records[key].revision + 1 };
     return new Response(JSON.stringify(records[key]), { status: 200 });
   });
   container = document.createElement("div"); document.body.append(container); root = createRoot(container);
@@ -48,10 +48,10 @@ afterEach(async () => {
 
 it.each(["chapters", "outline"])("%s: slow save, continued typing, immediate navigation, reopen, and empty text", async resource => {
   const url = `/api/${resource}/${id}`;
-  records[url] = { id, title: "Synthetic", content: "<p>Original</p>", projectId: 1, isCompleted: false };
+  records[url] = { id, revision: 0, title: "Synthetic", content: "<p>Original</p>", projectId: 1, isCompleted: false };
   const initial = { ...records[url] };
   const mount = (value = initial) => resource === "chapters"
-    ? React.createElement(RichTextEditor, { key: id, chapterId: id, projectId: 1, content: value.content })
+    ? React.createElement(RichTextEditor, { key: id, chapterId: id, revision: value.revision, projectId: 1, content: value.content })
     : React.createElement(OutlineRichEditor, { key: id, item: value, projectId: 1 });
   await act(async () => render(mount()));
   expect(global.fetch).not.toHaveBeenCalled(); // Initialization must not save placeholders.
@@ -83,8 +83,8 @@ it.each(["chapters", "outline"])("%s: slow save, continued typing, immediate nav
 it("plot sections retain independent drafts across rapid switches, slow saves and leaving the screen", async () => {
   const firstUrl = `/api/plot-structure-sections/${id}`;
   const secondUrl = `/api/plot-structure-sections/${id + 1000}`;
-  records[firstUrl] = { id, sectionKey: "first", title: "First section", content: "Original first", order: 1, plotStructureId: id };
-  records[secondUrl] = { id: id + 1000, sectionKey: "second", title: "Second section", content: "Original second", order: 2, plotStructureId: id };
+  records[firstUrl] = { id, revision: 0, sectionKey: "first", title: "First section", content: "Original first", order: 1, plotStructureId: id };
+  records[secondUrl] = { revision: 0, id: id + 1000, sectionKey: "second", title: "Second section", content: "Original second", order: 2, plotStructureId: id };
   queryClient.setQueryData([`/api/plot-structures/${id}`], { id, name: "Synthetic plot" });
   queryClient.setQueryData([`/api/plot-structures/${id}/sections`], [records[firstUrl], records[secondUrl]]);
   const mount = () => React.createElement(PlotStructureView, { key: id, structureId: id });
@@ -107,8 +107,8 @@ it("plot sections retain independent drafts across rapid switches, slow saves an
 
 it("chapter typography survives queued autosave, navigation, and reopening", async () => {
   const url = `/api/chapters/${id}`;
-  records[url] = { id, title: "Synthetic", content: "<p>Words with a style.</p>", projectId: 1 };
-  const mount = () => React.createElement(RichTextEditor, { key: id, chapterId: id, projectId: 1, content: records[url].content });
+  records[url] = { id, revision: 0, title: "Synthetic", content: "<p>Words with a style.</p>", projectId: 1 };
+  const mount = () => React.createElement(RichTextEditor, { key: id, chapterId: id, revision: records[url].revision, projectId: 1, content: records[url].content });
   await act(async () => render(mount()));
   expect(container.querySelector('[role="textbox"]')?.getAttribute('aria-labelledby')).toBeTruthy();
   await act(async () => { editor().commands.setTextSelection(3); applyWritingStyle(editor(), QUILL_STYLES[1].definition); });
@@ -127,7 +127,7 @@ it("chapter typography survives queued autosave, navigation, and reopening", asy
 
 it("toolbar controls and the saved-style form capture and restore formatting", async () => {
   const url = `/api/chapters/${id}`;
-  records[url] = { id, title: "Synthetic", content: "<p>Style this sentence.</p>", projectId: 1 };
+  records[url] = { id, revision: 0, title: "Synthetic", content: "<p>Style this sentence.</p>", projectId: 1 };
   const styles: any[] = [];
   (global.fetch as jest.Mock).mockImplementation(async (url, init) => {
     if (String(url) === '/api/writing-styles') {
@@ -141,7 +141,7 @@ it("toolbar controls and the saved-style form capture and restore formatting", a
     records[String(url)] = { ...records[String(url)], ...JSON.parse(init.body) };
     return new Response(JSON.stringify(records[String(url)]), { status: 200 });
   });
-  await act(async () => render(React.createElement(RichTextEditor, { chapterId: id, projectId: 1, content: records[url].content })));
+  await act(async () => render(React.createElement(RichTextEditor, { chapterId: id, revision: records[url].revision, projectId: 1, content: records[url].content })));
   const select = (label: string, value: string) => {
     const field = container.querySelector(`[aria-label="${label}"]`) as HTMLSelectElement;
     field.value = value; Simulate.change(field);

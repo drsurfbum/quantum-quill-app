@@ -1,7 +1,7 @@
 import { queryClient, apiRequest } from "../client/src/lib/queryClient";
 import { getSaveQueue, flushPendingSaves, withPendingEdits } from "../client/src/hooks/use-autosave";
-function asUser(id: number) { queryClient.clear(); queryClient.setQueryData(["/api/user"], { id }); queryClient.setQueryData([`/api/chapters/${id}`], { id, content: "Original" }); }
-function reply(id: number) { return new Response(JSON.stringify({ id, title: "Saved" }), { status: 200, headers: { "content-type": "application/json" } }); }
+function asUser(id: number) { queryClient.clear(); queryClient.setQueryData(["/api/user"], { id }); queryClient.setQueryData([`/api/chapters/${id}`], { id, revision: 0, projectId: id, content: "Original" }); }
+function reply(id: number) { return new Response(JSON.stringify({ id, revision: 1, title: "Saved" }), { status: 200, headers: { "content-type": "application/json" } }); }
 
 describe("Autosave session boundaries", () => {
   afterEach(() => { jest.restoreAllMocks(); queryClient.clear(); });
@@ -33,7 +33,7 @@ describe("Autosave session boundaries", () => {
     const saving = queue.flush();
     asUser(103);
     respond(reply(102));
-    expect(await saving).toBe(true);
+    expect(await saving).toBe(false);
     expect(queryClient.getQueryData(["/api/chapters/102"])).toBeUndefined();
   });
   it("expires client login on a 401 and retains the failed draft for reauthentication", async () => {
@@ -71,5 +71,17 @@ it("does not let a stale list fetch replace an acknowledged save", async () => {
   oldRead(new Response(JSON.stringify([{ id: 105, content: "Original" }]), { status: 200 }));
   await read;
   expect(queryClient.getQueryData([list])).toEqual([{ id: 105, content: "Latest writing" }]);
+  jest.restoreAllMocks(); queryClient.clear();
+});
+
+it("does not expire a new login when an old account's request returns 401", async () => {
+  let reply!: (response: Response) => void;
+  jest.spyOn(global, "fetch").mockImplementation(() => new Promise<Response>(resolve => { reply = resolve; }));
+  asUser(106);
+  const request = apiRequest("GET", "/api/projects");
+  asUser(107);
+  reply(new Response(JSON.stringify({ message: "Expired" }), { status: 401 }));
+  await expect(request).rejects.toThrow("Expired");
+  expect(queryClient.getQueryData(["/api/user"])).toEqual({ id: 107 });
   jest.restoreAllMocks(); queryClient.clear();
 });

@@ -4,5 +4,5 @@ export function NewOutlineRichEditor({ projectId }: { projectId: number }) {
   const { selectedItemId, getItemById } = useOutline();
   const item = getItemById(selectedItemId);
   if (!item) return <p>Select a section to begin editing.</p>;
-  return <OutlineRichEditor key={item.id} projectId={projectId} item={{ ...item, projectId, content: item.content || "", isCompleted: item.isCompleted || false, createdAt: null, updatedAt: null }} />;
+  return <OutlineRichEditor key={item.id} projectId={projectId} item={{ ...item, projectId, content: item.content || "", isCompleted: item.isCompleted || false, revision: 0, createdAt: null, updatedAt: null }} />;
 }

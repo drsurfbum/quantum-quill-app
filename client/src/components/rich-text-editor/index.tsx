@@ -1,3 +1,4 @@
+import { editorContent } from "@/lib/editor-content";
 import { useAutosave, withPendingEdits } from "@/hooks/use-autosave";
 import { useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
@@ -19,6 +20,8 @@ import { cn } from '@/lib/utils';
 interface RichTextEditorProps {
   content: string | null;
   chapterId: number | string;
+  revision: number;
+  title?: string;
   projectId: number;
   onChange?: (content: string) => void;
 }
@@ -26,6 +29,8 @@ interface RichTextEditorProps {
 export default function RichTextEditor({ 
   content = "",
   chapterId,
+  revision,
+  title = "Chapter",
   projectId,
   onChange 
 }: RichTextEditorProps) {
@@ -67,7 +72,7 @@ export default function RichTextEditor({
       TableCell,
       Image,
     ],
-    content: withPendingEdits(`/api/chapters/${chapterId}`, { content }).content || "",
+    content: editorContent(withPendingEdits(`/api/chapters/${chapterId}`, { content, projectId, revision, title }).content),
     onUpdate: ({ editor }) => {
       const html = editor.getHTML();
       calculateWordCount(editor.getText());
@@ -87,8 +92,8 @@ export default function RichTextEditor({
   const handleContentChange = (html: string) => { autosave.save({ content: html }); };
   useEffect(() => {
     if (!editor) return;
-    const initial = withPendingEdits(`/api/chapters/${chapterId}`, { content }).content || "";
-    editor.commands.setContent(initial, false, { preserveWhitespace: "full" });
+    const initial = withPendingEdits(`/api/chapters/${chapterId}`, { content, projectId, revision, title }).content || "";
+    editor.commands.setContent(editorContent(initial), false, { preserveWhitespace: "full" });
     calculateWordCount(editor.getText());
   }, [editor, chapterId]);
 

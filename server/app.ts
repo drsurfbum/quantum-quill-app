@@ -55,5 +55,6 @@ export const errorHandler: ErrorRequestHandler = (error, _req, res, next) => {
   const status = Number(error.status || error.statusCode) || 500;
   res.status(status >= 400 && status < 600 ? status : 500).json({
     message: status < 500 ? error.message : "Internal server error",
+    ...(status < 500 && error.code ? { code: error.code } : {}),
   });
 };

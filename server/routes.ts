@@ -15,21 +15,29 @@ import {
 import { z } from "zod";
 import { requireUser } from "./auth";
 
-function fail(status: number, message: string): never { throw Object.assign(new Error(message), { status }); }
+function fail(status: number, message: string, code?: string): never { throw Object.assign(new Error(message), { status, code }); }
 const idSchema = z.number().int().positive().max(2147483647);
 function routeId(value: string) { if (!/^\d+$/.test(value)) fail(400, "Invalid ID"); return idSchema.parse(Number(value)); }
 const title = z.string().trim().min(1).max(500);
 const handler = (fn: (req: Request, res: express.Response) => Promise<unknown>): RequestHandler =>
   (req, res, next) => { Promise.resolve(fn(req, res)).catch(next); };
 
-// Optional compare-and-set envelope; older clients retain the existing API.
+// Every writing update must name the version the writer actually loaded.
+// Field bases remain an additional check, never a substitute for a revision.
 function draftBody(body: unknown) {
-  const { _base, ...patch } = z.record(z.unknown()).parse(body);
-  if (_base === undefined) return { patch, base: undefined };
-  const base = z.record(z.unknown()).parse(_base);
-  const fields = Object.keys(patch).sort();
-  if (!fields.length || JSON.stringify(fields) !== JSON.stringify(Object.keys(base).sort())) fail(400, "Draft base must cover every changed field");
-  return { patch, base };
+  const { _base, _revision, ...patch } = z.record(z.unknown()).parse(body);
+  const revision = _revision === undefined ? undefined : z.number().int().min(0).max(2147483647).parse(_revision);
+  let base: Record<string, unknown> | undefined;
+  if (_base !== undefined) {
+    base = z.record(z.unknown()).parse(_base);
+    const fields = Object.keys(patch).sort();
+    if (!fields.length || JSON.stringify(fields) !== JSON.stringify(Object.keys(base).sort())) fail(400, "Draft base must cover every changed field");
+  }
+  return { patch, base, revision };
+}
+function checkedBase(base: Record<string, unknown> | undefined, revision: number | undefined) {
+  if (revision === undefined) fail(428, "Reload this record before saving. A server revision is required; your local draft is kept.", "REVISION_REQUIRED");
+  return { ...base, revision };
 }
 
 type Child = { id: number; projectId: number };
@@ -91,11 +99,11 @@ export function registerRoutes(app: Express, storage: IStorage, directory = path
     }));
     app.put(`/api/${config.route}/:id`, handler(async (req, res) => {
       const item = await owned(req);
-      const { patch, base } = draftBody(req.body);
+      const { patch, base, revision } = draftBody(req.body);
       const data = config.updateSchema.parse(patch);
       await config.validate?.(data, item.projectId, item.id);
-      const result = await config.update(item.id, data, base);
-      if (!result) fail(409, "This record changed elsewhere. Review your saved draft before replacing it.");
+      const result = await config.update(item.id, data, checkedBase(base, revision));
+      if (!result) fail(409, "This record changed elsewhere. Review both versions before restoring your draft.", "REVISION_CONFLICT");
       res.json(result);
     }));
     app.delete(`/api/${config.route}/:id`, handler(async (req, res) => {
@@ -217,9 +225,10 @@ export function registerRoutes(app: Express, storage: IStorage, directory = path
   }));
   app.put("/api/plot-structure-sections/:id", handler(async (req, res) => {
     const section = await sectionFor(req);
-    const { patch, base } = draftBody(req.body);
-    const result = await storage.updatePlotStructureSection(section.id, sectionUpdate.parse(patch), base);
-    if (!result) fail(409, "This section changed elsewhere. Review your saved draft before replacing it.");
+    const { patch, base, revision } = draftBody(req.body);
+    const data = sectionUpdate.parse(patch);
+    const result = await storage.updatePlotStructureSection(section.id, data, checkedBase(base, revision));
+    if (!result) fail(409, "This section changed elsewhere. Review both versions before restoring your draft.", "REVISION_CONFLICT");
     res.json(result);
   }));
   app.delete("/api/plot-structure-sections/:id", handler(async (req, res) => {

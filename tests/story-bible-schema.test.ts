@@ -30,23 +30,23 @@ it("validates IDs/types/projects, parent cycles and incoming deletion across bot
   const character = await create("characters"), groupA = await create("groups_races"), groupB = await create("groups_races"), event = await create("events");
   const foreign = (await other.post("/api/story-bible").send({ projectId: otherProject.id, entryType: "characters", title: "foreign" }).expect(201)).body;
   const url = (id: number) => `/api/story-bible/${id}`;
-  for (const id of [foreign.id, event.id, 0, 99999]) await agent.put(url(event.id)).send({ content: JSON.stringify({ charactersInvolved: [{ id, name: "Ignored cached name" }] }) }).expect(400);
-  await agent.put(url(event.id)).send({ content: JSON.stringify({ charactersInvolved: [{ id: character.id, name: "Old name", role: "Witness" }] }) }).expect(200);
+  for (const id of [foreign.id, event.id, 0, 99999]) await agent.put(url(event.id)).send({ _revision: 0, content: JSON.stringify({ charactersInvolved: [{ id, name: "Ignored cached name" }] }) }).expect(400);
+  await agent.put(url(event.id)).send({ _revision: 0, content: JSON.stringify({ charactersInvolved: [{ id: character.id, name: "Old name", role: "Witness" }] }) }).expect(200);
   await agent.delete(url(character.id)).expect(409);
-  await agent.put(url(character.id)).send({ entryType: "locations" }).expect(400);
-  await agent.put(url(event.id)).send({ content: JSON.stringify({ charactersInvolved: [] }) }).expect(200);
+  await agent.put(url(character.id)).send({ _revision: 0, entryType: "locations" }).expect(400);
+  await agent.put(url(event.id)).send({ _revision: 1, content: JSON.stringify({ charactersInvolved: [] }) }).expect(200);
   await agent.delete(url(character.id)).expect(204);
-  await agent.put(url(groupA.id)).send({ metadata: { parentGroup: String(groupB.id) } }).expect(200);
-  await agent.put(url(groupB.id)).send({ metadata: { parentGroup: String(groupA.id) } }).expect(400);
+  await agent.put(url(groupA.id)).send({ _revision: 0, metadata: { parentGroup: String(groupB.id) } }).expect(200);
+  await agent.put(url(groupB.id)).send({ _revision: 0, metadata: { parentGroup: String(groupA.id) } }).expect(400);
   await agent.delete(url(groupB.id)).expect(409);
-  await agent.put(url(groupA.id)).send({ metadata: { parentGroup: "" } }).expect(200);
+  await agent.put(url(groupA.id)).send({ _revision: 1, metadata: { parentGroup: "" } }).expect(200);
   await agent.delete(url(groupB.id)).expect(204);
 });
 it("serializes concurrent relationship writes so two parents cannot create a cycle", async () => {
   const { agent, project } = await twoWriters();
   const make = async (title: string) => (await agent.post("/api/story-bible").send({ projectId: project.id, entryType: "locations", title }).expect(201)).body;
   const a = await make("A"), b = await make("B");
-  const results = await Promise.all([[a,b],[b,a]].map(([source,target]) => agent.put(`/api/story-bible/${source.id}`).send({ metadata: { parentLocation: String(target.id) } })));
+  const results = await Promise.all([[a,b],[b,a]].map(([source,target]) => agent.put(`/api/story-bible/${source.id}`).send({ _revision: 0, metadata: { parentLocation: String(target.id) } })));
   expect(results.map(result => result.status).sort()).toEqual([200,400]);
 });
 it("does not guess free-text relationships into IDs, and indexes generic and structured links", () => {

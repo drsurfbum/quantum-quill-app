@@ -29,6 +29,11 @@ export async function comparePasswords(supplied: string, stored: string) {
 
 export const requireUser: RequestHandler = (req, res, next) => {
   if (!req.isAuthenticated() || !req.user) { res.status(401).json({ message: "Not authenticated" }); return; }
+  const expectedAccount = req.get("X-QQ-Account");
+  if (expectedAccount !== undefined && expectedAccount !== String(req.user.id)) {
+    res.status(409).json({ code: "ACCOUNT_CHANGED", message: "The signed-in account changed in another tab. Sign in again to continue." });
+    return;
+  }
   next();
 };
 
@@ -77,7 +82,7 @@ export function setupAuth(app: Express, storage: IStorage, options: AuthOptions)
       });
     })(req, res, next);
   });
-  app.post("/api/logout", (req, res, next) => {
+  app.post("/api/logout", requireUser, (req, res, next) => {
     req.logout((error) => {
       if (error) return next(error);
       req.session.destroy((error) => {

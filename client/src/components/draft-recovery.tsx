@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { discardDraft, inspectDraft, restoreDraft, useRecoverableDrafts } from "@/hooks/use-autosave";
 import type { DurableDraft } from "@/lib/draft-journal";
-import { queryClient } from "@/lib/queryClient";
+import { queryClient, currentAccount } from "@/lib/queryClient";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 function download(draft: DurableDraft) {
@@ -11,12 +11,15 @@ function download(draft: DurableDraft) {
 }
 export function DraftRecovery() {
   const drafts = useRecoverableDrafts();
+  const owner = useSyncExternalStore(listener => queryClient.getQueryCache().subscribe(listener), currentAccount, currentAccount);
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<DurableDraft>();
   const [review, setReview] = useState<Awaited<ReturnType<typeof inspectDraft>>>();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  useEffect(() => { setOpen(false); setSelected(undefined); setReview(undefined); setError(""); setMessage(""); }, [owner]);
+  useEffect(() => { const show = () => setOpen(true); window.addEventListener("qq:review-drafts", show); return () => window.removeEventListener("qq:review-drafts", show); }, []);
   async function inspect(draft: DurableDraft) {
     setSelected(draft); setReview(undefined); setError(""); setBusy(true);
     try { setReview(await inspectDraft(draft)); } catch (e) { setError((e as Error).message); } finally { setBusy(false); }
@@ -24,6 +27,7 @@ export function DraftRecovery() {
   async function finish(restore: boolean) {
     if (!selected) return;
     setBusy(true); setError("");
+    const originalOwner = owner;
     try {
       if (restore) { if (!review) return; await restoreDraft(selected, review); }
       else {
@@ -31,8 +35,9 @@ export function DraftRecovery() {
         await queryClient.invalidateQueries({ queryKey: [selected.url], exact: true });
         if (selected.listUrl) await queryClient.invalidateQueries({ queryKey: [selected.listUrl], exact: true });
       }
+      if (currentAccount() !== originalOwner) return;
       window.dispatchEvent(new Event("qq:draft-recovered"));
-      setMessage(restore ? "Draft restored. Reopen the editor to continue." : "Draft discarded. The server version is unchanged.");
+      setMessage(restore ? "Draft restored. Your editor is ready to continue." : "Draft discarded. The server version is unchanged.");
       setSelected(undefined); setReview(undefined);
     } catch (e) { setError((e as Error).message); } finally { setBusy(false); }
   }

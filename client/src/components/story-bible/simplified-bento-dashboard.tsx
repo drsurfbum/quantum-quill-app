@@ -54,7 +54,7 @@ export function SimplifiedBentoDashboard({ projectId, onCreateEntry, onEditEntry
     const newPriority = (entry.priority || 0) > 0 ? 0 : 1;
     
     updateEntryMutation.mutate({
-      id: entryId,
+      id: entryId, revision: entry.revision,
       priority: newPriority
     });
   };

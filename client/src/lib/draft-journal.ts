@@ -5,6 +5,7 @@ const recordSchema = z.object({
   version: z.literal(1), id: z.string(), owner: z.number().int().positive(),
   projectId: z.number().int().positive().optional(), url: z.string().regex(/^\/api\/(chapters|outline|story-bible|plot-structure-sections)\/\d+$/),
   listUrl: z.string().optional(), title: z.string(), updatedAt: z.string(),
+  baseRevision: z.number().int().nonnegative().optional(),
   base: z.record(z.unknown()), patch: z.record(z.unknown()),
 });
 export type DurableDraft = z.infer<typeof recordSchema>;
@@ -21,7 +22,7 @@ export class DraftJournal {
     try { this.storage().setItem(DRAFT_PREFIX + draft.id, JSON.stringify(recordSchema.parse(draft))); this.error = null; return true; }
     catch { this.error = "Draft recovery storage is unavailable or full. Keep this tab open until your changes save, or download your draft."; return false; }
   }
-  read(owner: number): DurableDraft[] {
+  read(owner: number, projectId?: number): DurableDraft[] {
     try {
       const storage = this.storage(); const drafts: DurableDraft[] = [];
       for (let i = 0; i < storage.length; i++) {
@@ -29,7 +30,7 @@ export class DraftJournal {
         if (!key?.startsWith(DRAFT_PREFIX)) continue;
         try {
           const draft = recordSchema.parse(JSON.parse(storage.getItem(key)!));
-          if (draft.owner === owner && key === DRAFT_PREFIX + draft.id) drafts.push(draft);
+          if (draft.owner === owner && (projectId === undefined || draft.projectId === projectId) && key === DRAFT_PREFIX + draft.id) drafts.push(draft);
         } catch { /* Preserve unreadable or future-format records for manual recovery. */ }
       }
       return drafts.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));

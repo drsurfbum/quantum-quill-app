@@ -50,7 +50,7 @@ beforeEach(() => {
   queryClient.clear();
   const id = ++sequence;
   queryClient.setQueryData(["/api/user"], { id });
-  entry = { id, projectId: 1, title: "Original title", content: "", metadata: {}, entryType: "details", category: null, subcategory: null, tags: [], relatedEntryIds: [], isArchived: false, priority: 0, createdAt: new Date(), updatedAt: new Date() } as StoryBibleEntry;
+  entry = { id, revision: 0, projectId: 1, title: "Original title", content: "", metadata: {}, entryType: "details", category: null, subcategory: null, tags: [], relatedEntryIds: [], isArchived: false, priority: 0, createdAt: new Date(), updatedAt: new Date() } as StoryBibleEntry;
   stored = { ...entry };
   queryClient.setQueryData([listUrl], [entry]);
   waitForWrite = undefined;
@@ -58,7 +58,7 @@ beforeEach(() => {
     if (init?.method !== "PUT") throw new Error("Unexpected request in isolated editor test");
     const patch = JSON.parse(init.body as string);
     await waitForWrite;
-    stored = { ...stored, ...patch };
+    stored = { ...stored, ...patch, revision: stored.revision + 1 };
     return new Response(JSON.stringify(stored), { status: 200 });
   });
   container = document.createElement("div"); document.body.append(container); root = createRoot(container);
@@ -144,7 +144,7 @@ it("keeps a failed draft through switching screens, then visibly recovers on ret
   (global.fetch as jest.Mock).mockRejectedValue(new Error("Synthetic network failure"));
   await act(async () => { change("#shortSummary", "Must not disappear"); await flushPendingSaves(); });
   expect(container.textContent).toContain("Save failed");
-  expect(container.textContent).toContain("Keep this tab open");
+  expect(container.textContent).toContain("draft is kept");
   // Keep failing through cleanup retries and Strict Mode remounts.
   await act(async () => root.render(React.createElement("div")));
   await act(async () => renderEditor(DetailsEditor));
