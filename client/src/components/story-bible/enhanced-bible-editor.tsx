@@ -79,8 +79,7 @@ export function EnhancedBibleEditor({ entry, projectId, onClose }: EnhancedBible
   };
 
   const handleEntryTypeChange = (value: string) => {
-    setEntryType(value);
-    debouncedSave({ entryType: value });
+    toast({ title: "Preview conversion first", description: "Use the conversion preview above. Your current entry and classification are unchanged." });
   };
 
   const handleCategoryChange = (value: string) => {
@@ -227,6 +226,7 @@ export function EnhancedBibleEditor({ entry, projectId, onClose }: EnhancedBible
             </CardHeader>
             <CardContent>
               <TaxonomySelector
+                typeReadOnly
                 entryType={entryType}
                 category={category}
                 subcategory={subcategory}

@@ -17,6 +17,7 @@ interface TaxonomySelectorProps {
   onSubcategoryChange: (value: string) => void;
   onTagsChange: (tags: string[]) => void;
   disabled?: boolean;
+  typeReadOnly?: boolean;
 }
 
 export function TaxonomySelector({
@@ -28,7 +29,8 @@ export function TaxonomySelector({
   onCategoryChange,
   onSubcategoryChange,
   onTagsChange,
-  disabled = false
+  disabled = false,
+  typeReadOnly = false
 }: TaxonomySelectorProps) {
   const [newTag, setNewTag] = useState("");
 
@@ -48,9 +50,7 @@ export function TaxonomySelector({
 
   const handleEntryTypeChange = (value: string) => {
     onEntryTypeChange(value);
-    // Reset category and subcategory when entry type changes
-    onCategoryChange("");
-    onSubcategoryChange("");
+    // Classification changes belong to an explicit conversion, not this selector.
   };
 
   return (
@@ -61,7 +61,7 @@ export function TaxonomySelector({
         <Select 
           value={entryType} 
           onValueChange={handleEntryTypeChange}
-          disabled={disabled}
+          disabled={disabled || typeReadOnly}
         >
           <SelectTrigger>
             <SelectValue placeholder="Select entry type..." />

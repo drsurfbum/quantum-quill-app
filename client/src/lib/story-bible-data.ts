@@ -1,9 +1,9 @@
 import type { StoryBibleEntry } from '@shared/schema';
 import { readBibleFields, structuredTypes } from "@shared/story-bible";
+import { legacyClassification } from "@shared/bible-contract";
 export const structuredBibleData = readBibleFields;
 export function bibleEntryArchived(entry: StoryBibleEntry) {
-  const data = structuredBibleData(entry);
-  return typeof data.isArchived === 'boolean' ? data.isArchived : !!entry.isArchived;
+  return legacyClassification(entry).archived;
 }
 function textValues(value: unknown): string {
   if (Array.isArray(value)) return value.map(textValues).join(' ');

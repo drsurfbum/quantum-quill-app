@@ -67,3 +67,10 @@ node --import tsx tests/audit-story-bible.ts
 The first creates a new, empty `qq_stabilization_<random ID>` database, verifies the actual PostgreSQL storage/CAS/project-lock implementation, and drops only that database in `finally`. The second reads `quantum_quill_verified_snapshot` in a READ ONLY transaction and rehearses normalization in memory. It prints structural counts/issues only. Both passed on October 11, 2026; the snapshot contained 47 entries with no indexed link or known-field issues. Neither runs a migration against a recovered database.
 
 See [the recovery/integrity report](docs/DRAFT_RECOVERY_AND_DATA_INTEGRITY.md) for behavior and remaining boundaries. For a manual recovery walkthrough, use the same synthetic browser origin: edit while writes fail/offline, reload, reconnect, choose Review saved drafts, and inspect both versions before restoring. A second concurrent write after review must reject the restore and retain the draft. Test browser quota/private-mode behavior separately from the mounted DOM suite.
+
+
+## Writing safety and versioned Story Bible contract
+
+The synthetic browser server exposes `/__fixture` controls for a write outage, reconnect, a concurrent server edit and a failed write. Use only its synthetic accounts on port 5057. New writes require the record revision; recovery always reviews the current server version.
+
+`tests/bible-contract.test.ts` checks all seven schemas, shared catalog identity, lossless compatibility, unknown fields, ambiguous types and non-mutating conversion previews. `scripts/rehearse-bible-contract.ts` restores an explicit recovery dump into a uniquely named disposable database, stages/compares/rolls back, then removes that database. It never takes a production database URL. See [the contract](docs/DATA_CONTRACT.md) and [the recovered-field report](docs/DATA_CONTRACT_REHEARSAL.md).

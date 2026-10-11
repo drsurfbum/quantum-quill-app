@@ -1,3 +1,4 @@
+import { fieldOptions } from "@shared/bible-catalog";
 import { readBibleFields, linkedTitle } from "@shared/story-bible";
 import { useEditorDraft } from "@/hooks/use-editor-draft";
 import { useAutosave, withPendingEdits } from "@/hooks/use-autosave";
@@ -94,25 +95,13 @@ interface EventsEditorProps {
 }
 
 // Constants
-const EVENT_TYPES = [
-  'Battle', 'Discovery', 'Treaty', 'Meeting', 'Birth', 'Death', 'Collapse', 'Formation',
-  'Arrival', 'Departure', 'Betrayal', 'Alliance', 'Conflict', 'Resolution',
-  'Revelation', 'Transformation', 'Ceremony', 'Disaster', 'Victory', 'Defeat',
-  'Negotiation', 'War', 'Peace', 'Rebellion', 'Other'
-];
+const EVENT_TYPES = fieldOptions("events", "eventType");
 
-const EVENT_STATUS_OPTIONS = [
-  'Canonical', 'Rumor', 'Historical', 'Speculative', 'Unverified', 'Planned', 'Draft'
-];
+const EVENT_STATUS_OPTIONS = fieldOptions("events", "status");
 
-const CHARACTER_ROLES = [
-  'Leader', 'Victim', 'Witness', 'Participant', 'Instigator', 'Bystander', 'Hero', 'Villain'
-];
+const CHARACTER_ROLES = fieldOptions("events", "participantRole");
 
-const OUTCOME_TYPES = [
-  'Victory', 'Defeat', 'Alliance Formed', 'Cataclysm', 'Treaty Signed', 'War Declared',
-  'Discovery Made', 'Secret Revealed', 'Betrayal', 'Sacrifice', 'Transformation', 'Other'
-];
+const OUTCOME_TYPES = fieldOptions("events", "outcomeType");
 
 const EventsEditor = memo(({ entry, projectId, onClose }: EventsEditorProps) => {
   entry = withPendingEdits(`/api/story-bible/${entry.id}`, entry);

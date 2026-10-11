@@ -1,3 +1,4 @@
+import { fieldChoices } from "@shared/bible-catalog";
 import { TagInput } from "./tag-input";
 import { useEditorDraft } from "@/hooks/use-editor-draft";
 import { useAutosave, withPendingEdits } from "@/hooks/use-autosave";
@@ -316,11 +317,7 @@ export function CharacterEditor({ entry, projectId, onClose }: CharacterEditorPr
                           <SelectValue placeholder="Select role..." />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="protagonist">Protagonist</SelectItem>
-                          <SelectItem value="antagonist">Antagonist</SelectItem>
-                          <SelectItem value="supporting">Supporting Character</SelectItem>
-                          <SelectItem value="minor">Minor Character</SelectItem>
-                          <SelectItem value="cameo">Cameo/Background</SelectItem>
+                          {fieldChoices("characters", "primaryRole").map(option => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}
                         </SelectContent>
                       </Select>
                     </div>

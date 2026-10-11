@@ -1,3 +1,4 @@
+import { fieldChoices } from "@shared/bible-catalog";
 import { TagInput } from "./tag-input";
 import { useEditorDraft } from "@/hooks/use-editor-draft";
 import { useAutosave, withPendingEdits } from "@/hooks/use-autosave";
@@ -312,11 +313,7 @@ export function GroupsRacesEditor({ entry, projectId, onClose }: GroupsRacesEdit
                           <SelectValue placeholder="Select category..." />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="species">Species/Race</SelectItem>
-                          <SelectItem value="faction">Faction/Organization</SelectItem>
-                          <SelectItem value="clan">Tribe/Clan</SelectItem>
-                          <SelectItem value="government">Government/Political Body</SelectItem>
-                          <SelectItem value="guild">Company/Guild</SelectItem>
+                          {fieldChoices("groups_races", "groupCategory").map(option => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}
                         </SelectContent>
                       </Select>
                     </div>
@@ -333,9 +330,7 @@ export function GroupsRacesEditor({ entry, projectId, onClose }: GroupsRacesEdit
                           <SelectValue placeholder="Select status..." />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="active">Active</SelectItem>
-                          <SelectItem value="defunct">Defunct</SelectItem>
-                          <SelectItem value="secret">Secret/Hidden</SelectItem>
+                          {fieldChoices("groups_races", "status").map(option => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}
                         </SelectContent>
                       </Select>
                     </div>

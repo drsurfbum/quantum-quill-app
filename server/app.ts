@@ -45,7 +45,7 @@ export function createApp(options: AppOptions) {
 export const errorHandler: ErrorRequestHandler = (error, _req, res, next) => {
   if (res.headersSent) return next(error);
   if (error instanceof z.ZodError) {
-    res.status(400).json({ message: "Invalid request data", errors: error.issues.map(({ path, message }) => ({ path, message })) });
+    res.status(400).json({ message: error.issues.map(issue => `${issue.path.join(".") || "request"}: ${issue.message}`).join("; "), code: "VALIDATION_ERROR", errors: error.issues.map(({ path, message }) => ({ path, message })) });
     return;
   }
   if (error instanceof MulterError) {

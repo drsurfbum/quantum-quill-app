@@ -1,3 +1,4 @@
+import { ConversionPreview } from "@/components/story-bible/conversion-preview";
 import { EntryLinks } from "@/components/story-bible/entry-links";
 import { useParams, useLocation, Link } from "wouter";
 import SidebarNavigation from "@/components/sidebar-navigation";
@@ -242,6 +243,7 @@ export default function StoryBible() {
                       Back to Dashboard
                     </Button>
                   </div>
+                  <ConversionPreview entry={editorState.entryData} />
                   <EditorRenderer 
                     entry={editorState.entryData}
                     projectId={projectId}

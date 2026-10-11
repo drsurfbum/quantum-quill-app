@@ -45,6 +45,7 @@ export async function updateBibleEntry(storage: IStorage, id: number, patch: Par
   const entry = await storage.getStoryBibleEntry(id); if (!entry) return;
   return storage.withProjectLock(entry.projectId, async scoped => {
     const current = await scoped.getStoryBibleEntry(id); if (!current) return;
+    if (patch.entryType && patch.entryType !== current.entryType) throw Object.assign(new Error("Changing entry type requires a conversion preview. Use Preview conversion; the original record will be retained."), { status: 400, code: "CONVERSION_REQUIRED" });
     if (!matchesBase(current, base)) return;
     const prepared = prepareBiblePatch(current, patch);
     await validateLinks(scoped, current, { ...current, ...prepared });

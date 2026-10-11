@@ -1,3 +1,4 @@
+import { fieldOptions } from "@shared/bible-catalog";
 import { readBibleFields, linkedTitle } from "@shared/story-bible";
 import { useEditorDraft } from "@/hooks/use-editor-draft";
 import { useAutosave, withPendingEdits } from "@/hooks/use-autosave";
@@ -65,18 +66,11 @@ interface DetailsEditorProps {
 }
 
 // Constants
-const DETAIL_TYPES = [
-  'Note', 'Quote', 'Idea', 'Reminder', 'Foreshadow', 'Plot Hook', 'Character Note', 
-  'World Note', 'Research', 'Continuity Check', 'Other'
-];
+const DETAIL_TYPES = fieldOptions("details", "type");
 
-const DETAIL_STATUS = [
-  'Open', 'In Progress', 'Resolved', 'Archived', 'On Hold'
-];
+const DETAIL_STATUS = fieldOptions("details", "status");
 
-const VISIBILITY_OPTIONS = [
-  'Internal Only', 'Visible to Collaborators', 'Public Notes'
-];
+const VISIBILITY_OPTIONS = fieldOptions("details", "visibility");
 
 const DetailsEditor = memo(({ entry, projectId, onClose }: DetailsEditorProps) => {
   entry = withPendingEdits(`/api/story-bible/${entry.id}`, entry);

@@ -138,9 +138,9 @@ export function DynamicFormFields({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="__none__">None</SelectItem>
-              {field.options?.map((option) => (
-                <SelectItem key={option} value={option}>
-                  {option}
+              {(field.choices || field.options?.map(value => ({ value, label: value })))?.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -185,9 +185,9 @@ export function DynamicFormFields({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="__add_option__" disabled>Add option...</SelectItem>
-                    {field.options?.filter(option => !(value || []).includes(option)).map((option) => (
-                      <SelectItem key={option} value={option}>
-                        {option}
+                    {(field.choices || field.options?.map(value => ({ value, label: value })))?.filter(option => !(value || []).includes(option.value)).map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
                       </SelectItem>
                     ))}
                   </SelectContent>

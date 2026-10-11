@@ -89,7 +89,8 @@ async function fresh() {
 function data(saved: any) { return jsonTypes.includes(activeType) ? JSON.parse(saved.content) : saved.metadata; }
 async function create(type: string, metadata: any = {}, content: any = {}, storedType = type) {
   activeType = type;
-  entry = (await context.agent.post("/api/story-bible").send({ title: 'Synthetic original', entryType: storedType, projectId, metadata: { legacyUnrendered: 'keep', ...metadata }, content: jsonTypes.includes(type) ? JSON.stringify({ legacyUnrendered: 'keep', ...content }) : '' }).expect(201)).body;
+  const payload = { title: 'Synthetic original', entryType: storedType, projectId, metadata: { legacyUnrendered: 'keep', ...metadata }, content: jsonTypes.includes(type) ? JSON.stringify({ legacyUnrendered: 'keep', ...content }) : '' };
+  entry = storedType === 'fallback' ? await context.storage.createStoryBibleEntry(payload) : (await context.agent.post("/api/story-bible").send(payload).expect(201)).body;
   queryClient.setQueryData([listUrl()], [entry, ...peers]);
   await mount();
 }
@@ -308,7 +309,7 @@ it.each(dynamicCases)('generic %s / %s: all declared dynamic fields round-trip a
         await select(section.querySelector('[role="combobox"]')!);
       } else {
         expected[key] = spec.type === 'multi-select' ? [spec.options![0]] : spec.options![0];
-        await select(section.querySelector('[role="combobox"]')!, spec.options![0]);
+        await select(section.querySelector('[role="combobox"]')!, spec.choices?.[0]?.label || spec.options![0]);
       }
     }
   }
@@ -320,7 +321,7 @@ it.each(dynamicCases)('generic %s / %s: all declared dynamic fields round-trip a
       expect(section.querySelector<HTMLInputElement>('input,textarea')!.value).toBe(expected[key]);
       await change(`[data-field="${key}"] ${spec.type === 'text' ? 'input' : 'textarea'}`, ''); expected[key] = '';
     } else if (spec.type === 'checkbox') { await click(section.querySelector('[role="checkbox"]')); expected[key] = false; }
-    else if (spec.type === 'single-select') { expect(section.textContent).toContain(expected[key]); await select(section.querySelector('[role="combobox"]')!, 'None'); expected[key] = ''; }
+    else if (spec.type === 'single-select') { expect(section.textContent).toContain(spec.choices?.find(option => option.value === expected[key])?.label || expected[key]); await select(section.querySelector('[role="combobox"]')!, 'None'); expected[key] = ''; }
     else {
       expect(section.textContent).toContain(spec.type === 'multi-select' ? expected[key][0] : peers.find(e => e.id === (Array.isArray(expected[key]) ? expected[key][0] : expected[key])).title);
       await click(section.querySelector('button:not([role="combobox"])'));
@@ -338,16 +339,15 @@ it.each(['characters','groups_races','locations','fallback'])('%s header archive
     const saved = await fresh(); expect(saved.priority).toBe(enabled ? 1 : 0); expect(saved.isArchived).toBe(enabled);
   }
 });
-it('generic classification, suggested categories and entry type changes persist', async () => {
+it('generic classification persists while type changes require a conversion preview', async () => {
   await create('fallback', {}, {}, 'world_elements');
   await change(ph('Enter custom category (e.g., Main Characters, Villains, etc.)'), 'Custom');
   await change(ph('Custom subcategory...'), 'Subtype');
   let saved = await fresh(); expect(saved).toMatchObject({ category: 'Custom', subcategory: 'Subtype' });
   const suggestion = [...container.querySelectorAll('button')].find(n => n.textContent === 'Flora');
   await click(suggestion!); saved = await fresh(); expect(saved.category).toBe('Flora');
-  // Type change intentionally clears only classification, never existing metadata/content.
-  await select(combo('Entry Type'), 'CharactersPeople, beings, and entities in your story');
-  saved = await fresh(); expect(saved).toMatchObject({ entryType: 'characters', category: null, subcategory: null }); expect(saved.metadata.legacyUnrendered).toBe('keep');
+  expect(combo('Entry Type').getAttribute('data-disabled')).not.toBeNull();
+  saved = await fresh(); expect(saved).toMatchObject({ entryType: 'world_elements', category: 'Flora', subcategory: 'Subtype' }); expect(saved.metadata.legacyUnrendered).toBe('keep');
 });
 it('event location picker saves real links, supports removal and fictional-only dates', async () => {
   await create('events');

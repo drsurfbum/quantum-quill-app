@@ -1,3 +1,4 @@
+import { fieldOptions } from "@shared/bible-catalog";
 import { readBibleFields, linkedTitle } from "@shared/story-bible";
 import { useEditorDraft } from "@/hooks/use-editor-draft";
 import { useAutosave, withPendingEdits } from "@/hooks/use-autosave";
@@ -80,20 +81,11 @@ interface ResearchEditorProps {
 }
 
 // Constants
-const SOURCE_TYPES = [
-  'Article', 'Book', 'Video', 'Map', 'Website', 'Interview', 'Documentary', 
-  'Academic Paper', 'Blog Post', 'Podcast', 'News Report', 'Database', 'Other'
-];
+const SOURCE_TYPES = fieldOptions("research", "sourceType");
 
-const RESEARCH_STATUS = [
-  'To Review', 'In Progress', 'Reviewed', 'Applied', 'Archived', 'Outdated'
-];
+const RESEARCH_STATUS = fieldOptions("research", "status");
 
-const TOPIC_CATEGORIES = [
-  'Engineering', 'Cultural Customs', 'Biology', 'History', 'Geography', 
-  'Technology', 'Politics', 'Economics', 'Science', 'Sociology', 'Language',
-  'Religion', 'Military', 'Architecture', 'Art', 'Other'
-];
+const TOPIC_CATEGORIES = fieldOptions("research", "topics");
 
 const ResearchEditor = memo(({ entry, projectId, onClose }: ResearchEditorProps) => {
   entry = withPendingEdits(`/api/story-bible/${entry.id}`, entry);

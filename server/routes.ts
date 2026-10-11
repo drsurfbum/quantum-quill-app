@@ -1,3 +1,5 @@
+import { BIBLE_TYPES } from "@shared/bible-catalog";
+import { previewBibleDocument } from "@shared/bible-contract";
 import { saveWritingStyleSchema } from "@shared/writing-styles";
 import { createBibleEntry, updateBibleEntry, deleteBibleEntry } from "./story-bible";
 import express, { type Express, type Request, type RequestHandler } from "express";
@@ -180,11 +182,26 @@ export function registerRoutes(app: Express, storage: IStorage, directory = path
   const bible = insertStoryBibleEntrySchema.extend({ projectId: idSchema, title,
     metadata: z.record(z.unknown()).nullable().optional(), relatedEntryIds: z.array(idSchema).nullable().optional(),
   }).strict();
-  resource<StoryBibleEntry, z.infer<typeof bible>>({ route: "story-bible", listRoute: "story-bible", schema: bible,
+  resource<StoryBibleEntry, z.infer<typeof bible>>({ route: "story-bible", listRoute: "story-bible", schema: bible.extend({ entryType: z.enum(BIBLE_TYPES) }),
     updateSchema: bible.omit({ projectId: true }).partial().strict(),
     get: storage.getStoryBibleEntry.bind(storage), list: storage.getProjectStoryBible.bind(storage),
     create: data => createBibleEntry(storage, data), update: (id, data, base) => updateBibleEntry(storage, id, data, base), remove: id => deleteBibleEntry(storage, id),
   });
+  app.get("/api/story-bible/:id/contract", handler(async (req, res) => {
+    const entry = await storage.getStoryBibleEntry(routeId(req.params.id));
+    if (!entry) fail(404, "Entry not found");
+    await projectFor(req, entry.projectId);
+    res.json(previewBibleDocument(entry));
+  }));
+  app.post("/api/story-bible/:id/conversion-preview", handler(async (req, res) => {
+    const { targetType, _revision } = z.object({ targetType: z.enum(BIBLE_TYPES), _revision: z.number().int().nonnegative() }).strict().parse(req.body);
+    const entry = await storage.getStoryBibleEntry(routeId(req.params.id));
+    if (!entry) fail(404, "Entry not found");
+    await projectFor(req, entry.projectId);
+    if (entry.revision !== _revision) fail(409, "This entry changed. Reload it before previewing a conversion.", "REVISION_CONFLICT");
+    res.json({ ...previewBibleDocument(entry, targetType), sourceRevision: entry.revision, canApply: false,
+      notice: "Preview only. The original entry is unchanged. Applying conversions is gated on migration review." });
+  }));
   app.get("/api/plot-templates", handler(async (_req, res) => res.json(await storage.getAllPlotStructureTemplates())));
   app.get("/api/plot-templates/:id", handler(async (req, res) => {
     const template = await storage.getPlotStructureTemplate(routeId(req.params.id));

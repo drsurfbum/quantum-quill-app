@@ -1,3 +1,4 @@
+import { fieldOptions } from "@shared/bible-catalog";
 import { readBibleFields, linkedTitle } from "@shared/story-bible";
 import { useEditorDraft } from "@/hooks/use-editor-draft";
 import { useAutosave, withPendingEdits } from "@/hooks/use-autosave";
@@ -134,15 +135,9 @@ interface WorldElementsEditorProps {
 }
 
 // Constants
-const WORLD_ELEMENT_CATEGORIES = [
-  'Flora', 'Fauna', 'Technology', 'Religion/Ritual', 'Mythology', 'Magic System', 
-  'Language', 'Currency', 'Art/Culture', 'Transportation', 'Weapon/Tool', 
-  'Material/Resource', 'Food/Drink', 'Medicine', 'Architecture', 'Other'
-];
+const WORLD_ELEMENT_CATEGORIES = fieldOptions("world_elements", "category");
 
-const WORLD_ELEMENT_STATUS = [
-  'Common', 'Uncommon', 'Rare', 'Very Rare', 'Extinct', 'Legendary', 'Mythical', 'Unknown'
-];
+const WORLD_ELEMENT_STATUS = fieldOptions("world_elements", "status");
 
 const WorldElementsEditor = memo(({ entry, projectId, onClose }: WorldElementsEditorProps) => {
   entry = withPendingEdits(`/api/story-bible/${entry.id}`, entry);

@@ -5,7 +5,7 @@ const kinds = [
   { route: "chapters", list: "chapters", data: { title: "Chapter", content: "Draft", order: 0 } },
   { route: "whiteboards", list: "whiteboards", data: { name: "Board", canvasData: {} } },
   { route: "outline", list: "outline", data: { title: "Outline", parentId: null, order: 0 } },
-  { route: "story-bible", list: "story-bible", data: { title: "Character", entryType: "character", metadata: {} } },
+  { route: "story-bible", list: "story-bible", data: { title: "Character", entryType: "characters", metadata: {} } },
 ];
 describe("Project ownership and writable fields", () => {
   it.each(kinds)("protects $route reads, lists, creates, updates and deletes", async ({ route, list, data }) => {
@@ -72,8 +72,8 @@ describe("Project ownership and writable fields", () => {
     await other.post("/api/outline").send({ projectId: otherProject.id, title: "Cross link", parentId: parent.id, order: 0 }).expect(400);
     await agent.delete(`/api/outline/${parent.id}`).expect(409);
     await agent.delete(`/api/projects/${project.id}`).expect(409);
-    const entry = (await agent.post("/api/story-bible").send({ projectId: project.id, title: "Owned", entryType: "character" }).expect(201)).body;
-    await other.post("/api/story-bible").send({ projectId: otherProject.id, title: "Cross link", entryType: "character", relatedEntryIds: [entry.id] }).expect(400);
+    const entry = (await agent.post("/api/story-bible").send({ projectId: project.id, title: "Owned", entryType: "characters" }).expect(201)).body;
+    await other.post("/api/story-bible").send({ projectId: otherProject.id, title: "Cross link", entryType: "characters", relatedEntryIds: [entry.id] }).expect(400);
   });
   it("returns controlled errors and continues serving requests", async () => {
     const { agent, storage } = await twoWriters();

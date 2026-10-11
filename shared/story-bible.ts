@@ -1,3 +1,4 @@
+import { legacyClassification } from "./bible-contract";
 import { z } from "zod";
 import type { StoryBibleEntry } from "./schema";
 import { canonical } from "./draft";
@@ -15,46 +16,42 @@ export function parseContent(content: string | null | undefined): Record<string,
 export function readBibleFields(entry: Pick<StoryBibleEntry, "entryType" | "content" | "metadata" | "tags" | "isArchived">) {
   if (!structuredTypes.has(entry.entryType)) return objectData(entry.metadata);
   const parsed = parseContent(entry.content);
-  return { ...objectData(entry.metadata), tags: entry.tags || [], isArchived: !!entry.isArchived,
-    ...(parsed || (entry.content ? { [narrativeFields[entry.entryType]]: entry.content } : {})) };
+  const classification = legacyClassification(entry);
+  return { ...objectData(entry.metadata), ...(parsed || (entry.content ? { [narrativeFields[entry.entryType]]: entry.content } : {})), tags: classification.tags, isArchived: classification.archived };
 }
-const text = z.string(); const texts = z.array(text); const id = z.number().int().positive();
-const ref = z.object({ id, name: text.optional(), type: text.optional(), role: text.optional(), context: text.optional(), relationship: text.optional(), impact: text.optional(), notes: text.optional() }).passthrough();
-const refs = z.array(ref);
-const strings = (names: string) => Object.fromEntries(names.split(" ").map(name => [name, text.optional()]));
-const common = { _schemaVersion: z.literal(1).optional(), tags: texts.optional(), isArchived: z.boolean().optional(), imageUrl: text.optional(), imageDescription: text.optional() };
-export const bibleFieldSchemas: Record<string, z.ZodObject<any>> = {
-  characters: z.object({ ...common, ...strings("age gender species origin primaryRole eyeColor hairColor build clothingStyle distinguishingFeatures personalityTraits beliefs motivations conflicts"), abilities: texts.optional() }).passthrough(),
-  groups_races: z.object({ ...common, ...strings("groupCategory status tagline eraEstablished eraDissolved leadershipStructure homeworld physiology purpose ideology resources culturalNotes notes"), subGroups: texts.optional(), alliances: texts.optional(), rivalries: texts.optional(), parentGroup: z.union([id, text]).nullable().optional() }).passthrough(),
-  locations: z.object({ ...common, ...strings("locationType status tagline coordinates size gravity atmosphere capacity layout purpose eraEstablished statusChanges notes"), environment: z.union([text, texts]).optional(), keyFeatures: texts.optional(), worldElements: texts.optional(), nearbyLocations: z.array(id).optional(), parentLocation: z.union([id, text]).nullable().optional() }).passthrough(),
-  events: z.object({ ...common, ...strings("era eventType status shortSummary narrativeContext writerNotes hiddenDetails alternativeVersions researchReminders outcomeType"), date: z.object({ ...strings("year month day fictionalDate"), isApproximate: z.boolean().optional() }).passthrough().optional(), locations: refs.optional(), charactersInvolved: refs.optional(), groupsRacesInvolved: refs.optional(), linkedEvents: refs.optional(), worldElements: refs.optional(), outcomeTags: texts.optional(), includeOnTimeline: z.boolean().optional() }).passthrough(),
-  world_elements: z.object({ ...common, ...strings("category status shortNotes discoveryOrigin loreHooks idioms rumors nicheFacts"), categoryDetails: z.record(z.unknown()).optional(), majorEvents: refs.optional(), users: refs.optional(), affectedLocations: refs.optional(), linkedCharacters: refs.optional(), linkedLocations: refs.optional(), linkedEvents: refs.optional(), researchReferences: refs.optional(), parentElement: ref.nullable().optional(), childElements: refs.optional() }).passthrough(),
-  details: z.object({ ...common, ...strings("type status shortSummary content explanation visibility outcomeNotes"), linkedElements: refs.optional() }).passthrough(),
-  research: z.object({ ...common, ...strings("sourceType status urlOrReference shortSummary detailedNotes nextSteps incorporationPlans teamNotes"), topics: texts.optional(), linkedElements: refs.optional() }).passthrough(),
-};
+export { bibleFieldSchemas } from "./bible-field-schemas";
+import { bibleFieldSchemas, bibleMetadataSchemas } from "./bible-field-schemas";
 /** Validate changed known fields, retaining unknown and malformed historical fields
  * that were not edited. The version identifies the compatible envelope, not a migration.
  */
-function validateChanged(type: string, previous: Record<string, any>, next: Record<string, any>) {
-  const schema = bibleFieldSchemas[type]; if (!schema) return;
+function validateChanged(type: string, previous: Record<string, any>, next: Record<string, any>, metadata = false) {
+  const schema = (metadata ? bibleMetadataSchemas : bibleFieldSchemas)[type]; if (!schema) return;
   for (const [key, value] of Object.entries(next)) {
     if (canonical(previous[key]) === canonical(value)) continue;
-    const validator = schema.shape[key] as z.ZodTypeAny | undefined;
-    if (validator) validator.parse(value);
+    const validator = Object.hasOwn(schema.shape, key) ? schema.shape[key] as z.ZodTypeAny : undefined;
+    if (validator) {
+      const checked = validator.safeParse(value);
+      if (!checked.success) throw new z.ZodError(checked.error.issues.map(issue => ({ ...issue, path: [type, key, ...issue.path] })));
+    }
   }
 }
 export function prepareBiblePatch(previous: Partial<StoryBibleEntry>, patch: Partial<StoryBibleEntry>) {
   const result = { ...patch }; const type = patch.entryType || previous.entryType || "";
+  if (patch.metadata === null) throw new z.ZodError([{ code: "custom", path: [type, "metadata"], message: "Use an object patch; null would discard retained legacy fields." }]);
   if (patch.metadata !== undefined && patch.metadata !== null) {
     const old = objectData(previous.metadata);
     if (old._schemaVersion !== undefined) z.literal(1).parse(old._schemaVersion);
     const next = { ...old, ...objectData(patch.metadata) };
     // Generic legacy editors also store taxonomy fields in metadata for JSON types.
-    if (!structuredTypes.has(type)) validateChanged(type, old, next);
+    validateChanged(type, old, next, true);
     next._schemaVersion = BIBLE_SCHEMA_VERSION; result.metadata = next;
   }
   if (structuredTypes.has(type)) {
     const old = parseContent(previous.content); const next = parseContent(patch.content);
+    if (old && patch.content !== undefined && !next) throw new z.ZodError([{ code: "custom", path: [type, "content"], message: "Edit narrative fields inside the structured object; replacing it with prose would remove other fields." }]);
+    for (const field of ["tags", "isArchived"] as const) {
+      if (next && field in next && patch[field] !== undefined && canonical(next[field]) !== canonical(patch[field] ?? (field === "tags" ? [] : false))) throw new z.ZodError([{ code: "custom", path: [type, field], message: "The structured and top-level values disagree. Send one consistent value." }]);
+    }
     if (old?._schemaVersion !== undefined && (next || patch.tags !== undefined || patch.isArchived !== undefined)) z.literal(1).parse(old._schemaVersion);
     if (next || ((patch.tags !== undefined || patch.isArchived !== undefined) && old)) {
       const merged = { ...(old || {}), ...(next || {}) };

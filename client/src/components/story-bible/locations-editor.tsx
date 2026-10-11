@@ -1,3 +1,4 @@
+import { fieldChoices } from "@shared/bible-catalog";
 import { TagInput } from "./tag-input";
 import { useEditorDraft } from "@/hooks/use-editor-draft";
 import { useAutosave, withPendingEdits } from "@/hooks/use-autosave";
@@ -318,14 +319,7 @@ export function LocationsEditor({ entry, projectId, onClose }: LocationsEditorPr
                           <SelectValue placeholder="Select type..." />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="planet">Planet</SelectItem>
-                          <SelectItem value="moon">Moon</SelectItem>
-                          <SelectItem value="asteroid">Asteroid</SelectItem>
-                          <SelectItem value="city">City</SelectItem>
-                          <SelectItem value="station">Station</SelectItem>
-                          <SelectItem value="structure">Structure/Building</SelectItem>
-                          <SelectItem value="region">Region/Territory</SelectItem>
-                          <SelectItem value="dimension">Dimension/Realm</SelectItem>
+                          {fieldChoices("locations", "locationType").map(option => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}
                         </SelectContent>
                       </Select>
                     </div>
@@ -342,11 +336,7 @@ export function LocationsEditor({ entry, projectId, onClose }: LocationsEditorPr
                           <SelectValue placeholder="Select status..." />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="inhabited">Inhabited</SelectItem>
-                          <SelectItem value="abandoned">Abandoned</SelectItem>
-                          <SelectItem value="destroyed">Destroyed</SelectItem>
-                          <SelectItem value="hidden">Hidden/Secret</SelectItem>
-                          <SelectItem value="construction">Under Construction</SelectItem>
+                          {fieldChoices("locations", "status").map(option => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}
                         </SelectContent>
                       </Select>
                     </div>
@@ -460,18 +450,7 @@ export function LocationsEditor({ entry, projectId, onClose }: LocationsEditorPr
                           <SelectValue placeholder="Select environment..." />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="desert">Desert</SelectItem>
-                          <SelectItem value="forest">Forest</SelectItem>
-                          <SelectItem value="ice">Ice/Arctic</SelectItem>
-                          <SelectItem value="ocean">Ocean/Aquatic</SelectItem>
-                          <SelectItem value="volcanic">Volcanic</SelectItem>
-                          <SelectItem value="urban">Urban</SelectItem>
-                          <SelectItem value="industrial">Industrial</SelectItem>
-                          <SelectItem value="space">Space/Void</SelectItem>
-                          <SelectItem value="underground">Underground</SelectItem>
-                          <SelectItem value="mountain">Mountain/Highland</SelectItem>
-                          <SelectItem value="tropical">Tropical</SelectItem>
-                          <SelectItem value="artificial">Artificial</SelectItem>
+                          {fieldChoices("locations", "environment").map(option => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}
                         </SelectContent>
                       </Select>
                     </div>
