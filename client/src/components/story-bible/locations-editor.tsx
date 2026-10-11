@@ -1,4 +1,8 @@
-import { useState, useEffect } from "react";
+import { TagInput } from "./tag-input";
+import { useEditorDraft } from "@/hooks/use-editor-draft";
+import { useAutosave, withPendingEdits } from "@/hooks/use-autosave";
+import { SaveStatus } from "@/components/save-status";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,11 +13,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Save, Trash2, Archive, ArchiveRestore, Star, StarOff, ChevronDown, ChevronRight, Plus, X, MapPin, ImageIcon } from "lucide-react";
-import { useUpdateStoryBibleEntry, useDeleteStoryBibleEntry, useStoryBibleEntries, useCreateStoryBibleEntry } from "@/hooks/use-story-bible";
+import { useDeleteStoryBibleEntry, useStoryBibleEntries, useCreateStoryBibleEntry } from "@/hooks/use-story-bible";
 import { useToast } from "@/hooks/use-toast";
 import { FileUpload } from "@/components/ui/file-upload";
 import { StoryBibleEntry } from "@shared/schema";
-import { debounce } from "lodash";
 
 interface LocationsEditorProps {
   entry: StoryBibleEntry;
@@ -22,17 +25,19 @@ interface LocationsEditorProps {
 }
 
 export function LocationsEditor({ entry, projectId, onClose }: LocationsEditorProps) {
+  entry = withPendingEdits(`/api/story-bible/${entry.id}`, entry);
+  const autosave = useAutosave(`/api/story-bible/${entry.id}`, `/api/projects/${projectId}/story-bible`);
+
   // Core fields
   const [title, setTitle] = useState(entry.title);
   const [content, setContent] = useState(entry.content || "");
   const [category, setCategory] = useState(entry.category || "");
   const [tags, setTags] = useState<string[]>(entry.tags || []);
   const [relatedEntryIds, setRelatedEntryIds] = useState<number[]>(entry.relatedEntryIds || []);
-  const [metadata, setMetadata] = useState(entry.metadata || {});
+  const [metadata, setMetadata] = useEditorDraft<Record<string, any>>(entry.metadata || {});
   const [isArchived, setIsArchived] = useState(entry.isArchived || false);
   const [priority, setPriority] = useState(entry.priority || 0);
-  const [saveStatus, setSaveStatus] = useState<'saved' | 'saving'>('saved');
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const saveStatus = autosave.status;
 
   // Location-specific fields from metadata
   const [locationType, setLocationType] = useState((metadata as any)?.locationType || "");
@@ -83,7 +88,6 @@ export function LocationsEditor({ entry, projectId, onClose }: LocationsEditorPr
   const [relationalExpanded, setRelationalExpanded] = useState(false);
   const [notesExpanded, setNotesExpanded] = useState(false);
 
-  const updateMutation = useUpdateStoryBibleEntry({ skipInvalidation: true });
   const deleteMutation = useDeleteStoryBibleEntry();
   const createMutation = useCreateStoryBibleEntry();
   const { data: allEntries } = useStoryBibleEntries(projectId);
@@ -96,70 +100,36 @@ export function LocationsEditor({ entry, projectId, onClose }: LocationsEditorPr
   const groupEntries = availableForLinking.filter(e => e.entryType === "groups_races");
 
   // Debounced save function
-  const debouncedSave = debounce(
-    (updates: any) => {
-      updateMutation.mutate(
-        { id: entry.id, ...updates },
-        {
-          onSuccess: () => {
-            setSaveStatus('saved');
-          },
-          onError: () => {
-            toast({
-              title: "Failed to save",
-              description: "There was an error saving your changes. Please try again.",
-              variant: "destructive",
-            });
-            setSaveStatus('saved');
-          }
-        }
-      );
-    }, 1000);
+  const debouncedSave = autosave.save;
 
   // Update metadata helper
   const updateMetadata = (newFields: Record<string, any>) => {
-    const updatedMetadata = { ...metadata, ...newFields };
-    setMetadata(updatedMetadata);
-    if (!isInitialLoad) {
-      setSaveStatus('saving');
-      debouncedSave({ metadata: updatedMetadata });
-    }
+    const updatedMetadata = setMetadata(previous => ({ ...previous, ...newFields }));
+    debouncedSave({ metadata: updatedMetadata });
   };
 
   // Field change handlers
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newTitle = e.target.value;
     setTitle(newTitle);
-    if (!isInitialLoad) {
-      setSaveStatus('saving');
-      debouncedSave({ title: newTitle });
-    }
+    debouncedSave({ title: newTitle });
   };
 
   const handleCategoryChange = (value: string) => {
     setCategory(value);
-    if (!isInitialLoad) {
-      setSaveStatus('saving');
-      debouncedSave({ category: value || null });
-    }
+    debouncedSave({ category: value || null });
   };
 
   const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newContent = e.target.value;
     setContent(newContent);
-    if (!isInitialLoad) {
-      setSaveStatus('saving');
-      debouncedSave({ content: newContent });
-    }
+    debouncedSave({ content: newContent });
   };
 
   const togglePriority = () => {
     const newPriority = priority > 0 ? 0 : 1;
     setPriority(newPriority);
-    if (!isInitialLoad) {
-      setSaveStatus('saving');
-      debouncedSave({ priority: newPriority });
-    }
+    debouncedSave({ priority: newPriority });
   };
 
   // Array management helpers
@@ -197,20 +167,14 @@ export function LocationsEditor({ entry, projectId, onClose }: LocationsEditorPr
     if (!relatedEntryIds.includes(entryId)) {
       const updatedIds = [...relatedEntryIds, entryId];
       setRelatedEntryIds(updatedIds);
-      if (!isInitialLoad) {
-        setSaveStatus('saving');
-        debouncedSave({ relatedEntryIds: updatedIds });
-      }
+      debouncedSave({ relatedEntryIds: updatedIds });
     }
   };
 
   const handleRemoveRelatedEntry = (entryId: number) => {
     const updatedIds = relatedEntryIds.filter(id => id !== entryId);
     setRelatedEntryIds(updatedIds);
-    if (!isInitialLoad) {
-      setSaveStatus('saving');
-      debouncedSave({ relatedEntryIds: updatedIds });
-    }
+    debouncedSave({ relatedEntryIds: updatedIds });
   };
 
   const handleAddNearbyLocation = (locationId: number) => {
@@ -228,6 +192,7 @@ export function LocationsEditor({ entry, projectId, onClose }: LocationsEditorPr
   };
 
   const handleDelete = async () => {
+    if (!await autosave.flush()) return;
     try {
       await deleteMutation.mutateAsync(entry.id);
       toast({
@@ -238,18 +203,13 @@ export function LocationsEditor({ entry, projectId, onClose }: LocationsEditorPr
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to delete location",
+        description: error instanceof Error ? error.message : "Failed to delete entry",
         variant: "destructive",
       });
     }
   };
 
   // Mark as loaded after first render
-  useEffect(() => {
-    if (isInitialLoad) {
-      setIsInitialLoad(false);
-    }
-  }, [isInitialLoad]);
 
   const isPlanetaryBody = ["planet", "moon", "asteroid"].includes(locationType);
   const isStructure = ["city", "station", "structure", "building"].includes(locationType);
@@ -264,17 +224,17 @@ export function LocationsEditor({ entry, projectId, onClose }: LocationsEditorPr
               <MapPin className="h-6 w-6 text-muted-foreground" />
             </div>
             <div>
-              <Input
-                value={title}
-                onChange={handleTitleChange}
-                className="text-2xl font-bold border-none p-0 h-auto bg-transparent text-foreground"
-                placeholder="Location name..."
-              />
-              {saveStatus === 'saving' && (
-                <Badge variant="outline" className="text-xs mt-1">
-                  Saving...
-                </Badge>
-              )}
+              <div className="min-w-0 flex-1 space-y-2">
+                <Label htmlFor={`locations-title-${entry.id}`}>Location name</Label>
+                <Input
+                  id={`locations-title-${entry.id}`}
+                  value={title}
+                  onChange={handleTitleChange}
+                  className="text-2xl font-bold h-12"
+                  placeholder="Location name..."
+                />
+              </div>
+              <SaveStatus status={saveStatus} retry={autosave.flush} />
             </div>
           </div>
           
@@ -298,7 +258,7 @@ export function LocationsEditor({ entry, projectId, onClose }: LocationsEditorPr
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setIsArchived(!isArchived)}
+              onClick={() => { setIsArchived(!isArchived); autosave.save({ isArchived: !isArchived }); }}
             >
               {isArchived ? <ArchiveRestore className="h-4 w-4" /> : <Archive className="h-4 w-4" />}
             </Button>
@@ -395,7 +355,7 @@ export function LocationsEditor({ entry, projectId, onClose }: LocationsEditorPr
                   <div className="space-y-2">
                     <Label htmlFor="parentLocation">Parent Location</Label>
                     <Select 
-                      value={parentLocation} 
+                      value={parentLocation || "none"}
                       onValueChange={async (value) => {
                         if (value === "__create_new__") {
                           const locationName = prompt("Enter name for new location:");
@@ -407,7 +367,7 @@ export function LocationsEditor({ entry, projectId, onClose }: LocationsEditorPr
                                 title: locationName.trim(),
                                 content: "",
                               });
-                              const newValue = (newLocation as any).id.toString();
+                              const newValue = newLocation.data.id.toString();
                               setParentLocation(newValue);
                               updateMetadata({ parentLocation: newValue });
                               toast({
@@ -743,7 +703,7 @@ export function LocationsEditor({ entry, projectId, onClose }: LocationsEditorPr
                   <div className="space-y-2">
                     <Label>Controlling Groups/Races</Label>
                     <div className="space-y-2">
-                      {groupEntries.slice(0, 5).map((group) => (
+                      {groupEntries.map((group) => (
                         <div key={group.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
                           <div>
                             <span className="font-medium">{group.title}</span>
@@ -765,7 +725,7 @@ export function LocationsEditor({ entry, projectId, onClose }: LocationsEditorPr
                   <div className="space-y-2">
                     <Label>Notable Characters</Label>
                     <div className="space-y-2">
-                      {characterEntries.slice(0, 5).map((character) => (
+                      {characterEntries.map((character) => (
                         <div key={character.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
                           <div>
                             <span className="font-medium">{character.title}</span>
@@ -890,6 +850,10 @@ export function LocationsEditor({ entry, projectId, onClose }: LocationsEditorPr
               <CollapsibleContent>
                 <CardContent>
                   <Textarea
+                    id="notes"
+                    aria-label="Development notes"
+                    value={metadata.notes || ""}
+                    onChange={(e) => updateMetadata({ notes: e.target.value })}
                     placeholder="Future expansion ideas, plot hooks, lore puzzles, development notes..."
                     className="min-h-[150px] resize-none"
                   />
@@ -951,17 +915,7 @@ export function LocationsEditor({ entry, projectId, onClose }: LocationsEditorPr
               <CardTitle className="text-lg">Tags & Significance</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex flex-wrap gap-2">
-                {tags.map((tag, index) => (
-                  <Badge key={index} variant="secondary" className="text-xs">
-                    {tag}
-                  </Badge>
-                ))}
-                {category && <Badge variant="outline" className="text-xs">{category}</Badge>}
-                {tags.length === 0 && !category && (
-                  <p className="text-sm text-muted-foreground">No tags added</p>
-                )}
-              </div>
+              <TagInput tags={tags} onChange={(next) => { setTags(next); autosave.save({ tags: next }); }} />
             </CardContent>
           </Card>
 

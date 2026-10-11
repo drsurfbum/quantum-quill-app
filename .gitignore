@@ -75,3 +75,6 @@ attached_assets/
 *.bundle
 .local/
 recovery/
+
+# Keep the schema migration in version control; database dumps remain ignored.
+!migrations/0001_writing_styles.sql

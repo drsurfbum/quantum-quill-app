@@ -1,3 +1,6 @@
+import { useEditorDraft } from "@/hooks/use-editor-draft";
+import { useAutosave, withPendingEdits } from "@/hooks/use-autosave";
+import { SaveStatus } from "@/components/save-status";
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,12 +13,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Save, Trash2, Archive, ArchiveRestore, Link, Plus, Star, StarOff } from "lucide-react";
-import { useUpdateStoryBibleEntry, useDeleteStoryBibleEntry, useStoryBibleEntries } from "@/hooks/use-story-bible";
+import { useDeleteStoryBibleEntry, useStoryBibleEntries } from "@/hooks/use-story-bible";
 import { useToast } from "@/hooks/use-toast";
 import { StoryBibleEntry } from "@shared/schema";
 import { TaxonomySelector } from "./taxonomy-selector";
 import { DynamicFormFields } from "./dynamic-form-fields";
-import { debounce } from "lodash";
 
 interface EnhancedBibleEditorProps {
   entry: StoryBibleEntry;
@@ -24,6 +26,9 @@ interface EnhancedBibleEditorProps {
 }
 
 export function EnhancedBibleEditor({ entry, projectId, onClose }: EnhancedBibleEditorProps) {
+  entry = withPendingEdits(`/api/story-bible/${entry.id}`, entry);
+  const autosave = useAutosave(`/api/story-bible/${entry.id}`, `/api/projects/${projectId}/story-bible`);
+
   const [title, setTitle] = useState(entry.title);
   const [content, setContent] = useState(entry.content || "");
   const [entryType, setEntryType] = useState(entry.entryType);
@@ -31,13 +36,11 @@ export function EnhancedBibleEditor({ entry, projectId, onClose }: EnhancedBible
   const [subcategory, setSubcategory] = useState(entry.subcategory || "");
   const [tags, setTags] = useState<string[]>(entry.tags || []);
   const [relatedEntryIds, setRelatedEntryIds] = useState<number[]>(entry.relatedEntryIds || []);
-  const [metadata, setMetadata] = useState(entry.metadata || {});
+  const [metadata, setMetadata] = useEditorDraft<Record<string, any>>(entry.metadata || {});
   const [isArchived, setIsArchived] = useState(entry.isArchived || false);
   const [priority, setPriority] = useState(entry.priority || 0);
-  const [saveStatus, setSaveStatus] = useState<'saved' | 'saving'>('saved');
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const saveStatus = autosave.status;
 
-  const updateMutation = useUpdateStoryBibleEntry();
   const deleteMutation = useDeleteStoryBibleEntry();
   const { data: allEntries } = useStoryBibleEntries(projectId);
   const { toast } = useToast();
@@ -57,99 +60,53 @@ export function EnhancedBibleEditor({ entry, projectId, onClose }: EnhancedBible
     setMetadata(entry.metadata || {});
     setIsArchived(entry.isArchived || false);
     setPriority(entry.priority || 0);
-    setIsInitialLoad(true);
-  }, [entry]);
+  }, [entry.id]);
 
   // Set up debounced save
-  const debouncedSave = debounce((updatedFields: any) => {
-    updateMutation.mutate(
-      { 
-        id: entry.id, 
-        ...updatedFields
-      },
-      {
-        onSuccess: () => {
-          setSaveStatus('saved');
-        },
-        onError: () => {
-          toast({
-            title: "Failed to save",
-            description: "There was an error saving your changes. Please try again.",
-            variant: "destructive",
-          });
-          setSaveStatus('saved');
-        }
-      }
-    );
-  }, 1000);
+  const debouncedSave = autosave.save;
 
   // Individual change handlers with debounced save
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newTitle = e.target.value;
     setTitle(newTitle);
-    if (!isInitialLoad) {
-      setSaveStatus('saving');
-      debouncedSave({ title: newTitle });
-    }
+    debouncedSave({ title: newTitle });
   };
 
   const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newContent = e.target.value;
     setContent(newContent);
-    if (!isInitialLoad) {
-      setSaveStatus('saving');
-      debouncedSave({ content: newContent });
-    }
+    debouncedSave({ content: newContent });
   };
 
   const handleEntryTypeChange = (value: string) => {
     setEntryType(value);
-    if (!isInitialLoad) {
-      setSaveStatus('saving');
-      debouncedSave({ entryType: value });
-    }
+    debouncedSave({ entryType: value });
   };
 
   const handleCategoryChange = (value: string) => {
     setCategory(value);
-    if (!isInitialLoad) {
-      setSaveStatus('saving');
-      debouncedSave({ category: value || null });
-    }
+    debouncedSave({ category: value || null });
   };
 
   const handleSubcategoryChange = (value: string) => {
     setSubcategory(value);
-    if (!isInitialLoad) {
-      setSaveStatus('saving');
-      debouncedSave({ subcategory: value || null });
-    }
+    debouncedSave({ subcategory: value || null });
   };
 
   const handleTagsChange = (newTags: string[]) => {
     setTags(newTags);
-    if (!isInitialLoad) {
-      setSaveStatus('saving');
-      debouncedSave({ tags: newTags.length > 0 ? newTags : null });
-    }
+    debouncedSave({ tags: newTags.length > 0 ? newTags : null });
   };
 
   const handleMetadataChange = (newMetadata: Record<string, any>) => {
-    setMetadata(newMetadata);
-    if (!isInitialLoad) {
-      setSaveStatus('saving');
-      debouncedSave({ metadata: newMetadata });
-    }
+    const updatedMetadata = setMetadata(previous => ({ ...previous, ...newMetadata }));
+    debouncedSave({ metadata: updatedMetadata });
   };
 
   // Mark as loaded after first render to prevent initial saves
-  useEffect(() => {
-    if (isInitialLoad) {
-      setIsInitialLoad(false);
-    }
-  }, [isInitialLoad]);
 
   const handleDelete = async () => {
+    if (!await autosave.flush()) return;
     try {
       await deleteMutation.mutateAsync(entry.id);
       toast({
@@ -160,7 +117,7 @@ export function EnhancedBibleEditor({ entry, projectId, onClose }: EnhancedBible
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to delete entry",
+        description: error instanceof Error ? error.message : "Failed to delete entry",
         variant: "destructive",
       });
     }
@@ -168,21 +125,22 @@ export function EnhancedBibleEditor({ entry, projectId, onClose }: EnhancedBible
 
   const handleAddRelatedEntry = (entryId: number) => {
     if (!relatedEntryIds.includes(entryId)) {
-      setRelatedEntryIds([...relatedEntryIds, entryId]);
+      const next = [...relatedEntryIds, entryId];
+      setRelatedEntryIds(next);
+      autosave.save({ relatedEntryIds: next });
     }
   };
 
   const handleRemoveRelatedEntry = (entryId: number) => {
-    setRelatedEntryIds(relatedEntryIds.filter(id => id !== entryId));
+    const next = relatedEntryIds.filter(id => id !== entryId);
+    setRelatedEntryIds(next);
+    autosave.save({ relatedEntryIds: next });
   };
 
   const togglePriority = () => {
     const newPriority = priority > 0 ? 0 : 1;
     setPriority(newPriority);
-    if (!isInitialLoad) {
-      setSaveStatus('saving');
-      debouncedSave({ priority: newPriority });
-    }
+    debouncedSave({ priority: newPriority });
   };
 
   return (
@@ -190,17 +148,17 @@ export function EnhancedBibleEditor({ entry, projectId, onClose }: EnhancedBible
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Input
-            value={title}
-            onChange={handleTitleChange}
-            className="text-lg font-semibold border-none p-0 h-auto bg-transparent"
-            placeholder="Entry title..."
-          />
-          {saveStatus === 'saving' && (
-            <Badge variant="outline" className="text-xs">
-              Saving...
-            </Badge>
-          )}
+          <div className="min-w-0 flex-1 space-y-2">
+            <Label htmlFor={`enhanced-bible-title-${entry.id}`}>Entry title</Label>
+            <Input
+              id={`enhanced-bible-title-${entry.id}`}
+              value={title}
+              onChange={handleTitleChange}
+              className="text-lg font-semibold h-12"
+              placeholder="Entry title..."
+            />
+          </div>
+          <SaveStatus status={saveStatus} retry={autosave.flush} />
         </div>
         <div className="flex items-center gap-2">
           <Button
@@ -214,7 +172,7 @@ export function EnhancedBibleEditor({ entry, projectId, onClose }: EnhancedBible
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => setIsArchived(!isArchived)}
+            onClick={() => { setIsArchived(!isArchived); autosave.save({ isArchived: !isArchived }); }}
           >
             {isArchived ? <ArchiveRestore className="h-4 w-4" /> : <Archive className="h-4 w-4" />}
           </Button>
@@ -285,6 +243,7 @@ export function EnhancedBibleEditor({ entry, projectId, onClose }: EnhancedBible
           <DynamicFormFields
             entryType={entryType}
             metadata={metadata}
+            currentEntryId={entry.id}
             onMetadataChange={handleMetadataChange}
             projectId={projectId}
             disabled={false}
@@ -360,7 +319,7 @@ export function EnhancedBibleEditor({ entry, projectId, onClose }: EnhancedBible
                 <Checkbox 
                   id="archived" 
                   checked={isArchived} 
-                  onCheckedChange={(checked) => setIsArchived(checked === true)}
+                  onCheckedChange={(checked) => { setIsArchived(checked === true); autosave.save({ isArchived: checked === true }); }}
                 />
                 <Label htmlFor="archived">Archived</Label>
               </div>
@@ -368,7 +327,7 @@ export function EnhancedBibleEditor({ entry, projectId, onClose }: EnhancedBible
                 <Checkbox 
                   id="priority" 
                   checked={priority > 0} 
-                  onCheckedChange={(checked) => setPriority(checked === true ? 1 : 0)}
+                  onCheckedChange={(checked) => { const next = checked === true ? 1 : 0; setPriority(next); autosave.save({ priority: next }); }}
                 />
                 <Label htmlFor="priority">High Priority</Label>
               </div>

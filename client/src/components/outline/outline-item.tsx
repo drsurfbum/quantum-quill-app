@@ -1,3 +1,4 @@
+import { getSaveQueue } from "@/hooks/use-autosave";
 import { OutlineItem as OutlineItemType } from "@shared/schema";
 import { ChevronRight, ChevronDown, PlusCircle, MoreVertical, Trash2, Edit } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -104,44 +105,14 @@ export default function OutlineItem({
   
   const hasChildren = childItems.length > 0;
   
-  const handleDelete = () => {
-    // If this was the selected item, deselect it before deleting to prevent UI issues
-    if (selectedItemId === item.id) {
-      onSelectItem(null);
-    }
-    
-    // Pre-update the local cache to make the UI respond instantly
-    const outlineItems = queryClient.getQueryData<OutlineItemType[]>([`/api/projects/${projectId}/outline`]);
-    if (outlineItems) {
-      // Remove this item and all its children from the local cache
-      const deletedItemIds = new Set<number | string>();
-      
-      const findItemsToDelete = (parentId: number | string) => {
-        outlineItems.forEach(i => {
-          if ((i.id === parentId || i.parentId === parentId) && !deletedItemIds.has(i.id)) {
-            deletedItemIds.add(i.id);
-            findItemsToDelete(i.id);
-          }
-        });
-      };
-      
-      findItemsToDelete(item.id);
-      
-      // Update the cache immediately
-      const filteredItems = outlineItems.filter(i => !deletedItemIds.has(i.id));
-      queryClient.setQueryData([`/api/projects/${projectId}/outline`], filteredItems);
-    }
-    
-    // Then perform the actual deletion in the background
-    deleteItem(
-      { id: item.id, projectId },
-      {
-        // No callbacks needed - our mutation is designed to always succeed
-        // and the cache is already updated above for immediate UI response
-      }
-    );
+  const handleDelete = async () => {
+    if (!await getSaveQueue(`/api/outline/${item.id}`, `/api/projects/${projectId}/outline`).flush()) return;
+    deleteItem({ id: item.id, projectId }, {
+      onSuccess: () => { if (selectedItemId === item.id) onSelectItem(null); },
+      onError: (error) => toast({ title: "Unable to delete outline item", description: error.message, variant: "destructive" }),
+    });
   };
-  
+
   const handleRename = () => {
     updateItem(
       { id: item.id, title: newTitle },

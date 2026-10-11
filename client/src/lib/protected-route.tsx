@@ -10,29 +10,15 @@ interface ProtectedRouteProps {
 export function ProtectedRoute({ path, component: Component }: ProtectedRouteProps) {
   const { user, isLoading } = useAuth();
 
+  // Keep the page's component identity stable when auth context rerenders.
+  // An inline Route component function remounts the page on notifications.
   return (
-    <Route
-      path={path}
-      component={() => {
-        // TEMPORARY: Bypass auth for development
-        if (import.meta.env.DEV) {
-          return <Component />;
-        }
-
-        if (isLoading) {
-          return (
-            <div className="flex items-center justify-center min-h-screen">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-          );
-        }
-
-        if (!user) {
-          return <Redirect to="/auth" />;
-        }
-
-        return <Component />;
-      }}
-    />
+    <Route path={path}>
+      {isLoading ? (
+        <div className="flex items-center justify-center min-h-screen">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      ) : !user ? <Redirect to="/auth" /> : <Component />}
+    </Route>
   );
 }

@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -23,7 +23,11 @@ export function FileUpload({
   placeholder = "Add image"
 }: FileUploadProps) {
   const [isUploading, setIsUploading] = useState(false);
-  const [description, setDescription] = useState(imageDescription || '');
+  const description = imageDescription || '';
+  const latest = useRef({ onImageChange, description });
+  latest.current = { onImageChange, description };
+  const upload = useRef<AbortController | null>(null);
+  useEffect(() => () => { upload.current?.abort(); }, []);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -51,6 +55,9 @@ export function FileUpload({
       return;
     }
 
+    upload.current?.abort();
+    const controller = new AbortController();
+    upload.current = controller;
     setIsUploading(true);
 
     try {
@@ -61,32 +68,31 @@ export function FileUpload({
         method: 'POST',
         body: formData,
         credentials: 'include',
+        signal: controller.signal,
       });
 
       const data = await response.json();
-      console.log('Upload response:', data);
+
 
       if (!response.ok || !data.success) {
         throw new Error(data.error || data.details || 'Upload failed');
       }
-      // Defer the image change callback to prevent immediate re-renders
-      setTimeout(() => {
-        onImageChange(data.url, description);
-      }, 50);
+      if (controller.signal.aborted) return;
+      latest.current.onImageChange(data.url, latest.current.description);
       
       toast({
         title: "Success",
         description: "Image uploaded successfully",
       });
     } catch (error) {
-      console.error('Upload error:', error);
+      if (controller.signal.aborted) return;
       toast({
         title: "Upload failed",
         description: "Failed to upload image. Please try again.",
         variant: "destructive",
       });
     } finally {
-      setIsUploading(false);
+      if (!controller.signal.aborted) setIsUploading(false);
       // Reset file input
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
@@ -98,14 +104,14 @@ export function FileUpload({
     if (e.key === 'Enter') {
       const url = e.currentTarget.value;
       if (url.trim()) {
-        onImageChange(url, description);
+        e.preventDefault();
+        onImageChange(url.trim(), description);
         e.currentTarget.value = '';
       }
     }
   };
 
   const handleDescriptionChange = (newDescription: string) => {
-    setDescription(newDescription);
     if (imageUrl) {
       onImageChange(imageUrl, newDescription);
     }
@@ -141,6 +147,7 @@ export function FileUpload({
               <input
                 ref={fileInputRef}
                 type="file"
+                aria-label="Upload image file"
                 accept="image/*"
                 onChange={handleFileSelect}
                 className="hidden"

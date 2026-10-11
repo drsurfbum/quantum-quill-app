@@ -11,7 +11,7 @@ import { OutlineProvider, useOutline } from '@/contexts/outline-context';
 import { NewOutlineItem } from '@/components/outline/new-outline-item';
 import { NewOutlineRichEditor } from '@/components/outline/new-outline-rich-editor';
 import { apiRequest } from '@/lib/queryClient';
-import SidebarNavigation from '@/components/navigation/sidebar-navigation';
+import SidebarNavigation from '@/components/sidebar-navigation';
 import ExportModal from '@/components/export-modal';
 
 import {

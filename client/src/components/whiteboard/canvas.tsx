@@ -260,11 +260,13 @@ const Canvas = forwardRef((props, ref) => {
     },
     
     // Add image to canvas
-    addImage: (url: string) => {
+    addImage: async (url: string) => {
       const canvas = fabricCanvasRef.current;
       if (!canvas) return;
       
-      fabricjs.Image.fromURL(url, (img: any) => {
+      const img = await fabricjs.FabricImage.fromURL(url);
+      if (fabricCanvasRef.current !== canvas) return;
+      {
         // Scale down large images
         if (img.width && img.width > 500) {
           const scale = 500 / img.width;
@@ -274,7 +276,7 @@ const Canvas = forwardRef((props, ref) => {
         canvas.add(img);
         canvas.setActiveObject(img);
         canvas.renderAll();
-      });
+      }
     }
   }));
 

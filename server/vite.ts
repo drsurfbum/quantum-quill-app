@@ -26,7 +26,7 @@ export async function setupVite(app: Express, server: Server) {
   const serverOptions = {
     middlewareMode: true,
     hmr: { server },
-    allowedHosts: true,
+    // Use Vite's default localhost allowlist for local development.
   };
 
   const vite = await createViteServer({

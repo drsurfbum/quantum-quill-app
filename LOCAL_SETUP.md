@@ -20,18 +20,23 @@ The original Replit project and the older public GitHub repositories remain unch
 
 Node 24 and PostgreSQL 16 are installed through Homebrew. The launcher selects these versions without changing the Mac's default Node version. It starts PostgreSQL on a private socket in `/tmp/quantum-quill-501`, using port number 55432 for the socket filename. PostgreSQL does not listen on TCP. The app uses port 5055 to avoid macOS services that can use port 5000.
 
-The existing users, passwords, projects and writing data were restored. Development mode retains the original app's automatic user-1 behavior. No Replit database credentials are needed locally. The local session secret is newly generated.
+The existing users, passwords, projects and writing data were restored. Local development now requires the same username/password login as production; the automatic user-1 and fabricated-token bypasses have been removed. No Replit database credentials are needed locally. The local session secret is newly generated. It must contain at least 32 characters; there is no fallback secret.
 
 ## Checks
 
 ```sh
 export PATH="/opt/homebrew/opt/node@24/bin:$PATH"
 npm ci
-npm run build
+npm test
 npm run check
+npm run build
 ```
 
-The build succeeds. The type check has 26 pre-existing errors recorded in the audit. The inherited Jest suite fails before executing tests because its module mapping is misspelled. Do not point tests or `db:push` at the Replit database or at the recovered working data. Use the separate `quantum_quill_audit_test` database for disposable tests.
+The production build, full TypeScript check and 27 isolated regression tests pass after the local stabilization round. See [the stabilization report](docs/STABILIZATION_REPORT.md) for scope and remaining issues, and [the testing guide](README-Testing.md) for a disposable browser fixture.
+
+Tests inject synthetic in-memory storage and block real database imports. Do not point tests or `db:push` at Replit or the recovered writing databases. The existing `quantum_quill_audit_test` and `quantum_quill_verified_snapshot` databases are not used by the new test suite.
+
+After reviewing local source changes, restart the regular app with the launcher to load the repaired server. Existing sessions may require signing in again. The browser fixture runs separately on port 5057 and is not your recovered writing database.
 
 ## Database recovery
 
@@ -48,3 +53,7 @@ The database service can be stopped after stopping the app:
 ## Render later
 
 No Render services were created or changed. This remains one React/Express application with PostgreSQL. Before deploying to the existing Render account, resolve the audit's authentication and data-safety findings and choose durable storage for uploaded images. Configure the deployment host as `0.0.0.0`; the default in this recovered local setup is `127.0.0.1`.
+
+### Saved writing styles
+
+The expanded Write editor adds an account-level style library. For an existing database, run `npm run db:migrate:writing-styles` with the intended `DATABASE_URL` before starting the updated server. The additive migration has already been applied to this Mac's `quantum_quill` database. See [Write formatting](docs/WRITE_FORMATTING.md) for controls, persistence, and remaining publishing limitations.

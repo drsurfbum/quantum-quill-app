@@ -1,289 +1,64 @@
-import request from 'supertest';
-import { Express } from 'express';
-import { createApp } from '../server/index';
-import { storage } from '../server/storage';
+import request from "supertest";
+import { createApp } from "../server/app";
+import { hashPassword, comparePasswords } from "../server/auth";
+import { fixture, credentials, secret } from "./helpers";
 
-describe('Authentication System', () => {
-  let app: Express;
-  let testUserId: number;
-  const testUser = {
-    username: `testuser_${Date.now()}`,
-    email: `test_${Date.now()}@example.com`,
-    password: 'testpassword123'
-  };
-
-  beforeAll(async () => {
-    app = await createApp();
+describe("Session authentication", () => {
+  it("registers, persists login, stores a hash and never returns the password", async () => {
+    const { app, agent, storage } = fixture();
+    const result = await agent.post("/api/register").send(credentials).expect(201);
+    expect(Object.keys(result.body).sort()).toEqual(["email", "id", "username"]);
+    const user = await storage.getUser(result.body.id);
+    expect(user!.password).not.toBe(credentials.password);
+    expect(await comparePasswords(credentials.password, user!.password)).toBe(true);
+    const cookies = result.headers["set-cookie"] as unknown as string[];
+    expect(cookies).toHaveLength(1);
+    expect(cookies[0]).toMatch(/quill_sid=s%3A/);
+    expect(cookies[0]).toMatch(/HttpOnly/);
+    expect(cookies[0]).toMatch(/SameSite=Lax/);
+    await agent.get("/api/user").expect(200);
+    await agent.get("/api/projects").expect(200);
+    await request(app).get("/api/user").expect(401);
   });
-
-  afterAll(async () => {
-    // Note: No deleteUser method available in storage interface
-    // Test users will remain in database for manual cleanup if needed
+  it("destroys the session on logout, including replay of the old cookie", async () => {
+    const { app, agent } = fixture();
+    const result = await agent.post("/api/register").send(credentials).expect(201);
+    const oldCookie = result.headers["set-cookie"];
+    await agent.post("/api/logout").expect(200);
+    await agent.get("/api/user").expect(401);
+    await request(app).get("/api/projects").set("Cookie", oldCookie).expect(401);
+    await agent.post("/api/login").send({ username: credentials.username, password: credentials.password }).expect(200);
+    await agent.get("/api/user").expect(200);
   });
-
-  describe('User Registration', () => {
-    it('should register a new user successfully', async () => {
-      const response = await request(app)
-        .post('/api/register')
-        .send(testUser)
-        .expect(201);
-
-      expect(response.body).toHaveProperty('id');
-      expect(response.body).toHaveProperty('username', testUser.username);
-      expect(response.body).toHaveProperty('email', testUser.email);
-      expect(response.body).not.toHaveProperty('password');
-
-      testUserId = response.body.id;
-    });
-
-    it('should reject duplicate username registration', async () => {
-      const duplicateUser = {
-        username: testUser.username,
-        email: 'different@example.com',
-        password: 'differentpassword'
-      };
-
-      const response = await request(app)
-        .post('/api/register')
-        .send(duplicateUser)
-        .expect(400);
-
-      expect(response.body).toHaveProperty('message', 'Username already exists');
-    });
-
-    it('should reject registration with invalid data', async () => {
-      const invalidUser = {
-        username: '',
-        email: 'invalid-email',
-        password: '123' // too short
-      };
-
-      await request(app)
-        .post('/api/register')
-        .send(invalidUser)
-        .expect(400);
-    });
+  it("rejects incorrect passwords, malformed input and duplicate usernames", async () => {
+    const { agent } = fixture();
+    await agent.post("/api/register").send(credentials).expect(201);
+    await agent.post("/api/register").send(credentials).expect(409);
+    await agent.post("/api/login").send({ username: credentials.username, password: "wrong" }).expect(401);
+    await agent.post("/api/login").send({ username: [], password: {} }).expect(400);
+    await agent.post("/api/register").send({ ...credentials, username: "new", password: "short" }).expect(400);
+    await agent.post("/api/register").send({ ...credentials, username: "new", id: 900 }).expect(400);
   });
-
-  describe('User Login', () => {
-    it('should login with valid credentials', async () => {
-      const response = await request(app)
-        .post('/api/login')
-        .send({
-          username: testUser.username,
-          password: testUser.password
-        })
-        .expect(200);
-
-      expect(response.body).toHaveProperty('id', testUserId);
-      expect(response.body).toHaveProperty('username', testUser.username);
-      expect(response.body).toHaveProperty('email', testUser.email);
-      expect(response.headers['set-cookie']).toBeDefined();
-    });
-
-    it('should reject login with invalid credentials', async () => {
-      const response = await request(app)
-        .post('/api/login')
-        .send({
-          username: testUser.username,
-          password: 'wrongpassword'
-        })
-        .expect(401);
-
-      expect(response.body).toHaveProperty('message');
-    });
-
-    it('should reject login with non-existent user', async () => {
-      const response = await request(app)
-        .post('/api/login')
-        .send({
-          username: 'nonexistentuser',
-          password: 'anypassword'
-        })
-        .expect(401);
-
-      expect(response.body).toHaveProperty('message');
-    });
+  it("requires a private session secret and uses secure cookies in production", async () => {
+    const { storage } = fixture();
+    expect(() => createApp({ storage })).toThrow("SESSION_SECRET");
+    expect(() => createApp({ storage, secret: "short" })).toThrow("SESSION_SECRET");
+    const app = createApp({ storage, secret, production: true });
+    const result = await request(app).post("/api/register").set("X-Forwarded-Proto", "https").send(credentials).expect(201);
+    expect(result.headers["set-cookie"][0]).toMatch(/; Secure/);
   });
-
-  describe('Session-based Authentication', () => {
-    let sessionCookie: string;
-
-    beforeAll(async () => {
-      // Login to get session cookie
-      const loginResponse = await request(app)
-        .post('/api/login')
-        .send({
-          username: testUser.username,
-          password: testUser.password
-        });
-
-      const setCookieHeader = loginResponse.headers['set-cookie'];
-      const cookies = Array.isArray(setCookieHeader) ? setCookieHeader : setCookieHeader ? [setCookieHeader] : [];
-      sessionCookie = cookies.find((cookie: string) => cookie.startsWith('quill_sid=')) || '';
-    });
-
-    it('should access protected endpoint with valid session', async () => {
-      const response = await request(app)
-        .get('/api/user')
-        .set('Cookie', sessionCookie)
-        .expect(200);
-
-      expect(response.body).toHaveProperty('id', testUserId);
-      expect(response.body).toHaveProperty('username', testUser.username);
-    });
-
-    it('should reject protected endpoint without session', async () => {
-      await request(app)
-        .get('/api/user')
-        .expect(401);
-    });
-
-    it('should check session status correctly', async () => {
-      const response = await request(app)
-        .get('/api/session-check')
-        .set('Cookie', sessionCookie)
-        .expect(200);
-
-      expect(response.body).toHaveProperty('sessionActive', true);
-      expect(response.body).toHaveProperty('isAuthenticated', true);
-      expect(response.body).toHaveProperty('hasUser', true);
-    });
+  it("rejects cross-site writes and does not allocate anonymous sessions", async () => {
+    const { app } = fixture();
+    const anonymous = await request(app).get("/api/projects").expect(401);
+    expect(anonymous.headers["set-cookie"]).toBeUndefined();
+    await request(app).post("/api/register").set("Origin", "https://attacker.example").send(credentials).expect(403);
+    await request(app).post("/api/login").set("Sec-Fetch-Site", "cross-site").send(credentials).expect(403);
   });
-
-  describe('Token-based Authentication', () => {
-    const validToken = `user-${testUserId}-${Date.now()}`;
-    const invalidToken = 'invalid-token-format';
-
-    it('should validate token format correctly', async () => {
-      const response = await request(app)
-        .get('/api/token-check')
-        .set('Authorization', `Bearer ${validToken}`)
-        .expect(200);
-
-      expect(response.body).toHaveProperty('present', true);
-      expect(response.body).toHaveProperty('format', 'user-id-timestamp');
-      expect(response.body).toHaveProperty('isValidUserId', true);
-    });
-
-    it('should reject malformed tokens', async () => {
-      const response = await request(app)
-        .get('/api/token-check')
-        .set('Authorization', `Bearer ${invalidToken}`)
-        .expect(200);
-
-      expect(response.body).toHaveProperty('present', true);
-      expect(response.body).toHaveProperty('format', 'unknown');
-    });
-
-    it('should access protected endpoint with valid token', async () => {
-      const response = await request(app)
-        .get('/api/user')
-        .set('Authorization', `Bearer ${validToken}`)
-        .expect(200);
-
-      expect(response.body).toHaveProperty('id', testUserId);
-    });
-
-    it('should reject protected endpoint with invalid token', async () => {
-      await request(app)
-        .get('/api/user')
-        .set('Authorization', `Bearer ${invalidToken}`)
-        .expect(401);
-    });
-
-    it('should reject protected endpoint without Bearer prefix', async () => {
-      await request(app)
-        .get('/api/user')
-        .set('Authorization', validToken)
-        .expect(401);
-    });
-  });
-
-  describe('Logout', () => {
-    let sessionCookie: string;
-
-    beforeEach(async () => {
-      // Login to get session cookie
-      const loginResponse = await request(app)
-        .post('/api/login')
-        .send({
-          username: testUser.username,
-          password: testUser.password
-        });
-
-      const setCookieHeader = loginResponse.headers['set-cookie'];
-      const cookies = Array.isArray(setCookieHeader) ? setCookieHeader : setCookieHeader ? [setCookieHeader] : [];
-      sessionCookie = cookies.find((cookie: string) => cookie.startsWith('quill_sid=')) || '';
-    });
-
-    it('should logout and destroy session', async () => {
-      await request(app)
-        .post('/api/logout')
-        .set('Cookie', sessionCookie)
-        .expect(200);
-
-      // Verify session is destroyed
-      await request(app)
-        .get('/api/user')
-        .set('Cookie', sessionCookie)
-        .expect(401);
-    });
-  });
-
-  describe('Protected Routes', () => {
-    const validToken = `user-${testUserId}-${Date.now()}`;
-
-    it('should protect project routes', async () => {
-      await request(app)
-        .get('/api/projects')
-        .expect(401);
-
-      await request(app)
-        .get('/api/projects')
-        .set('Authorization', `Bearer ${validToken}`)
-        .expect(200);
-    });
-
-    it('should protect story bible routes', async () => {
-      await request(app)
-        .get('/api/story-bible')
-        .expect(401);
-
-      await request(app)
-        .get('/api/story-bible')
-        .set('Authorization', `Bearer ${validToken}`)
-        .expect(200);
-    });
-
-    it('should protect chapter routes', async () => {
-      await request(app)
-        .get('/api/chapters/1')
-        .expect(401);
-
-      await request(app)
-        .get('/api/chapters/1')
-        .set('Authorization', `Bearer ${validToken}`)
-        .expect(404); // Not found is OK, we're testing auth
-    });
-  });
-
-  describe('Development Mode Bypass', () => {
-    const originalNodeEnv = process.env.NODE_ENV;
-
-    afterEach(() => {
-      process.env.NODE_ENV = originalNodeEnv;
-    });
-
-    it('should bypass authentication in development mode', async () => {
-      process.env.NODE_ENV = 'development';
-      
-      const response = await request(app)
-        .get('/api/user')
-        .expect(200);
-
-      expect(response.body).toHaveProperty('id', 1);
-      expect(response.body).toHaveProperty('username', 'DevUser');
-    });
+  it("handles malformed stored passwords without throwing", async () => {
+    for (const stored of ["password", "bad.salt", "", "00." + "a".repeat(32)]) expect(await comparePasswords("test", stored)).toBe(false);
+    const first = await hashPassword("same-password");
+    const second = await hashPassword("same-password");
+    expect(first).not.toBe(second);
+    expect(await comparePasswords("wrong-password", first)).toBe(false);
   });
 });

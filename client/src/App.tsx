@@ -1,3 +1,6 @@
+import { useEffect, useState } from "react";
+import { DraftRecovery } from "@/components/draft-recovery";
+import { PendingSaves } from "@/components/pending-saves";
 import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -30,13 +33,20 @@ function Router() {
   );
 }
 
+function RecoverableRouter() {
+  const [version, setVersion] = useState(0);
+  useEffect(() => { const refresh = () => setVersion(value => value + 1); window.addEventListener("qq:draft-recovered", refresh); return () => window.removeEventListener("qq:draft-recovered", refresh); }, []);
+  return <Router key={version} />;
+}
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <AppStateProvider>
-          <Router />
+          <RecoverableRouter />
           <Toaster />
+          <PendingSaves />
+          <DraftRecovery />
         </AppStateProvider>
       </AuthProvider>
     </QueryClientProvider>

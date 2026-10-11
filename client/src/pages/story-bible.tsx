@@ -1,3 +1,4 @@
+import { EntryLinks } from "@/components/story-bible/entry-links";
 import { useParams, useLocation, Link } from "wouter";
 import SidebarNavigation from "@/components/sidebar-navigation";
 import ThemeToggle from "@/components/ui/theme-toggle";
@@ -246,6 +247,7 @@ export default function StoryBible() {
                     projectId={projectId}
                     onClose={handleBackToDashboard}
                   />
+                  <EntryLinks entry={editorState.entryData} onOpen={handleEditEntry} />
                 </div>
               </div>
             ) : null}

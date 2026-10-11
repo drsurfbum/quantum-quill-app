@@ -1,3 +1,8 @@
+import { readBibleFields, linkedTitle } from "@shared/story-bible";
+import { useEditorDraft } from "@/hooks/use-editor-draft";
+import { useAutosave, withPendingEdits } from "@/hooks/use-autosave";
+import { SaveStatus } from "@/components/save-status";
+import { FileUpload } from "@/components/ui/file-upload";
 import { useState, useCallback, useMemo, memo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,10 +15,9 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Save, Trash2, Plus, X, ChevronDown, ChevronRight, BookOpen, Link2, Users, MapPin, Calendar, Zap, Tag, ArrowLeft, Clock, Archive, FileText, ExternalLink, CheckCircle, Eye, AlertCircle, ImageIcon, Upload } from 'lucide-react';
-import { useUpdateStoryBibleEntry, useDeleteStoryBibleEntry, useStoryBibleEntries } from '@/hooks/use-story-bible';
+import { useDeleteStoryBibleEntry, useStoryBibleEntries } from '@/hooks/use-story-bible';
 import { useToast } from '@/hooks/use-toast';
 import { StoryBibleEntry } from '@shared/schema';
-import { debounce } from 'lodash';
 
 // Research data structure based on specification
 interface ResearchData {
@@ -92,14 +96,16 @@ const TOPIC_CATEGORIES = [
 ];
 
 const ResearchEditor = memo(({ entry, projectId, onClose }: ResearchEditorProps) => {
+  entry = withPendingEdits(`/api/story-bible/${entry.id}`, entry);
+  const autosave = useAutosave(`/api/story-bible/${entry.id}`, `/api/projects/${projectId}/story-bible`);
+
   const { toast } = useToast();
-  const updateStoryBibleEntry = useUpdateStoryBibleEntry();
   const deleteStoryBibleEntry = useDeleteStoryBibleEntry();
   const { data: allEntries } = useStoryBibleEntries(projectId);
 
   const [title, setTitle] = useState(entry.title);
-  const [isSaving, setIsSaving] = useState(false);
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
+
 
   // Collapsible states - Core Info and Tags & Topics expanded initially
   const [coreInfoExpanded, setCoreInfoExpanded] = useState(true);
@@ -119,29 +125,15 @@ const ResearchEditor = memo(({ entry, projectId, onClose }: ResearchEditorProps)
       linkedElements: [],
       detailedNotes: '',
       status: 'To Review',
-      tags: [],
+      tags: entry.tags || [],
       topics: [],
-      isArchived: false
+      isArchived: entry.isArchived || false
     };
 
-    if (!entry.content) return defaultData;
-    
-    try {
-      const parsed = JSON.parse(entry.content);
-      if (typeof parsed === 'object' && parsed !== null) {
-        return { ...defaultData, ...parsed } as ResearchData;
-      }
-    } catch {
-      return {
-        ...defaultData,
-        detailedNotes: entry.content
-      } as ResearchData;
-    }
-    
-    return defaultData;
+    return { ...defaultData, ...readBibleFields(entry) } as ResearchData;
   }, [entry.content]);
 
-  const [researchDataState, setResearchData] = useState<ResearchData>(initialResearchData);
+  const [researchDataState, setResearchData] = useEditorDraft<ResearchData>(initialResearchData);
 
   // Available entries for linking
   const characterEntries = (allEntries || []).filter(e => e.entryType === 'characters');
@@ -151,55 +143,28 @@ const ResearchEditor = memo(({ entry, projectId, onClose }: ResearchEditorProps)
   const worldElementEntries = (allEntries || []).filter(e => e.entryType === 'world_elements');
   const detailEntries = (allEntries || []).filter(e => e.entryType === 'details');
 
-  // Debounced save function - stable reference
-  const debouncedSave = useMemo(
-    () => debounce(async (titleToSave: string, dataToSave: ResearchData) => {
-      setIsSaving(true);
-      try {
-        await updateStoryBibleEntry.mutateAsync({
-          id: entry.id,
-          title: titleToSave,
-          content: JSON.stringify(dataToSave),
-        });
-        setHasUnsavedChanges(false);
-      } catch (error) {
-        console.error('Failed to save:', error);
-        toast({
-          title: "Error",
-          description: "Failed to save changes",
-          variant: "destructive",
-        });
-      } finally {
-        setIsSaving(false);
-      }
-    }, 1500),
-    [entry.id, updateStoryBibleEntry, toast]
-  );
-
   const updateResearchData = useCallback((updates: Partial<ResearchData>) => {
-    setResearchData(prev => {
-      const newData = { ...prev, ...updates };
-      return newData;
+    const next = setResearchData(previous => ({ ...previous, ...updates }));
+    autosave.save({ content: JSON.stringify(next),
+      ...(Object.hasOwn(updates, 'tags') ? { tags: next.tags || [] } : {}),
+      ...(Object.hasOwn(updates, 'isArchived') ? { isArchived: next.isArchived || false } : {}),
     });
-    setHasUnsavedChanges(true);
-    debouncedSave(title, { ...researchDataState, ...updates });
-  }, [title, researchDataState, debouncedSave]);
+  }, [setResearchData, autosave.save]);
 
-  // Handle title changes
   const handleTitleChange = useCallback((newTitle: string) => {
     setTitle(newTitle);
-    setHasUnsavedChanges(true);
-    debouncedSave(newTitle, researchDataState);
-  }, [researchDataState, debouncedSave]);
+    autosave.save({ title: newTitle });
+  }, [autosave.save]);
 
   // Reset state when entry changes
   useEffect(() => {
     setTitle(entry.title);
     setResearchData(initialResearchData);
-    setHasUnsavedChanges(false);
-  }, [entry.id, entry.title, initialResearchData]);
+
+  }, [entry.id]);
 
   const handleDelete = async () => {
+    if (!await autosave.flush()) return;
     try {
       await deleteStoryBibleEntry.mutateAsync(entry.id);
       toast({
@@ -210,7 +175,7 @@ const ResearchEditor = memo(({ entry, projectId, onClose }: ResearchEditorProps)
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to delete research entry",
+        description: error instanceof Error ? error.message : "Failed to delete entry",
         variant: "destructive",
       });
     }
@@ -279,12 +244,16 @@ const ResearchEditor = memo(({ entry, projectId, onClose }: ResearchEditorProps)
               </Button>
             )}
             <div className="flex items-center gap-3">
-              <Input
-                value={title}
-                onChange={(e) => handleTitleChange(e.target.value)}
-                className="text-2xl font-bold border-none p-0 h-auto bg-transparent"
-                placeholder="Research Title (e.g., Asteroid Mining Techniques)"
-              />
+              <div className="min-w-0 flex-1 space-y-2">
+                <Label htmlFor={`research-title-${entry.id}`}>Research title</Label>
+                <Input
+                  id={`research-title-${entry.id}`}
+                  value={title}
+                  onChange={(e) => handleTitleChange(e.target.value)}
+                  className="text-2xl font-bold h-12"
+                  placeholder="Research Title (e.g., Asteroid Mining Techniques)"
+                />
+              </div>
               <div className="flex gap-2">
                 {researchDataState.sourceType && (
                   <Badge variant="secondary">{researchDataState.sourceType}</Badge>
@@ -299,8 +268,7 @@ const ResearchEditor = memo(({ entry, projectId, onClose }: ResearchEditorProps)
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {isSaving && <span className="text-sm text-muted-foreground">Saving...</span>}
-            {hasUnsavedChanges && !isSaving && <span className="text-sm text-muted-foreground">Unsaved changes</span>}
+            <SaveStatus status={autosave.status} retry={autosave.flush} />
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button variant="outline" size="sm">
@@ -533,7 +501,7 @@ const ResearchEditor = memo(({ entry, projectId, onClose }: ResearchEditorProps)
                           {element.type === 'world_elements' && <Zap className="h-3 w-3" />}
                           {element.type === 'groups_races' && <Users className="h-3 w-3" />}
                           {element.type === 'details' && <FileText className="h-3 w-3" />}
-                          {element.name}
+                          {linkedTitle(allEntries, element.id, element.name)}
                           <button
                             onClick={() => removeLinkedElement(element.id)}
                             className="hover:bg-red-500 hover:text-white rounded-full p-0.5"
@@ -547,15 +515,16 @@ const ResearchEditor = memo(({ entry, projectId, onClose }: ResearchEditorProps)
                     {/* Add element dropdowns */}
                     <div className="grid grid-cols-3 gap-2">
                       <Select onValueChange={(value) => {
-                        const [id, name] = value.split('|');
-                        addLinkedElement(parseInt(id), name, 'characters');
+                        const id = Number(value);
+                        const name = (allEntries || []).find(e => e.id === id)?.title || '';
+                        addLinkedElement(id, name, 'characters');
                       }}>
                         <SelectTrigger>
                           <SelectValue placeholder="Add Character" />
                         </SelectTrigger>
                         <SelectContent>
                           {characterEntries.map((char) => (
-                            <SelectItem key={char.id} value={`${char.id}|${char.title}`}>
+                            <SelectItem key={char.id} value={char.id.toString()}>
                               {char.title}
                             </SelectItem>
                           ))}
@@ -563,15 +532,16 @@ const ResearchEditor = memo(({ entry, projectId, onClose }: ResearchEditorProps)
                       </Select>
                       
                       <Select onValueChange={(value) => {
-                        const [id, name] = value.split('|');
-                        addLinkedElement(parseInt(id), name, 'locations');
+                        const id = Number(value);
+                        const name = (allEntries || []).find(e => e.id === id)?.title || '';
+                        addLinkedElement(id, name, 'locations');
                       }}>
                         <SelectTrigger>
                           <SelectValue placeholder="Add Location" />
                         </SelectTrigger>
                         <SelectContent>
                           {locationEntries.map((loc) => (
-                            <SelectItem key={loc.id} value={`${loc.id}|${loc.title}`}>
+                            <SelectItem key={loc.id} value={loc.id.toString()}>
                               {loc.title}
                             </SelectItem>
                           ))}
@@ -579,19 +549,36 @@ const ResearchEditor = memo(({ entry, projectId, onClose }: ResearchEditorProps)
                       </Select>
                       
                       <Select onValueChange={(value) => {
-                        const [id, name] = value.split('|');
-                        addLinkedElement(parseInt(id), name, 'world_elements');
+                        const id = Number(value);
+                        const name = (allEntries || []).find(e => e.id === id)?.title || '';
+                        addLinkedElement(id, name, 'world_elements');
                       }}>
                         <SelectTrigger>
                           <SelectValue placeholder="Add World Element" />
                         </SelectTrigger>
                         <SelectContent>
                           {worldElementEntries.map((element) => (
-                            <SelectItem key={element.id} value={`${element.id}|${element.title}`}>
+                            <SelectItem key={element.id} value={element.id.toString()}>
                               {element.title}
                             </SelectItem>
                           ))}
                         </SelectContent>
+                      </Select>
+                      <Select onValueChange={value => { const target = (allEntries || []).find(item => item.id === Number(value)); if (target) addLinkedElement(target.id, target.title, 'groups_races'); }}>
+                        <SelectTrigger><SelectValue placeholder="Add Group / Race" /></SelectTrigger>
+                        <SelectContent>{(allEntries || []).filter(item => item.entryType === 'groups_races' && item.id !== entry.id).map(item => <SelectItem key={item.id} value={String(item.id)}>{item.title}</SelectItem>)}</SelectContent>
+                      </Select>
+                      <Select onValueChange={value => { const target = (allEntries || []).find(item => item.id === Number(value)); if (target) addLinkedElement(target.id, target.title, 'events'); }}>
+                        <SelectTrigger><SelectValue placeholder="Add Event" /></SelectTrigger>
+                        <SelectContent>{(allEntries || []).filter(item => item.entryType === 'events' && item.id !== entry.id).map(item => <SelectItem key={item.id} value={String(item.id)}>{item.title}</SelectItem>)}</SelectContent>
+                      </Select>
+                      <Select onValueChange={value => { const target = (allEntries || []).find(item => item.id === Number(value)); if (target) addLinkedElement(target.id, target.title, 'details'); }}>
+                        <SelectTrigger><SelectValue placeholder="Add Detail" /></SelectTrigger>
+                        <SelectContent>{(allEntries || []).filter(item => item.entryType === 'details' && item.id !== entry.id).map(item => <SelectItem key={item.id} value={String(item.id)}>{item.title}</SelectItem>)}</SelectContent>
+                      </Select>
+                      <Select onValueChange={value => { const target = (allEntries || []).find(item => item.id === Number(value)); if (target) addLinkedElement(target.id, target.title, 'research'); }}>
+                        <SelectTrigger><SelectValue placeholder="Add Research" /></SelectTrigger>
+                        <SelectContent>{(allEntries || []).filter(item => item.entryType === 'research' && item.id !== entry.id).map(item => <SelectItem key={item.id} value={String(item.id)}>{item.title}</SelectItem>)}</SelectContent>
                       </Select>
                     </div>
                   </div>
@@ -742,7 +729,7 @@ const ResearchEditor = memo(({ entry, projectId, onClose }: ResearchEditorProps)
                     {element.type === 'world_elements' && <Zap className="h-3 w-3 mr-1" />}
                     {element.type === 'groups_races' && <Users className="h-3 w-3 mr-1" />}
                     {element.type === 'details' && <FileText className="h-3 w-3 mr-1" />}
-                    {element.name}
+                    {linkedTitle(allEntries, element.id, element.name)}
                   </Badge>
                 ))}
                 {researchDataState.linkedElements.length === 0 && (

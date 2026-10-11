@@ -1,722 +1,249 @@
-import type { Express, Request, Response } from "express";
-import { createServer, type Server } from "http";
-import express from "express";
+import { saveWritingStyleSchema } from "@shared/writing-styles";
+import { createBibleEntry, updateBibleEntry, deleteBibleEntry } from "./story-bible";
+import express, { type Express, type Request, type RequestHandler } from "express";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
-import { storage } from "./storage";
-import { 
-  insertProjectSchema, 
-  insertChapterSchema, 
-  insertWhiteboardSchema, 
-  insertOutlineItemSchema, 
-  insertStoryBibleEntrySchema,
-  insertPlotStructureSchema,
-  insertPlotStructureSectionSchema
+import { randomUUID } from "crypto";
+import type { IStorage } from "./storage";
+import {
+  type Chapter, type Whiteboard, type OutlineItem, type StoryBibleEntry, type PlotStructure,
+  insertProjectSchema, insertChapterSchema, insertWhiteboardSchema,
+  insertOutlineItemSchema, insertStoryBibleEntrySchema, insertPlotStructureSchema,
+  insertPlotStructureSectionSchema,
 } from "@shared/schema";
 import { z } from "zod";
-import { ZodError } from "zod-validation-error";
-import { setupAuth } from "./auth";
+import { requireUser } from "./auth";
 
-// Middleware to check if user is authenticated
-const isAuthenticated = (req: Request, res: Response, next: Function) => {
-  // TEMPORARY: Bypass authentication for development
-  if (!process.env.NODE_ENV || process.env.NODE_ENV === 'development') {
-    req.user = { id: 1, username: 'DevUser', email: 'dev@example.com', password: '', createdAt: null };
-    return next();
-  }
+function fail(status: number, message: string): never { throw Object.assign(new Error(message), { status }); }
+const idSchema = z.number().int().positive().max(2147483647);
+function routeId(value: string) { if (!/^\d+$/.test(value)) fail(400, "Invalid ID"); return idSchema.parse(Number(value)); }
+const title = z.string().trim().min(1).max(500);
+const handler = (fn: (req: Request, res: express.Response) => Promise<unknown>): RequestHandler =>
+  (req, res, next) => { Promise.resolve(fn(req, res)).catch(next); };
 
-  // First check if user is authenticated through session
-  let isSessionAuth = req.isAuthenticated() && !!req.user;
-  
-  // If not authenticated through session, check for token-based auth
-  if (!isSessionAuth) {
-    const authHeader = req.headers.authorization;
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      const token = authHeader.substring(7); // Remove 'Bearer ' prefix
-      
-      // Simple token validation - production would use JWT
-      if (token && token.startsWith('user-')) {
-        try {
-          // Extract user ID from token - format is user-{userId}-{timestamp}
-          const parts = token.split('-');
-          if (parts.length >= 2) {
-            const userId = parseInt(parts[1]);
-            if (!isNaN(userId)) {
-              // Manual authentication - set user on request
-              req.user = { id: userId, username: "TokenUser" } as Express.User;
-              isSessionAuth = true;
-              console.log(`User authenticated via token for user ID: ${userId}`);
-            }
-          }
-        } catch (error) {
-          console.error("Token authentication error:", error);
-        }
-      }
-    }
-  }
-  
-  console.log(`
-===== Auth Check =====
-Path: ${req.path}
-Method: ${req.method}
-Session ID: ${req.sessionID}
-Has Auth Header: ${!!req.headers.authorization}
-Is Authenticated: ${isSessionAuth}
-User: ${req.user ? JSON.stringify({ id: req.user.id, username: req.user.username }) : "null"}
-====================
-  `);
-  
-  if (isSessionAuth) {
-    console.log(`User authorized: ${req.user!.username || req.user!.id}. Proceeding to route handler.`);
-    return next();
-  }
-  
-  console.log("User unauthorized. Returning 401.");
-  return res.status(401).json({ message: "Unauthorized" });
-};
-
-// Configure multer for file uploads
-const uploadDir = path.join(process.cwd(), 'uploads');
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
+// Optional compare-and-set envelope; older clients retain the existing API.
+function draftBody(body: unknown) {
+  const { _base, ...patch } = z.record(z.unknown()).parse(body);
+  if (_base === undefined) return { patch, base: undefined };
+  const base = z.record(z.unknown()).parse(_base);
+  const fields = Object.keys(patch).sort();
+  if (!fields.length || JSON.stringify(fields) !== JSON.stringify(Object.keys(base).sort())) fail(400, "Draft base must cover every changed field");
+  return { patch, base };
 }
 
-const storage_multer = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
+type Child = { id: number; projectId: number };
+type Resource<T extends Child, C> = {
+  route: string; listRoute: string; schema: z.ZodType<C>;
+  updateSchema: z.ZodType<Partial<T>>;
+  get: (id: number) => Promise<T | undefined>;
+  list: (projectId: number) => Promise<T[]>;
+  create: (data: C) => Promise<T>;
+  update: (id: number, data: Partial<T>, base?: Record<string, unknown>) => Promise<T | undefined>;
+  remove: (id: number) => Promise<boolean>;
+  validate?: (data: C | Partial<T>, projectId: number, id?: number) => Promise<void>;
+  beforeDelete?: (item: T) => Promise<void>;
+};
+
+export function registerRoutes(app: Express, storage: IStorage, directory = path.join(process.cwd(), "uploads")) {
+  app.use("/api", requireUser);
+  const projectFor = async (req: Request, id: number) => {
+    const project = await storage.getProject(id);
+    if (!project) fail(404, "Project not found");
+    if (project.userId !== req.user!.id) fail(403, "Forbidden");
+    return project;
+  };
+  const structureFor = async (req: Request, id: number) => {
+    const structure = await storage.getPlotStructure(id);
+    if (!structure) fail(404, "Plot structure not found");
+    await projectFor(req, structure.projectId);
+    return structure;
+  };
+
+  app.get("/api/writing-styles", handler(async (req, res) => res.json(await storage.getWritingStyles(req.user!.id))));
+  app.post("/api/writing-styles", handler(async (req, res) => {
+    res.json(await storage.saveWritingStyle(req.user!.id, saveWritingStyleSchema.parse(req.body)));
+  }));
+  app.delete("/api/writing-styles/:id", handler(async (req, res) => {
+    if (!await storage.deleteWritingStyle(req.user!.id, routeId(req.params.id))) fail(404, "Style not found");
+    res.status(204).end();
+  }));
+
+  // All project child operations go through the same ownership check.
+  function resource<T extends Child, C extends { projectId: number }>(config: Resource<T, C>) {
+    const owned = async (req: Request) => {
+      const item = await config.get(routeId(req.params.id));
+      if (!item) fail(404, "Not found");
+      await projectFor(req, item.projectId);
+      return item;
+    };
+    app.get(`/api/projects/:projectId/${config.listRoute}`, handler(async (req, res) => {
+      const projectId = routeId(req.params.projectId);
+      await projectFor(req, projectId);
+      res.json(await config.list(projectId));
+    }));
+    app.get(`/api/${config.route}/:id`, handler(async (req, res) => res.json(await owned(req))));
+    app.post(`/api/${config.route}`, handler(async (req, res) => {
+      const data = config.schema.parse(req.body);
+      await projectFor(req, data.projectId);
+      await config.validate?.(data, data.projectId);
+      res.status(201).json(await config.create(data));
+    }));
+    app.put(`/api/${config.route}/:id`, handler(async (req, res) => {
+      const item = await owned(req);
+      const { patch, base } = draftBody(req.body);
+      const data = config.updateSchema.parse(patch);
+      await config.validate?.(data, item.projectId, item.id);
+      const result = await config.update(item.id, data, base);
+      if (!result) fail(409, "This record changed elsewhere. Review your saved draft before replacing it.");
+      res.json(result);
+    }));
+    app.delete(`/api/${config.route}/:id`, handler(async (req, res) => {
+      const item = await owned(req);
+      await config.beforeDelete?.(item);
+      await config.remove(item.id);
+      res.status(204).end();
+    }));
   }
-});
 
-const upload = multer({ 
-  storage: storage_multer,
-  limits: {
-    fileSize: 5 * 1024 * 1024 // 5MB limit
-  },
-  fileFilter: (req, file, cb) => {
-    const allowedTypes = /jpeg|jpg|png|gif|webp/;
-    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-    const mimetype = allowedTypes.test(file.mimetype);
-    
-    if (mimetype && extname) {
-      return cb(null, true);
-    } else {
-      cb(new Error('Only image files are allowed'));
+  // Reject cross-project links and cycles without changing historical data.
+  async function validateParent(
+    parentId: number | null | undefined, projectId: number, id: number | undefined,
+    get: (id: number) => Promise<(Child & { parentId: number | null }) | undefined>,
+  ) {
+    const seen = new Set<number>(id === undefined ? [] : [id]);
+    let current = parentId;
+    while (current != null) {
+      idSchema.parse(current);
+      if (seen.has(current)) fail(400, "Parent would create a cycle");
+      seen.add(current);
+      const parent = await get(current);
+      if (!parent || parent.projectId !== projectId) fail(400, "Parent must belong to this project");
+      current = parent.parentId;
     }
   }
-});
 
-export async function registerRoutes(app: Express): Promise<Server> {
-  // Set up authentication routes and middleware
-  setupAuth(app);
-  
-  // Debug endpoint to check session status
-  app.get("/api/session-check", (req, res) => {
-    console.log("Session check:", {
-      sessionID: req.sessionID,
-      isAuthenticated: req.isAuthenticated(),
-      hasUser: !!req.user,
-      cookies: req.headers.cookie,
-      hasAuthHeader: !!req.headers.authorization
-    });
-    
-    res.json({
-      sessionActive: !!req.sessionID,
-      isAuthenticated: req.isAuthenticated(),
-      hasUser: !!req.user,
-      cookiesPresent: !!req.headers.cookie,
-      hasAuthHeader: !!req.headers.authorization
-    });
+  const projectCreate = insertProjectSchema.omit({ userId: true }).extend({ title }).strict();
+  const projectUpdate = projectCreate.partial().extend({ isArchived: z.boolean().optional() }).strict();
+  app.get("/api/projects", handler(async (req, res) => res.json(await storage.getUserProjects(req.user!.id))));
+  app.get("/api/projects/:id", handler(async (req, res) => res.json(await projectFor(req, routeId(req.params.id)))));
+  app.post("/api/projects", handler(async (req, res) => {
+    res.status(201).json(await storage.createProject({ ...projectCreate.parse(req.body), userId: req.user!.id }));
+  }));
+  app.put("/api/projects/:id", handler(async (req, res) => {
+    const project = await projectFor(req, routeId(req.params.id));
+    res.json(await storage.updateProject(project.id, projectUpdate.parse(req.body)));
+  }));
+  for (const action of ["trash", "restore"] as const) app.put(`/api/projects/:id/${action}`, handler(async (req, res) => {
+    const project = await projectFor(req, routeId(req.params.id));
+    res.json(await (action === "trash" ? storage.trashProject(project.id) : storage.restoreProject(project.id)));
+  }));
+  app.delete("/api/projects/:id", handler(async (req, res) => {
+    const project = await projectFor(req, routeId(req.params.id));
+    const children = await Promise.all([
+      storage.getProjectChapters(project.id), storage.getProjectWhiteboards(project.id),
+      storage.getProjectOutline(project.id), storage.getProjectStoryBible(project.id), storage.getProjectPlotStructures(project.id),
+    ]);
+    if (children.some(items => items.length)) fail(409, "This project contains writing. Move it to trash instead.");
+    await storage.deleteProject(project.id);
+    res.status(204).end();
+  }));
+
+  const chapter = insertChapterSchema.extend({ projectId: idSchema, title }).strict();
+  resource<Chapter, z.infer<typeof chapter>>({ route: "chapters", listRoute: "chapters", schema: chapter,
+    updateSchema: chapter.omit({ projectId: true }).partial().strict(),
+    get: storage.getChapter.bind(storage), list: storage.getProjectChapters.bind(storage),
+    create: storage.createChapter.bind(storage), update: storage.updateChapter.bind(storage), remove: storage.deleteChapter.bind(storage) });
+  const whiteboard = insertWhiteboardSchema.extend({ projectId: idSchema, name: title }).strict();
+  resource<Whiteboard, z.infer<typeof whiteboard>>({ route: "whiteboards", listRoute: "whiteboards", schema: whiteboard,
+    updateSchema: whiteboard.omit({ projectId: true }).partial().strict(),
+    get: storage.getWhiteboard.bind(storage), list: storage.getProjectWhiteboards.bind(storage),
+    create: storage.createWhiteboard.bind(storage), update: storage.updateWhiteboard.bind(storage), remove: storage.deleteWhiteboard.bind(storage) });
+  const outline = insertOutlineItemSchema.extend({ projectId: idSchema, title, parentId: idSchema.nullable().optional() }).strict();
+  resource<OutlineItem, z.infer<typeof outline>>({ route: "outline", listRoute: "outline", schema: outline,
+    updateSchema: outline.omit({ projectId: true }).partial().strict(),
+    get: storage.getOutlineItem.bind(storage), list: storage.getProjectOutline.bind(storage),
+    create: storage.createOutlineItem.bind(storage), update: storage.updateOutlineItem.bind(storage), remove: storage.deleteOutlineItem.bind(storage),
+    validate: async (data, projectId, id) => validateParent(data.parentId, projectId, id, storage.getOutlineItem.bind(storage)),
+    beforeDelete: async (item) => {
+      if ((await storage.getProjectOutline(item.projectId)).some(child => child.parentId === item.id)) fail(409, "Move or remove child outline items first");
+    },
   });
-  
-  // Debug endpoint to check token authentication
-  app.get("/api/token-check", (req, res) => {
-    const authHeader = req.headers.authorization;
-    let tokenInfo: {
-      present: boolean;
-      format?: string;
-      userIdPresent?: boolean;
-      timestampPresent?: boolean;
-      userId?: number | null;
-      isValidUserId?: boolean;
-      timestamp?: string | null;
-    } = { present: false };
-    
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      const token = authHeader.substring(7); // Remove 'Bearer ' prefix
-      console.log("Token received:", token);
-      
-      // Parse token parts
-      if (token.startsWith('user-')) {
-        const parts = token.split('-');
-        tokenInfo = {
-          present: true,
-          format: "user-id-timestamp",
-          userIdPresent: parts.length >= 2,
-          timestampPresent: parts.length >= 3,
-          userId: parts.length >= 2 ? parseInt(parts[1]) : null,
-          isValidUserId: parts.length >= 2 ? !isNaN(parseInt(parts[1])) : false,
-          timestamp: parts.length >= 3 ? parts[2] : null
-        };
-      } else {
-        tokenInfo = {
-          present: true,
-          format: "unknown"
-        };
-      }
-    }
-    
-    res.json({
-      token: tokenInfo,
-      headers: {
-        authorizationPresent: !!req.headers.authorization,
-        cookies: !!req.headers.cookie
-      }
-    });
+  const bible = insertStoryBibleEntrySchema.extend({ projectId: idSchema, title,
+    metadata: z.record(z.unknown()).nullable().optional(), relatedEntryIds: z.array(idSchema).nullable().optional(),
+  }).strict();
+  resource<StoryBibleEntry, z.infer<typeof bible>>({ route: "story-bible", listRoute: "story-bible", schema: bible,
+    updateSchema: bible.omit({ projectId: true }).partial().strict(),
+    get: storage.getStoryBibleEntry.bind(storage), list: storage.getProjectStoryBible.bind(storage),
+    create: data => createBibleEntry(storage, data), update: (id, data, base) => updateBibleEntry(storage, id, data, base), remove: id => deleteBibleEntry(storage, id),
   });
-
-  // File upload endpoint
-  app.post("/api/upload", isAuthenticated, upload.single('image'), (req: Request, res: Response) => {
-    try {
-      console.log('Upload request received:', {
-        hasFile: !!req.file,
-        file: req.file ? {
-          filename: req.file.filename,
-          originalname: req.file.originalname,
-          size: req.file.size,
-          mimetype: req.file.mimetype
-        } : null
-      });
-
-      if (!req.file) {
-        console.log('No file in request');
-        return res.status(400).json({ error: 'No file uploaded' });
-      }
-      
-      const fileUrl = `/uploads/${req.file.filename}`;
-      console.log('File uploaded successfully:', fileUrl);
-      
-      res.json({ 
-        success: true, 
-        url: fileUrl,
-        filename: req.file.filename,
-        originalName: req.file.originalname
-      });
-    } catch (error) {
-      console.error('Upload error:', error);
-      res.status(500).json({ error: 'Upload failed', details: (error as Error).message });
-    }
+  app.get("/api/plot-templates", handler(async (_req, res) => res.json(await storage.getAllPlotStructureTemplates())));
+  app.get("/api/plot-templates/:id", handler(async (req, res) => {
+    const template = await storage.getPlotStructureTemplate(routeId(req.params.id));
+    if (!template) fail(404, "Template not found");
+    res.json(template);
+  }));
+  const plot = insertPlotStructureSchema.extend({ projectId: idSchema, templateId: idSchema, name: title, parentId: idSchema.nullable().optional() }).strict();
+  resource<PlotStructure, z.infer<typeof plot>>({ route: "plot-structures", listRoute: "plot-structures", schema: plot,
+    updateSchema: plot.omit({ projectId: true, templateId: true }).partial().strict(),
+    get: storage.getPlotStructure.bind(storage), list: storage.getProjectPlotStructures.bind(storage),
+    create: storage.createPlotStructure.bind(storage), update: storage.updatePlotStructure.bind(storage), remove: storage.deletePlotStructure.bind(storage),
+    validate: async (data, projectId, id) => {
+      if ("templateId" in data && data.templateId && !await storage.getPlotStructureTemplate(data.templateId)) fail(400, "Template not found");
+      await validateParent(data.parentId, projectId, id, storage.getPlotStructure.bind(storage));
+    },
+    beforeDelete: async (item) => {
+      if ((await storage.getPlotStructureSections(item.id)).length || (await storage.getProjectPlotStructures(item.projectId)).some(child => child.parentId === item.id)) fail(409, "Remove sections and nested structures first");
+    },
   });
 
-  // Serve uploaded files
-  app.use('/uploads', express.static(uploadDir));
+  const sectionCreate = insertPlotStructureSectionSchema.extend({ plotStructureId: idSchema, title }).strict();
+  const sectionUpdate = sectionCreate.omit({ plotStructureId: true, sectionKey: true }).partial().strict();
+  const sectionFor = async (req: Request) => {
+    const section = await storage.getPlotStructureSection(routeId(req.params.id));
+    if (!section) fail(404, "Section not found");
+    await structureFor(req, section.plotStructureId);
+    return section;
+  };
+  app.get("/api/plot-structures/:structureId/sections", handler(async (req, res) => {
+    const structure = await structureFor(req, routeId(req.params.structureId));
+    res.json(await storage.getPlotStructureSections(structure.id));
+  }));
+  app.get("/api/plot-structure-sections/:id", handler(async (req, res) => res.json(await sectionFor(req))));
+  app.post("/api/plot-structure-sections", handler(async (req, res) => {
+    const data = sectionCreate.parse(req.body);
+    await structureFor(req, data.plotStructureId);
+    res.status(201).json(await storage.createPlotStructureSection(data));
+  }));
+  app.put("/api/plot-structure-sections/:id", handler(async (req, res) => {
+    const section = await sectionFor(req);
+    const { patch, base } = draftBody(req.body);
+    const result = await storage.updatePlotStructureSection(section.id, sectionUpdate.parse(patch), base);
+    if (!result) fail(409, "This section changed elsewhere. Review your saved draft before replacing it.");
+    res.json(result);
+  }));
+  app.delete("/api/plot-structure-sections/:id", handler(async (req, res) => {
+    const section = await sectionFor(req);
+    await storage.deletePlotStructureSection(section.id);
+    res.status(204).end();
+  }));
 
-  // Projects routes
-  app.get("/api/projects", isAuthenticated, async (req: Request, res: Response) => {
-    const userId = req.user!.id;
-    const projects = await storage.getUserProjects(userId);
-    res.json(projects);
+  const upload = multer({
+    storage: multer.diskStorage({
+      destination: (_req, _file, done) => fs.mkdir(directory, { recursive: true }, error => done(error, directory)),
+      filename: (_req, file, done) => done(null, `${randomUUID()}${path.extname(file.originalname).toLowerCase()}`),
+    }),
+    limits: { fileSize: 5 * 1024 * 1024, files: 1 },
+    fileFilter: (_req, file, done) => {
+      if (!/^\.(jpe?g|png|gif|webp)$/i.test(path.extname(file.originalname)) || !/^image\/(jpeg|png|gif|webp)$/.test(file.mimetype)) {
+        done(Object.assign(new Error("Only image files are allowed"), { status: 400 }));
+      } else done(null, true);
+    },
   });
-
-  app.get("/api/projects/:id", isAuthenticated, async (req: Request, res: Response) => {
-    const id = parseInt(req.params.id);
-    const project = await storage.getProject(id);
-    
-    if (!project) {
-      return res.status(404).json({ message: "Project not found" });
-    }
-    
-    // Check if project belongs to the user
-    if (project.userId !== req.user!.id) {
-      return res.status(403).json({ message: "Forbidden" });
-    }
-    
-    res.json(project);
+  app.post("/api/upload", upload.single("image"), (req, res) => {
+    if (!req.file) { res.status(400).json({ message: "No image uploaded" }); return; }
+    res.json({ success: true, url: `/uploads/${req.file.filename}`, filename: req.file.filename, originalName: req.file.originalname });
   });
-
-  app.post("/api/projects", isAuthenticated, async (req: Request, res: Response) => {
-    try {
-      const userId = req.user!.id;
-      const projectData = { ...req.body, userId };
-      const validatedData = insertProjectSchema.parse(projectData);
-      const project = await storage.createProject(validatedData);
-      res.status(201).json(project);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: "Invalid project data", errors: error.errors });
-      }
-      res.status(500).json({ message: "Failed to create project" });
-    }
-  });
-
-  app.put("/api/projects/:id", isAuthenticated, async (req: Request, res: Response) => {
-    try {
-      const id = parseInt(req.params.id);
-      const project = await storage.getProject(id);
-      
-      if (!project) {
-        return res.status(404).json({ message: "Project not found" });
-      }
-      
-      // Check if project belongs to the user
-      if (project.userId !== req.user!.id) {
-        return res.status(403).json({ message: "Forbidden" });
-      }
-      
-      const updatedProject = await storage.updateProject(id, req.body);
-      res.json(updatedProject);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to update project" });
-    }
-  });
-
-  app.delete("/api/projects/:id", isAuthenticated, async (req: Request, res: Response) => {
-    const id = parseInt(req.params.id);
-    const project = await storage.getProject(id);
-    
-    if (!project) {
-      return res.status(404).json({ message: "Project not found" });
-    }
-    
-    // Check if project belongs to the user
-    if (project.userId !== req.user!.id) {
-      return res.status(403).json({ message: "Forbidden" });
-    }
-    
-    const success = await storage.deleteProject(id);
-    
-    if (!success) {
-      return res.status(500).json({ message: "Failed to delete project" });
-    }
-    
-    res.status(204).send();
-  });
-
-  app.put("/api/projects/:id/trash", isAuthenticated, async (req: Request, res: Response) => {
-    const id = parseInt(req.params.id);
-    const project = await storage.getProject(id);
-    
-    if (!project) {
-      return res.status(404).json({ message: "Project not found" });
-    }
-    
-    // Check if project belongs to the user
-    if (project.userId !== req.user!.id) {
-      return res.status(403).json({ message: "Forbidden" });
-    }
-    
-    const trashedProject = await storage.trashProject(id);
-    res.json(trashedProject);
-  });
-
-  app.put("/api/projects/:id/restore", isAuthenticated, async (req: Request, res: Response) => {
-    const id = parseInt(req.params.id);
-    const project = await storage.getProject(id);
-    
-    if (!project) {
-      return res.status(404).json({ message: "Project not found" });
-    }
-    
-    // Check if project belongs to the user
-    if (project.userId !== req.user!.id) {
-      return res.status(403).json({ message: "Forbidden" });
-    }
-    
-    const restoredProject = await storage.restoreProject(id);
-    res.json(restoredProject);
-  });
-
-  // Chapters routes
-  app.get("/api/projects/:projectId/chapters", isAuthenticated, async (req: Request, res: Response) => {
-    const projectId = parseInt(req.params.projectId);
-    const chapters = await storage.getProjectChapters(projectId);
-    res.json(chapters);
-  });
-
-  app.get("/api/chapters/:id", isAuthenticated, async (req: Request, res: Response) => {
-    const id = parseInt(req.params.id);
-    const chapter = await storage.getChapter(id);
-    
-    if (!chapter) {
-      return res.status(404).json({ message: "Chapter not found" });
-    }
-    
-    res.json(chapter);
-  });
-
-  app.post("/api/chapters", isAuthenticated, async (req: Request, res: Response) => {
-    try {
-      const validatedData = insertChapterSchema.parse(req.body);
-      const chapter = await storage.createChapter(validatedData);
-      res.status(201).json(chapter);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: "Invalid chapter data", errors: error.errors });
-      }
-      res.status(500).json({ message: "Failed to create chapter" });
-    }
-  });
-
-  app.put("/api/chapters/:id", isAuthenticated, async (req: Request, res: Response) => {
-    try {
-      const id = parseInt(req.params.id);
-      const updatedChapter = await storage.updateChapter(id, req.body);
-      
-      if (!updatedChapter) {
-        return res.status(404).json({ message: "Chapter not found" });
-      }
-      
-      res.json(updatedChapter);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to update chapter" });
-    }
-  });
-
-  app.delete("/api/chapters/:id", isAuthenticated, async (req: Request, res: Response) => {
-    const id = parseInt(req.params.id);
-    const success = await storage.deleteChapter(id);
-    
-    if (!success) {
-      return res.status(404).json({ message: "Chapter not found" });
-    }
-    
-    res.status(204).send();
-  });
-
-  // Whiteboard routes
-  app.get("/api/projects/:projectId/whiteboards", isAuthenticated, async (req: Request, res: Response) => {
-    const projectId = parseInt(req.params.projectId);
-    const whiteboards = await storage.getProjectWhiteboards(projectId);
-    res.json(whiteboards);
-  });
-
-  app.get("/api/whiteboards/:id", isAuthenticated, async (req: Request, res: Response) => {
-    const id = parseInt(req.params.id);
-    const whiteboard = await storage.getWhiteboard(id);
-    
-    if (!whiteboard) {
-      return res.status(404).json({ message: "Whiteboard not found" });
-    }
-    
-    res.json(whiteboard);
-  });
-
-  app.post("/api/whiteboards", isAuthenticated, async (req: Request, res: Response) => {
-    try {
-      const validatedData = insertWhiteboardSchema.parse(req.body);
-      const whiteboard = await storage.createWhiteboard(validatedData);
-      res.status(201).json(whiteboard);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: "Invalid whiteboard data", errors: error.errors });
-      }
-      res.status(500).json({ message: "Failed to create whiteboard" });
-    }
-  });
-
-  app.put("/api/whiteboards/:id", isAuthenticated, async (req: Request, res: Response) => {
-    try {
-      const id = parseInt(req.params.id);
-      const updatedWhiteboard = await storage.updateWhiteboard(id, req.body);
-      
-      if (!updatedWhiteboard) {
-        return res.status(404).json({ message: "Whiteboard not found" });
-      }
-      
-      res.json(updatedWhiteboard);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to update whiteboard" });
-    }
-  });
-
-  app.delete("/api/whiteboards/:id", isAuthenticated, async (req: Request, res: Response) => {
-    const id = parseInt(req.params.id);
-    const success = await storage.deleteWhiteboard(id);
-    
-    if (!success) {
-      return res.status(404).json({ message: "Whiteboard not found" });
-    }
-    
-    res.status(204).send();
-  });
-
-  // Outline routes
-  app.get("/api/projects/:projectId/outline", isAuthenticated, async (req: Request, res: Response) => {
-    const projectId = parseInt(req.params.projectId);
-    const outlineItems = await storage.getProjectOutline(projectId);
-    res.json(outlineItems);
-  });
-
-  app.get("/api/outline/:id", isAuthenticated, async (req: Request, res: Response) => {
-    const id = parseInt(req.params.id);
-    const outlineItem = await storage.getOutlineItem(id);
-    
-    if (!outlineItem) {
-      return res.status(404).json({ message: "Outline item not found" });
-    }
-    
-    res.json(outlineItem);
-  });
-
-  app.post("/api/outline", isAuthenticated, async (req: Request, res: Response) => {
-    try {
-      const validatedData = insertOutlineItemSchema.parse(req.body);
-      const outlineItem = await storage.createOutlineItem(validatedData);
-      res.status(201).json(outlineItem);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: "Invalid outline item data", errors: error.errors });
-      }
-      res.status(500).json({ message: "Failed to create outline item" });
-    }
-  });
-
-  app.put("/api/outline/:id", isAuthenticated, async (req: Request, res: Response) => {
-    try {
-      const id = parseInt(req.params.id);
-      const updatedOutlineItem = await storage.updateOutlineItem(id, req.body);
-      
-      if (!updatedOutlineItem) {
-        return res.status(404).json({ message: "Outline item not found" });
-      }
-      
-      res.json(updatedOutlineItem);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to update outline item" });
-    }
-  });
-
-  app.delete("/api/outline/:id", isAuthenticated, async (req: Request, res: Response) => {
-    const id = parseInt(req.params.id);
-    const success = await storage.deleteOutlineItem(id);
-    
-    if (!success) {
-      return res.status(404).json({ message: "Outline item not found" });
-    }
-    
-    res.status(204).send();
-  });
-
-  // Story Bible routes
-  app.get("/api/projects/:projectId/story-bible", isAuthenticated, async (req: Request, res: Response) => {
-    const projectId = parseInt(req.params.projectId);
-    const storyBibleEntries = await storage.getProjectStoryBible(projectId);
-    res.json(storyBibleEntries);
-  });
-
-  app.get("/api/story-bible/:id", isAuthenticated, async (req: Request, res: Response) => {
-    const id = parseInt(req.params.id);
-    const storyBibleEntry = await storage.getStoryBibleEntry(id);
-    
-    if (!storyBibleEntry) {
-      return res.status(404).json({ message: "Story bible entry not found" });
-    }
-    
-    res.json(storyBibleEntry);
-  });
-
-  app.post("/api/story-bible", isAuthenticated, async (req: Request, res: Response) => {
-    try {
-      const validatedData = insertStoryBibleEntrySchema.parse(req.body);
-      const storyBibleEntry = await storage.createStoryBibleEntry(validatedData);
-      res.status(201).json(storyBibleEntry);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: "Invalid story bible entry data", errors: error.errors });
-      }
-      res.status(500).json({ message: "Failed to create story bible entry" });
-    }
-  });
-
-  app.put("/api/story-bible/:id", isAuthenticated, async (req: Request, res: Response) => {
-    try {
-      const id = parseInt(req.params.id);
-      const updatedStoryBibleEntry = await storage.updateStoryBibleEntry(id, req.body);
-      
-      if (!updatedStoryBibleEntry) {
-        return res.status(404).json({ message: "Story bible entry not found" });
-      }
-      
-      res.json(updatedStoryBibleEntry);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to update story bible entry" });
-    }
-  });
-
-  app.delete("/api/story-bible/:id", isAuthenticated, async (req: Request, res: Response) => {
-    const id = parseInt(req.params.id);
-    const success = await storage.deleteStoryBibleEntry(id);
-    
-    if (!success) {
-      return res.status(404).json({ message: "Story bible entry not found" });
-    }
-    
-    res.status(204).send();
-  });
-
-  // Plot structure template routes
-  app.get("/api/plot-templates", isAuthenticated, async (req: Request, res: Response) => {
-    try {
-      const templates = await storage.getAllPlotStructureTemplates();
-      res.json(templates);
-    } catch (error) {
-      console.error("Error fetching plot templates:", error);
-      res.status(500).json({ message: "Failed to fetch plot structure templates" });
-    }
-  });
-
-  app.get("/api/plot-templates/:id", isAuthenticated, async (req: Request, res: Response) => {
-    try {
-      const id = parseInt(req.params.id);
-      const template = await storage.getPlotStructureTemplate(id);
-      
-      if (!template) {
-        return res.status(404).json({ message: "Plot structure template not found" });
-      }
-      
-      res.json(template);
-    } catch (error) {
-      console.error("Error fetching plot template:", error);
-      res.status(500).json({ message: "Failed to fetch plot structure template" });
-    }
-  });
-
-  // Plot structure routes
-  app.get("/api/projects/:projectId/plot-structures", isAuthenticated, async (req: Request, res: Response) => {
-    try {
-      const projectId = parseInt(req.params.projectId);
-      const structures = await storage.getProjectPlotStructures(projectId);
-      res.json(structures);
-    } catch (error) {
-      console.error("Error fetching plot structures:", error);
-      res.status(500).json({ message: "Failed to fetch plot structures" });
-    }
-  });
-
-  app.post("/api/plot-structures", isAuthenticated, async (req: Request, res: Response) => {
-    try {
-      const validatedData = insertPlotStructureSchema.parse(req.body);
-      const structure = await storage.createPlotStructure(validatedData);
-      res.status(201).json(structure);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: "Invalid plot structure data", errors: error.errors });
-      }
-      console.error("Error creating plot structure:", error);
-      res.status(500).json({ message: "Failed to create plot structure" });
-    }
-  });
-
-  app.get("/api/plot-structures/:id", isAuthenticated, async (req: Request, res: Response) => {
-    try {
-      const id = parseInt(req.params.id);
-      const structure = await storage.getPlotStructure(id);
-      
-      if (!structure) {
-        return res.status(404).json({ message: "Plot structure not found" });
-      }
-      
-      res.json(structure);
-    } catch (error) {
-      console.error("Error fetching plot structure:", error);
-      res.status(500).json({ message: "Failed to fetch plot structure" });
-    }
-  });
-
-  app.put("/api/plot-structures/:id", isAuthenticated, async (req: Request, res: Response) => {
-    try {
-      const id = parseInt(req.params.id);
-      const updatedStructure = await storage.updatePlotStructure(id, req.body);
-      
-      if (!updatedStructure) {
-        return res.status(404).json({ message: "Plot structure not found" });
-      }
-      
-      res.json(updatedStructure);
-    } catch (error) {
-      console.error("Error updating plot structure:", error);
-      res.status(500).json({ message: "Failed to update plot structure" });
-    }
-  });
-
-  app.delete("/api/plot-structures/:id", isAuthenticated, async (req: Request, res: Response) => {
-    try {
-      const id = parseInt(req.params.id);
-      const success = await storage.deletePlotStructure(id);
-      
-      if (!success) {
-        return res.status(404).json({ message: "Plot structure not found" });
-      }
-      
-      res.status(204).send();
-    } catch (error) {
-      console.error("Error deleting plot structure:", error);
-      res.status(500).json({ message: "Failed to delete plot structure" });
-    }
-  });
-
-  // Plot structure section routes
-  app.get("/api/plot-structures/:structureId/sections", isAuthenticated, async (req: Request, res: Response) => {
-    try {
-      const structureId = parseInt(req.params.structureId);
-      const sections = await storage.getPlotStructureSections(structureId);
-      res.json(sections);
-    } catch (error) {
-      console.error("Error fetching plot structure sections:", error);
-      res.status(500).json({ message: "Failed to fetch plot structure sections" });
-    }
-  });
-
-  app.post("/api/plot-structure-sections", isAuthenticated, async (req: Request, res: Response) => {
-    try {
-      const validatedData = insertPlotStructureSectionSchema.parse(req.body);
-      const section = await storage.createPlotStructureSection(validatedData);
-      res.status(201).json(section);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: "Invalid plot structure section data", errors: error.errors });
-      }
-      console.error("Error creating plot structure section:", error);
-      res.status(500).json({ message: "Failed to create plot structure section" });
-    }
-  });
-
-  app.put("/api/plot-structure-sections/:id", isAuthenticated, async (req: Request, res: Response) => {
-    try {
-      const id = parseInt(req.params.id);
-      const updatedSection = await storage.updatePlotStructureSection(id, req.body);
-      
-      if (!updatedSection) {
-        return res.status(404).json({ message: "Plot structure section not found" });
-      }
-      
-      res.json(updatedSection);
-    } catch (error) {
-      console.error("Error updating plot structure section:", error);
-      res.status(500).json({ message: "Failed to update plot structure section" });
-    }
-  });
-
-  app.delete("/api/plot-structure-sections/:id", isAuthenticated, async (req: Request, res: Response) => {
-    try {
-      const id = parseInt(req.params.id);
-      const success = await storage.deletePlotStructureSection(id);
-      
-      if (!success) {
-        return res.status(404).json({ message: "Plot structure section not found" });
-      }
-      
-      res.status(204).send();
-    } catch (error) {
-      console.error("Error deleting plot structure section:", error);
-      res.status(500).json({ message: "Failed to delete plot structure section" });
-    }
-  });
-
-  const httpServer = createServer(app);
-  return httpServer;
+  // Historical files have no ownership metadata; require login pending a storage migration.
+  app.use("/uploads", requireUser, express.static(directory, { dotfiles: "deny" }));
 }

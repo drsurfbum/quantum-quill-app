@@ -1,6 +1,7 @@
-import { pgTable, text, serial, integer, boolean, jsonb, timestamp, varchar } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, jsonb, timestamp, varchar, uniqueIndex } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+import type { WritingStyle } from "./writing-styles";
 
 // User schema
 export const users = pgTable("users", {
@@ -19,6 +20,17 @@ export const insertUserSchema = createInsertSchema(users).pick({
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
+
+// Reusable typography belongs to the writer, across their projects.
+export const writingStyles = pgTable("writing_styles", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  name: text("name").notNull(),
+  definition: jsonb("definition").$type<WritingStyle>().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, table => [uniqueIndex("writing_styles_user_name_unique").on(table.userId, table.name)]);
+export type SavedWritingStyle = typeof writingStyles.$inferSelect;
 
 // Project schema
 export const projects = pgTable("projects", {

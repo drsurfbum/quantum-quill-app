@@ -1,4 +1,8 @@
-import { useState, useEffect } from "react";
+import { TagInput } from "./tag-input";
+import { useEditorDraft } from "@/hooks/use-editor-draft";
+import { useAutosave, withPendingEdits } from "@/hooks/use-autosave";
+import { SaveStatus } from "@/components/save-status";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,10 +14,9 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Save, Trash2, Archive, ArchiveRestore, Star, StarOff, ChevronDown, ChevronRight, Plus, X, User, ImageIcon } from "lucide-react";
 import { FileUpload } from "@/components/ui/file-upload";
-import { useUpdateStoryBibleEntry, useDeleteStoryBibleEntry, useStoryBibleEntries } from "@/hooks/use-story-bible";
+import { useDeleteStoryBibleEntry, useStoryBibleEntries } from "@/hooks/use-story-bible";
 import { useToast } from "@/hooks/use-toast";
 import { StoryBibleEntry } from "@shared/schema";
-import { debounce } from "lodash";
 
 interface CharacterEditorProps {
   entry: StoryBibleEntry;
@@ -22,17 +25,19 @@ interface CharacterEditorProps {
 }
 
 export function CharacterEditor({ entry, projectId, onClose }: CharacterEditorProps) {
+  entry = withPendingEdits(`/api/story-bible/${entry.id}`, entry);
+  const autosave = useAutosave(`/api/story-bible/${entry.id}`, `/api/projects/${projectId}/story-bible`);
+
   // Core fields
   const [title, setTitle] = useState(entry.title);
   const [content, setContent] = useState(entry.content || "");
   const [category, setCategory] = useState(entry.category || "");
   const [tags, setTags] = useState<string[]>(entry.tags || []);
   const [relatedEntryIds, setRelatedEntryIds] = useState<number[]>(entry.relatedEntryIds || []);
-  const [metadata, setMetadata] = useState(entry.metadata || {});
+  const [metadata, setMetadata] = useEditorDraft<Record<string, any>>(entry.metadata || {});
   const [isArchived, setIsArchived] = useState(entry.isArchived || false);
   const [priority, setPriority] = useState(entry.priority || 0);
-  const [saveStatus, setSaveStatus] = useState<'saved' | 'saving'>('saved');
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const saveStatus = autosave.status;
 
   // Character-specific fields from metadata
   const [age, setAge] = useState((metadata as any)?.age || "");
@@ -72,7 +77,6 @@ export function CharacterEditor({ entry, projectId, onClose }: CharacterEditorPr
   const [backstoryExpanded, setBackstoryExpanded] = useState(false);
   const [researchExpanded, setResearchExpanded] = useState(false);
 
-  const updateMutation = useUpdateStoryBibleEntry({ skipInvalidation: true });
   const deleteMutation = useDeleteStoryBibleEntry();
   const { data: allEntries } = useStoryBibleEntries(projectId);
   const { toast } = useToast();
@@ -81,70 +85,36 @@ export function CharacterEditor({ entry, projectId, onClose }: CharacterEditorPr
   const availableForLinking = (allEntries || []).filter(e => e.id !== entry.id);
 
   // Debounced save function
-  const debouncedSave = debounce(
-    (updates: any) => {
-      updateMutation.mutate(
-        { id: entry.id, ...updates },
-        {
-          onSuccess: () => {
-            setSaveStatus('saved');
-          },
-          onError: () => {
-            toast({
-              title: "Failed to save",
-              description: "There was an error saving your changes. Please try again.",
-              variant: "destructive",
-            });
-            setSaveStatus('saved');
-          }
-        }
-      );
-    }, 1000);
+  const debouncedSave = autosave.save;
 
   // Update metadata helper
   const updateMetadata = (newFields: Record<string, any>) => {
-    const updatedMetadata = { ...metadata, ...newFields };
-    setMetadata(updatedMetadata);
-    if (!isInitialLoad) {
-      setSaveStatus('saving');
-      debouncedSave({ metadata: updatedMetadata });
-    }
+    const updatedMetadata = setMetadata(previous => ({ ...previous, ...newFields }));
+    debouncedSave({ metadata: updatedMetadata });
   };
 
   // Field change handlers
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newTitle = e.target.value;
     setTitle(newTitle);
-    if (!isInitialLoad) {
-      setSaveStatus('saving');
-      debouncedSave({ title: newTitle });
-    }
+    debouncedSave({ title: newTitle });
   };
 
   const handleCategoryChange = (value: string) => {
     setCategory(value);
-    if (!isInitialLoad) {
-      setSaveStatus('saving');
-      debouncedSave({ category: value || null });
-    }
+    debouncedSave({ category: value || null });
   };
 
   const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newContent = e.target.value;
     setContent(newContent);
-    if (!isInitialLoad) {
-      setSaveStatus('saving');
-      debouncedSave({ content: newContent });
-    }
+    debouncedSave({ content: newContent });
   };
 
   const togglePriority = () => {
     const newPriority = priority > 0 ? 0 : 1;
     setPriority(newPriority);
-    if (!isInitialLoad) {
-      setSaveStatus('saving');
-      debouncedSave({ priority: newPriority });
-    }
+    debouncedSave({ priority: newPriority });
   };
 
   const handleAddAbility = () => {
@@ -166,23 +136,18 @@ export function CharacterEditor({ entry, projectId, onClose }: CharacterEditorPr
     if (!relatedEntryIds.includes(entryId)) {
       const updatedIds = [...relatedEntryIds, entryId];
       setRelatedEntryIds(updatedIds);
-      if (!isInitialLoad) {
-        setSaveStatus('saving');
-        debouncedSave({ relatedEntryIds: updatedIds });
-      }
+      debouncedSave({ relatedEntryIds: updatedIds });
     }
   };
 
   const handleRemoveRelatedEntry = (entryId: number) => {
     const updatedIds = relatedEntryIds.filter(id => id !== entryId);
     setRelatedEntryIds(updatedIds);
-    if (!isInitialLoad) {
-      setSaveStatus('saving');
-      debouncedSave({ relatedEntryIds: updatedIds });
-    }
+    debouncedSave({ relatedEntryIds: updatedIds });
   };
 
   const handleDelete = async () => {
+    if (!await autosave.flush()) return;
     try {
       await deleteMutation.mutateAsync(entry.id);
       toast({
@@ -193,18 +158,13 @@ export function CharacterEditor({ entry, projectId, onClose }: CharacterEditorPr
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to delete character",
+        description: error instanceof Error ? error.message : "Failed to delete entry",
         variant: "destructive",
       });
     }
   };
 
   // Mark as loaded after first render to prevent initial saves
-  useEffect(() => {
-    if (isInitialLoad) {
-      setIsInitialLoad(false);
-    }
-  }, [isInitialLoad]);
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
@@ -216,17 +176,17 @@ export function CharacterEditor({ entry, projectId, onClose }: CharacterEditorPr
               <User className="h-6 w-6 text-muted-foreground" />
             </div>
             <div>
-              <Input
-                value={title}
-                onChange={handleTitleChange}
-                className="text-2xl font-bold border-none p-0 h-auto bg-transparent text-foreground"
-                placeholder="Character name..."
-              />
-              {saveStatus === 'saving' && (
-                <Badge variant="outline" className="text-xs mt-1">
-                  Saving...
-                </Badge>
-              )}
+              <div className="min-w-0 flex-1 space-y-2">
+                <Label htmlFor={`character-title-${entry.id}`}>Character name</Label>
+                <Input
+                  id={`character-title-${entry.id}`}
+                  value={title}
+                  onChange={handleTitleChange}
+                  className="text-2xl font-bold h-12"
+                  placeholder="Character name..."
+                />
+              </div>
+              <SaveStatus status={saveStatus} retry={autosave.flush} />
             </div>
           </div>
           
@@ -245,7 +205,7 @@ export function CharacterEditor({ entry, projectId, onClose }: CharacterEditorPr
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setIsArchived(!isArchived)}
+              onClick={() => { setIsArchived(!isArchived); autosave.save({ isArchived: !isArchived }); }}
             >
               {isArchived ? <ArchiveRestore className="h-4 w-4" /> : <Archive className="h-4 w-4" />}
             </Button>
@@ -688,16 +648,7 @@ export function CharacterEditor({ entry, projectId, onClose }: CharacterEditorPr
               <CardTitle className="text-lg">Tags</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex flex-wrap gap-2">
-                {tags.map((tag, index) => (
-                  <Badge key={index} variant="secondary" className="text-xs">
-                    {tag}
-                  </Badge>
-                ))}
-                {tags.length === 0 && (
-                  <p className="text-sm text-muted-foreground">No tags added</p>
-                )}
-              </div>
+              <TagInput tags={tags} onChange={(next) => { setTags(next); autosave.save({ tags: next }); }} />
             </CardContent>
           </Card>
 

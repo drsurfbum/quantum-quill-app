@@ -241,7 +241,7 @@ export function usePlotStructureActions() {
   return {
     createPlotStructure: createPlotStructureMutation.mutate,
     updatePlotStructure: updatePlotStructureMutation.mutate,
-    deletePlotStructure: deletePlotStructureMutation.mutate,
+    deletePlotStructure: deletePlotStructureMutation.mutateAsync,
     createSection: createSectionMutation.mutate,
     updateSection: updateSectionMutation.mutate,
     deleteSection: deleteSectionMutation.mutate,

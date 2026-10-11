@@ -1,3 +1,4 @@
+import { bibleEntryArchived, bibleEntrySearchText } from "@/lib/story-bible-data";
 import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,7 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { Plus, Search, Star, Users, MapPin, Calendar, Zap, FileText, BookOpen, ChevronDown, ChevronUp, Edit2, MoreHorizontal, Filter } from "lucide-react";
 import { StoryBibleEntry } from "@shared/schema";
 import { useStoryBibleEntries, useUpdateStoryBibleEntry } from "@/hooks/use-story-bible";
-import { ENHANCED_TAXONOMY } from "@shared/enhanced-taxonomy";
+import { ENHANCED_TAXONOMY, getEnhancedTaxonomyByKey } from "@shared/enhanced-taxonomy";
 import { apiRequest } from "@/lib/queryClient";
 
 interface SimplifiedBentoDashboardProps {
@@ -22,7 +23,7 @@ interface SimplifiedBentoDashboardProps {
 // Icon mapping for entry types
 const ENTRY_TYPE_ICONS = {
   characters: Users,
-  groups: Users,
+  groups_races: Users,
   locations: MapPin,
   events: Calendar,
   world_elements: Zap,
@@ -31,8 +32,10 @@ const ENTRY_TYPE_ICONS = {
 } as const;
 
 export function SimplifiedBentoDashboard({ projectId, onCreateEntry, onEditEntry }: SimplifiedBentoDashboardProps) {
+  const [archiveFilter, setArchiveFilter] = useState("active");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedEntryType, setSelectedEntryType] = useState<string>("all");
+  const [tileCategories, setTileCategories] = useState<Record<string, string>>({});
   const [expandedTiles, setExpandedTiles] = useState<Set<string>>(new Set());
 
   const { data: entries = [] } = useStoryBibleEntries(projectId, { staleTime: 60000 });
@@ -58,16 +61,11 @@ export function SimplifiedBentoDashboard({ projectId, onCreateEntry, onEditEntry
 
   // Filter entries based on search and type
   const filteredEntries = useMemo(() => {
-    let filtered = entries;
+    let filtered = entries.filter(entry => archiveFilter === "all" || bibleEntryArchived(entry) === (archiveFilter === "archived"));
 
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
-      filtered = filtered.filter(entry =>
-        entry.title.toLowerCase().includes(term) ||
-        (entry.content || '').toLowerCase().includes(term) ||
-        entry.category?.toLowerCase().includes(term) ||
-        entry.tags?.some(tag => tag.toLowerCase().includes(term))
-      );
+      filtered = filtered.filter(entry => bibleEntrySearchText(entry).includes(term));
     }
 
     if (selectedEntryType !== "all") {
@@ -75,24 +73,24 @@ export function SimplifiedBentoDashboard({ projectId, onCreateEntry, onEditEntry
     }
 
     return filtered;
-  }, [entries, searchTerm, selectedEntryType]);
+  }, [entries, searchTerm, selectedEntryType, archiveFilter]);
 
   // Group entries by type
   const entriesByType = useMemo(() => {
     const grouped: Record<string, StoryBibleEntry[]> = {};
-    entries.forEach(entry => {
+    filteredEntries.forEach(entry => {
       if (!grouped[entry.entryType]) {
         grouped[entry.entryType] = [];
       }
       grouped[entry.entryType].push(entry);
     });
     return grouped;
-  }, [entries]);
+  }, [filteredEntries]);
 
   // Group entries by type and category
   const entriesByTypeAndCategory = useMemo(() => {
     const grouped: Record<string, Record<string, StoryBibleEntry[]>> = {};
-    entries.forEach(entry => {
+    filteredEntries.forEach(entry => {
       if (!grouped[entry.entryType]) {
         grouped[entry.entryType] = {};
       }
@@ -141,7 +139,7 @@ export function SimplifiedBentoDashboard({ projectId, onCreateEntry, onEditEntry
       grouped[entry.entryType][category].push(entry);
     });
     return grouped;
-  }, [entries]);
+  }, [filteredEntries]);
 
   const toggleTileExpansion = (tileKey: string) => {
     setExpandedTiles(prev => {
@@ -158,7 +156,7 @@ export function SimplifiedBentoDashboard({ projectId, onCreateEntry, onEditEntry
 
 
   const getRecentEntries = (entries: StoryBibleEntry[], limit = 2) => {
-    return entries
+    return [...entries]
       .sort((a, b) => {
         const aDate = new Date(a.updatedAt || a.createdAt || 0);
         const bDate = new Date(b.updatedAt || b.createdAt || 0);
@@ -243,7 +241,7 @@ export function SimplifiedBentoDashboard({ projectId, onCreateEntry, onEditEntry
           <ScrollArea className="max-h-96">
             <div className="space-y-4">
               {Object.entries(resultsByType).map(([entryType, entries]) => {
-                const taxonomy = ENHANCED_TAXONOMY[entryType];
+                const taxonomy = getEnhancedTaxonomyByKey(entryType);
                 // Map entry types to icons
                 const getIconForType = (type: string) => {
                   switch (type) {
@@ -359,7 +357,8 @@ export function SimplifiedBentoDashboard({ projectId, onCreateEntry, onEditEntry
     onCreateEntry: (entryType: string) => void;
     toggleStarEntry: (entryId: number) => void;
   }) => {
-    const [selectedCategory, setSelectedCategory] = useState<string>("all");
+    const selectedCategory = tileCategories[taxonomy.key] || "all";
+    const setSelectedCategory = (category: string) => setTileCategories(previous => ({ ...previous, [taxonomy.key]: category }));
     
     // Get entries based on category filter
     const filteredEntries = useMemo(() => {
@@ -418,7 +417,7 @@ export function SimplifiedBentoDashboard({ projectId, onCreateEntry, onEditEntry
         {/* Entry Grid */}
         <ScrollArea className="h-64">
           <div className="grid grid-cols-1 gap-2 pr-4">
-            {sortedEntries.slice(0, 8).map(entry => (
+            {sortedEntries.map(entry => (
               <div
                 key={entry.id}
                 className="group flex items-center justify-between p-3 border rounded-lg hover:shadow-sm transition-all duration-200 cursor-pointer"
@@ -494,13 +493,7 @@ export function SimplifiedBentoDashboard({ projectId, onCreateEntry, onEditEntry
               <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                 Category Management
               </span>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-6 px-2 text-xs"
-              >
-                <MoreHorizontal className="h-3 w-3" />
-              </Button>
+
             </div>
             
             <div className="flex flex-wrap gap-1">
@@ -663,7 +656,8 @@ export function SimplifiedBentoDashboard({ projectId, onCreateEntry, onEditEntry
                       size="sm"
                       onClick={() => {
                         setSelectedEntryType(taxonomy.key);
-                        // Could add category filtering here if needed
+                        setTileCategories(previous => ({ ...previous, [taxonomy.key]: category }));
+                        setExpandedTiles(previous => new Set([...previous, taxonomy.key]));
                       }}
                       className="flex-shrink-0 h-8 px-3 text-xs"
                     >
@@ -717,6 +711,10 @@ export function SimplifiedBentoDashboard({ projectId, onCreateEntry, onEditEntry
                   className="pl-10 h-10"
                 />
               </div>
+              <Select value={archiveFilter} onValueChange={setArchiveFilter}>
+                <SelectTrigger aria-label="Archive filter" className="w-[160px]"><SelectValue /></SelectTrigger>
+                <SelectContent><SelectItem value="active">Active entries</SelectItem><SelectItem value="archived">Archived entries</SelectItem><SelectItem value="all">All entries</SelectItem></SelectContent>
+              </Select>
               <Select value={selectedEntryType} onValueChange={setSelectedEntryType}>
                 <SelectTrigger className="w-[180px] h-10">
                   <SelectValue placeholder="Filter by category" />
@@ -734,7 +732,7 @@ export function SimplifiedBentoDashboard({ projectId, onCreateEntry, onEditEntry
             {searchTerm && (
               <div className="mt-3 text-sm text-muted-foreground">
                 Found {filteredEntries.length} entries
-                {selectedEntryType !== "all" && ` in ${ENHANCED_TAXONOMY[selectedEntryType]?.name || selectedEntryType}`}
+                {selectedEntryType !== "all" && ` in ${getEnhancedTaxonomyByKey(selectedEntryType)?.name || selectedEntryType}`}
               </div>
             )}
           </CardContent>
@@ -756,7 +754,7 @@ export function SimplifiedBentoDashboard({ projectId, onCreateEntry, onEditEntry
       {/* Bento Grid - Hidden when searching */}
       {!searchTerm && (
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-          {Object.entries(ENHANCED_TAXONOMY).map(([key, taxonomy]) => (
+          {Object.entries(ENHANCED_TAXONOMY).filter(([, taxonomy]) => selectedEntryType === "all" || taxonomy.key === selectedEntryType).map(([key, taxonomy]) => (
             <BentoTile key={key} taxonomyKey={key} taxonomy={taxonomy} />
           ))}
         </div>

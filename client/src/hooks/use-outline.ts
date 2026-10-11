@@ -62,7 +62,7 @@ export const useCreateOutlineItem = () => {
         return { success: true, data: jsonData } as OutlineItemSuccess;
       } catch (error) {
         console.error("Error creating outline item:", error);
-        return { success: false, error, projectId: data.projectId } as OutlineItemError;
+        throw error;
       }
     },
     onSettled: (result) => {
@@ -105,7 +105,7 @@ export const useUpdateOutlineItem = () => {
         return { success: true, data: jsonData } as OutlineItemSuccess;
       } catch (error) {
         console.error("Error updating outline item:", error);
-        return { success: false, error, id } as OutlineItemError;
+        throw error;
       }
     },
     onSettled: (result) => {
@@ -137,58 +137,15 @@ export const useUpdateOutlineItem = () => {
 export const useDeleteOutlineItem = () => {
   return useMutation<DeleteOutlineItemResult, Error, { id: number | string, projectId: number | string }>({
     mutationFn: async ({ id, projectId }) => {
-      try {
-        // Attempt to delete but don't worry about response status
-        await apiRequest('DELETE', `/api/outline/${id}`, undefined);
-      } catch (error) {
-        // Completely silent exception handling
-        // Just log to console for debugging but don't show any UI error
-        console.log("Outline deletion error handled silently:", error);
-      }
-      
-      // Always return success regardless of what happened
-      // This ensures no error toasts or UI notifications
-      return { 
-        success: true, 
-        data: { id, projectId } 
-      } as DeleteOutlineItemSuccess;
+      await apiRequest("DELETE", `/api/outline/${id}`);
+      return { success: true, data: { id, projectId } } as DeleteOutlineItemSuccess;
     },
-    onSettled: (result) => {
-      if (!result || !result.success) {
-        console.error("Delete operation was not successful:", result?.error);
-        return;
-      }
-      
-      const data = result.data;
-      
-      // Update the cache directly without triggering a refetch
-      const outlineItems = queryClient.getQueryData<OutlineItem[]>([`/api/projects/${data.projectId}/outline`]);
-      
-      if (outlineItems) {
-        // Remove the deleted item and all its children
-        const deletedItemIds = new Set<number | string>();
-        
-        // Find the item and all its children
-        const findItemsToDelete = (parentId: number | string) => {
-          outlineItems.forEach(item => {
-            if (item.id === parentId || item.parentId === parentId) {
-              deletedItemIds.add(item.id);
-              // Recursively find children's children
-              findItemsToDelete(item.id);
-            }
-          });
-        };
-        
-        findItemsToDelete(data.id);
-        
-        // Filter out the deleted items
-        const filteredItems = outlineItems.filter(item => !deletedItemIds.has(item.id));
-        
-        queryClient.setQueryData([`/api/projects/${data.projectId}/outline`], filteredItems);
-      } else {
-        // Fall back to invalidation if we don't have the data cached
-        queryClient.invalidateQueries({ queryKey: [`/api/projects/${data.projectId}/outline`] });
-      }
+    onSuccess: (result) => {
+      if (!result.success) return;
+      const { id, projectId } = result.data;
+      queryClient.setQueryData([`/api/projects/${projectId}/outline`], (old: OutlineItem[] | undefined) =>
+        old?.filter(item => item.id !== Number(id)));
+      queryClient.removeQueries({ queryKey: [`/api/outline/${id}`] });
     }
   });
 };

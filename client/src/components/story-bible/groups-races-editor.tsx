@@ -1,4 +1,8 @@
-import { useState, useEffect } from "react";
+import { TagInput } from "./tag-input";
+import { useEditorDraft } from "@/hooks/use-editor-draft";
+import { useAutosave, withPendingEdits } from "@/hooks/use-autosave";
+import { SaveStatus } from "@/components/save-status";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,10 +14,9 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Save, Trash2, Archive, ArchiveRestore, Star, StarOff, ChevronDown, ChevronRight, Plus, X, Users, ImageIcon } from "lucide-react";
 import { FileUpload } from "@/components/ui/file-upload";
-import { useUpdateStoryBibleEntry, useDeleteStoryBibleEntry, useStoryBibleEntries } from "@/hooks/use-story-bible";
+import { useDeleteStoryBibleEntry, useStoryBibleEntries } from "@/hooks/use-story-bible";
 import { useToast } from "@/hooks/use-toast";
 import { StoryBibleEntry } from "@shared/schema";
-import { debounce } from "lodash";
 
 interface GroupsRacesEditorProps {
   entry: StoryBibleEntry;
@@ -22,17 +25,19 @@ interface GroupsRacesEditorProps {
 }
 
 export function GroupsRacesEditor({ entry, projectId, onClose }: GroupsRacesEditorProps) {
+  entry = withPendingEdits(`/api/story-bible/${entry.id}`, entry);
+  const autosave = useAutosave(`/api/story-bible/${entry.id}`, `/api/projects/${projectId}/story-bible`);
+
   // Core fields
   const [title, setTitle] = useState(entry.title);
   const [content, setContent] = useState(entry.content || "");
   const [category, setCategory] = useState(entry.category || "");
   const [tags, setTags] = useState<string[]>(entry.tags || []);
   const [relatedEntryIds, setRelatedEntryIds] = useState<number[]>(entry.relatedEntryIds || []);
-  const [metadata, setMetadata] = useState(entry.metadata || {});
+  const [metadata, setMetadata] = useEditorDraft<Record<string, any>>(entry.metadata || {});
   const [isArchived, setIsArchived] = useState(entry.isArchived || false);
   const [priority, setPriority] = useState(entry.priority || 0);
-  const [saveStatus, setSaveStatus] = useState<'saved' | 'saving'>('saved');
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const saveStatus = autosave.status;
 
   // Groups & Races specific fields from metadata
   const [groupCategory, setGroupCategory] = useState((metadata as any)?.groupCategory || "");
@@ -80,7 +85,6 @@ export function GroupsRacesEditor({ entry, projectId, onClose }: GroupsRacesEdit
   const [relationshipsExpanded, setRelationshipsExpanded] = useState(false);
   const [notesExpanded, setNotesExpanded] = useState(false);
 
-  const updateMutation = useUpdateStoryBibleEntry({ skipInvalidation: true });
   const deleteMutation = useDeleteStoryBibleEntry();
   const { data: allEntries } = useStoryBibleEntries(projectId);
   const { toast } = useToast();
@@ -92,70 +96,36 @@ export function GroupsRacesEditor({ entry, projectId, onClose }: GroupsRacesEdit
   const locationEntries = availableForLinking.filter(e => e.entryType === "locations");
 
   // Debounced save function
-  const debouncedSave = debounce(
-    (updates: any) => {
-      updateMutation.mutate(
-        { id: entry.id, ...updates },
-        {
-          onSuccess: () => {
-            setSaveStatus('saved');
-          },
-          onError: () => {
-            toast({
-              title: "Failed to save",
-              description: "There was an error saving your changes. Please try again.",
-              variant: "destructive",
-            });
-            setSaveStatus('saved');
-          }
-        }
-      );
-    }, 1000);
+  const debouncedSave = autosave.save;
 
   // Update metadata helper
   const updateMetadata = (newFields: Record<string, any>) => {
-    const updatedMetadata = { ...metadata, ...newFields };
-    setMetadata(updatedMetadata);
-    if (!isInitialLoad) {
-      setSaveStatus('saving');
-      debouncedSave({ metadata: updatedMetadata });
-    }
+    const updatedMetadata = setMetadata(previous => ({ ...previous, ...newFields }));
+    debouncedSave({ metadata: updatedMetadata });
   };
 
   // Field change handlers
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newTitle = e.target.value;
     setTitle(newTitle);
-    if (!isInitialLoad) {
-      setSaveStatus('saving');
-      debouncedSave({ title: newTitle });
-    }
+    debouncedSave({ title: newTitle });
   };
 
   const handleCategoryChange = (value: string) => {
     setCategory(value);
-    if (!isInitialLoad) {
-      setSaveStatus('saving');
-      debouncedSave({ category: value || null });
-    }
+    debouncedSave({ category: value || null });
   };
 
   const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newContent = e.target.value;
     setContent(newContent);
-    if (!isInitialLoad) {
-      setSaveStatus('saving');
-      debouncedSave({ content: newContent });
-    }
+    debouncedSave({ content: newContent });
   };
 
   const togglePriority = () => {
     const newPriority = priority > 0 ? 0 : 1;
     setPriority(newPriority);
-    if (!isInitialLoad) {
-      setSaveStatus('saving');
-      debouncedSave({ priority: newPriority });
-    }
+    debouncedSave({ priority: newPriority });
   };
 
   // Array management helpers
@@ -208,23 +178,18 @@ export function GroupsRacesEditor({ entry, projectId, onClose }: GroupsRacesEdit
     if (!relatedEntryIds.includes(entryId)) {
       const updatedIds = [...relatedEntryIds, entryId];
       setRelatedEntryIds(updatedIds);
-      if (!isInitialLoad) {
-        setSaveStatus('saving');
-        debouncedSave({ relatedEntryIds: updatedIds });
-      }
+      debouncedSave({ relatedEntryIds: updatedIds });
     }
   };
 
   const handleRemoveRelatedEntry = (entryId: number) => {
     const updatedIds = relatedEntryIds.filter(id => id !== entryId);
     setRelatedEntryIds(updatedIds);
-    if (!isInitialLoad) {
-      setSaveStatus('saving');
-      debouncedSave({ relatedEntryIds: updatedIds });
-    }
+    debouncedSave({ relatedEntryIds: updatedIds });
   };
 
   const handleDelete = async () => {
+    if (!await autosave.flush()) return;
     try {
       await deleteMutation.mutateAsync(entry.id);
       toast({
@@ -235,18 +200,13 @@ export function GroupsRacesEditor({ entry, projectId, onClose }: GroupsRacesEdit
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to delete group/race",
+        description: error instanceof Error ? error.message : "Failed to delete entry",
         variant: "destructive",
       });
     }
   };
 
   // Mark as loaded after first render
-  useEffect(() => {
-    if (isInitialLoad) {
-      setIsInitialLoad(false);
-    }
-  }, [isInitialLoad]);
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
@@ -258,17 +218,17 @@ export function GroupsRacesEditor({ entry, projectId, onClose }: GroupsRacesEdit
               <Users className="h-6 w-6 text-muted-foreground" />
             </div>
             <div>
-              <Input
-                value={title}
-                onChange={handleTitleChange}
-                className="text-2xl font-bold border-none p-0 h-auto bg-transparent text-foreground"
-                placeholder="Group/Race name..."
-              />
-              {saveStatus === 'saving' && (
-                <Badge variant="outline" className="text-xs mt-1">
-                  Saving...
-                </Badge>
-              )}
+              <div className="min-w-0 flex-1 space-y-2">
+                <Label htmlFor={`groups-races-title-${entry.id}`}>Group or race name</Label>
+                <Input
+                  id={`groups-races-title-${entry.id}`}
+                  value={title}
+                  onChange={handleTitleChange}
+                  className="text-2xl font-bold h-12"
+                  placeholder="Group/Race name..."
+                />
+              </div>
+              <SaveStatus status={saveStatus} retry={autosave.flush} />
             </div>
           </div>
           
@@ -292,7 +252,7 @@ export function GroupsRacesEditor({ entry, projectId, onClose }: GroupsRacesEdit
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setIsArchived(!isArchived)}
+              onClick={() => { setIsArchived(!isArchived); autosave.save({ isArchived: !isArchived }); }}
             >
               {isArchived ? <ArchiveRestore className="h-4 w-4" /> : <Archive className="h-4 w-4" />}
             </Button>
@@ -423,14 +383,16 @@ export function GroupsRacesEditor({ entry, projectId, onClose }: GroupsRacesEdit
                 <CardContent className="space-y-6">
                   <div className="space-y-2">
                     <Label htmlFor="parentGroup">Parent Group</Label>
-                    <Select onValueChange={(value) => {
-                      setParentGroup(value);
-                      updateMetadata({ parentGroup: value });
+                    <Select value={parentGroup || "__none__"} onValueChange={(value) => {
+                      const next = value === "__none__" ? "" : value;
+                      setParentGroup(next);
+                      updateMetadata({ parentGroup: next });
                     }}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select parent group..." />
                       </SelectTrigger>
                       <SelectContent>
+                        <SelectItem value="__none__">None</SelectItem>
                         {groupEntries.map((group) => (
                           <SelectItem key={group.id} value={group.id.toString()}>
                             {group.title}
@@ -519,7 +481,7 @@ export function GroupsRacesEditor({ entry, projectId, onClose }: GroupsRacesEdit
                   <div className="space-y-2">
                     <Label>Notable Members</Label>
                     <div className="space-y-2">
-                      {characterEntries.slice(0, 5).map((character) => (
+                      {characterEntries.map((character) => (
                         <div key={character.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
                           <div>
                             <span className="font-medium">{character.title}</span>
@@ -780,6 +742,10 @@ export function GroupsRacesEditor({ entry, projectId, onClose }: GroupsRacesEdit
               <CollapsibleContent>
                 <CardContent>
                   <Textarea
+                    id="notes"
+                    aria-label="Development notes"
+                    value={metadata.notes || ""}
+                    onChange={(e) => updateMetadata({ notes: e.target.value })}
                     placeholder="Writer's ideas, future plot hooks, open questions, development notes..."
                     className="min-h-[150px] resize-none"
                   />
@@ -892,16 +858,7 @@ export function GroupsRacesEditor({ entry, projectId, onClose }: GroupsRacesEdit
               <CardTitle className="text-lg">Tags</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex flex-wrap gap-2">
-                {tags.map((tag, index) => (
-                  <Badge key={index} variant="secondary" className="text-xs">
-                    {tag}
-                  </Badge>
-                ))}
-                {tags.length === 0 && (
-                  <p className="text-sm text-muted-foreground">No tags added</p>
-                )}
-              </div>
+              <TagInput tags={tags} onChange={(next) => { setTags(next); autosave.save({ tags: next }); }} />
             </CardContent>
           </Card>
 

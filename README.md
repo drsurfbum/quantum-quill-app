@@ -1,3 +1,11 @@
+Current persistence and data integrity: [durable recovery and Story Bible fixes](docs/DRAFT_RECOVERY_AND_DATA_INTEGRITY.md).
+
+Story Bible follow-up: [field audit](docs/STORY_BIBLE_FIELD_AUDIT.md) and [completion roadmap](docs/STORY_BIBLE_ROADMAP.md).
+
+> Editor reliability follow-up: [autosave audit and remaining limits](docs/AUTOSAVE_AUDIT.md).
+
+> Local stabilization: see [results and remaining work](docs/STABILIZATION_REPORT.md) and [current test instructions](README-Testing.md).
+
 > **Recovered October 11, 2026.** See [Local setup](LOCAL_SETUP.md) to run this project and [Restart audit](docs/RESTART_AUDIT.md) for verified feature status and known issues. The historical overview below contains claims that the audit corrects.
 
 # QQ - AI-Enhanced Creative Writing Platform

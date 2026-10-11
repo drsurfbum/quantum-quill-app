@@ -313,7 +313,8 @@ export default function Outline() {
                     {selectedItem.title}
                   </h2>
                 </div>
-                <OutlineRichEditor 
+                <OutlineRichEditor
+                  key={selectedItem.id}
                   item={selectedItem}
                   projectId={Number(id)}
                 />

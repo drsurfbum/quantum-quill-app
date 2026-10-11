@@ -1,254 +1,86 @@
-import request from 'supertest';
-import { Express } from 'express';
-import { createApp } from '../server/index';
-import { storage } from '../server/storage';
+import request from "supertest";
+import { twoWriters } from "./helpers";
 
-describe('Authentication Integration Tests', () => {
-  let app: Express;
-  let testUserId: number;
-  const testUser = {
-    username: `integrationuser_${Date.now()}`,
-    email: `integration_${Date.now()}@example.com`,
-    password: 'integrationtest123'
-  };
-
-  beforeAll(async () => {
-    app = await createApp();
-    
-    // Create test user
-    const response = await request(app)
-      .post('/api/register')
-      .send(testUser);
-    
-    testUserId = response.body.id;
+const kinds = [
+  { route: "chapters", list: "chapters", data: { title: "Chapter", content: "Draft", order: 0 } },
+  { route: "whiteboards", list: "whiteboards", data: { name: "Board", canvasData: {} } },
+  { route: "outline", list: "outline", data: { title: "Outline", parentId: null, order: 0 } },
+  { route: "story-bible", list: "story-bible", data: { title: "Character", entryType: "character", metadata: {} } },
+];
+describe("Project ownership and writable fields", () => {
+  it.each(kinds)("protects $route reads, lists, creates, updates and deletes", async ({ route, list, data }) => {
+    const { app, agent, other, project, otherProject, storage } = await twoWriters();
+    const created = await agent.post(`/api/${route}`).send({ ...data, projectId: project.id }).expect(201);
+    const url = `/api/${route}/${created.body.id}`;
+    await agent.get(url).expect(200);
+    await request(app).get(url).expect(401);
+    await other.get(url).expect(403);
+    await other.get(`/api/projects/${project.id}/${list}`).expect(403);
+    await other.post(`/api/${route}`).send({ ...data, projectId: project.id }).expect(403);
+    await other.put(url).send({ title: "Stolen" }).expect(403);
+    await other.delete(url).expect(403);
+    await agent.put(url).send({ projectId: otherProject.id }).expect(400);
+    await agent.put(url).send({ id: 900 }).expect(400);
+    await agent.put(url).send({ createdAt: "2000-01-01" }).expect(400);
+    const update = route === "whiteboards" ? { name: "Saved board" } : { title: "Saved title" };
+    await agent.put(url).send(update).expect(200);
+    const persisted = await agent.get(url).expect(200);
+    expect(persisted.body).toMatchObject(update);
+    expect(persisted.body.projectId).toBe(project.id);
+    await agent.delete(url).expect(204);
+    await agent.get(url).expect(404);
+    expect(storage).toBeDefined();
   });
-
-  afterAll(async () => {
-    // Note: No deleteUser method available in storage interface
-    // Test users will remain in database for manual cleanup if needed
+  it("protects plots and sections through their owning project", async () => {
+    const { agent, other, project, storage } = await twoWriters();
+    const template = await storage.createPlotStructureTemplate({ templateType: "test", name: "Test", sections: [] });
+    const plot = (await agent.post("/api/plot-structures").send({ projectId: project.id, templateId: template.id, name: "Plot" }).expect(201)).body;
+    const section = (await agent.post("/api/plot-structure-sections").send({ plotStructureId: plot.id, sectionKey: "start", title: "Start", content: "Scene", order: 0 }).expect(201)).body;
+    for (const url of [`/api/plot-structures/${plot.id}`, `/api/plot-structure-sections/${section.id}`]) {
+      await other.get(url).expect(403);
+      await other.put(url).send({ title: "Stolen" }).expect(403);
+      await other.delete(url).expect(403);
+    }
+    await other.get(`/api/projects/${project.id}/plot-structures`).expect(403);
+    await other.get(`/api/plot-structures/${plot.id}/sections`).expect(403);
+    await other.post("/api/plot-structures").send({ projectId: project.id, templateId: template.id, name: "Stolen" }).expect(403);
+    await other.post("/api/plot-structure-sections").send({ plotStructureId: plot.id, sectionKey: "other", title: "Stolen", order: 1 }).expect(403);
+    await agent.put(`/api/plot-structure-sections/${section.id}`).send({ plotStructureId: 900 }).expect(400);
+    await agent.put(`/api/plot-structures/${plot.id}`).send({ templateId: 900 }).expect(400);
+    await agent.put(`/api/plot-structure-sections/${section.id}`).send({ content: "Saved scene" }).expect(200);
+    expect((await agent.get(`/api/plot-structure-sections/${section.id}`)).body.content).toBe("Saved scene");
+    await agent.delete(`/api/plot-structures/${plot.id}`).expect(409);
+    await agent.delete(`/api/plot-structure-sections/${section.id}`).expect(204);
+    await agent.delete(`/api/plot-structures/${plot.id}`).expect(204);
+    // Existing orphaned writing is preserved, never exposed by guessing an ID.
+    const orphan = await storage.createPlotStructureSection({ plotStructureId: 999, sectionKey: "orphan", title: "Keep", content: "Preserved", order: 0 });
+    await agent.put(`/api/plot-structure-sections/${orphan.id}`).send({ content: "Replace" }).expect(404);
+    expect((await storage.getPlotStructureSection(orphan.id))!.content).toBe("Preserved");
   });
-
-  describe('End-to-End Authentication Flow', () => {
-    it('should complete full registration -> login -> access protected resource flow', async () => {
-      // Step 1: Register new user
-      const newUser = {
-        username: `e2euser_${Date.now()}`,
-        email: `e2e_${Date.now()}@example.com`,
-        password: 'e2etest123'
-      };
-
-      const registerResponse = await request(app)
-        .post('/api/register')
-        .send(newUser)
-        .expect(201);
-
-      const userId = registerResponse.body.id;
-
-      try {
-        // Step 2: Login with new user
-        const loginResponse = await request(app)
-          .post('/api/login')
-          .send({
-            username: newUser.username,
-            password: newUser.password
-          })
-          .expect(200);
-
-        const cookies = loginResponse.headers['set-cookie'];
-        const sessionCookie = Array.isArray(cookies) 
-          ? cookies.find((cookie: string) => cookie.startsWith('quill_sid=')) || ''
-          : '';
-
-        // Step 3: Access protected resource
-        const userResponse = await request(app)
-          .get('/api/user')
-          .set('Cookie', sessionCookie)
-          .expect(200);
-
-        expect(userResponse.body.id).toBe(userId);
-        expect(userResponse.body.username).toBe(newUser.username);
-
-        // Step 4: Create a project (another protected resource)
-        const projectData = {
-          title: 'Test Project',
-          description: 'E2E test project'
-        };
-
-        const projectResponse = await request(app)
-          .post('/api/projects')
-          .set('Cookie', sessionCookie)
-          .send(projectData)
-          .expect(201);
-
-        expect(projectResponse.body.title).toBe(projectData.title);
-        expect(projectResponse.body.userId).toBe(userId);
-
-        // Step 5: Logout
-        await request(app)
-          .post('/api/logout')
-          .set('Cookie', sessionCookie)
-          .expect(200);
-
-        // Step 6: Verify access is denied after logout
-        await request(app)
-          .get('/api/user')
-          .set('Cookie', sessionCookie)
-          .expect(401);
-
-      } finally {
-        // Note: No deleteUser method available in storage interface
-        // Test user will remain in database for manual cleanup if needed
-      }
-    });
-
-    it('should handle concurrent authentication attempts', async () => {
-      const concurrentLogins = Array.from({ length: 5 }, () =>
-        request(app)
-          .post('/api/login')
-          .send({
-            username: testUser.username,
-            password: testUser.password
-          })
-      );
-
-      const responses = await Promise.all(concurrentLogins);
-      
-      // All should succeed
-      responses.forEach(response => {
-        expect(response.status).toBe(200);
-        expect(response.body.id).toBe(testUserId);
-      });
-    });
-
-    it('should maintain session across multiple requests', async () => {
-      // Login
-      const loginResponse = await request(app)
-        .post('/api/login')
-        .send({
-          username: testUser.username,
-          password: testUser.password
-        })
-        .expect(200);
-
-      const cookies = loginResponse.headers['set-cookie'];
-      const sessionCookie = Array.isArray(cookies) 
-        ? cookies.find((cookie: string) => cookie.startsWith('quill_sid=')) || ''
-        : '';
-
-      // Make multiple authenticated requests
-      const requests = [
-        request(app).get('/api/user').set('Cookie', sessionCookie),
-        request(app).get('/api/projects').set('Cookie', sessionCookie),
-        request(app).get('/api/session-check').set('Cookie', sessionCookie),
-      ];
-
-      const responses = await Promise.all(requests);
-      
-      // All should succeed
-      responses.forEach(response => {
-        expect(response.status).toBe(200);
-      });
-    });
+  it("rejects owner reassignment, cross-project links, invalid IDs and outline cycles", async () => {
+    const { agent, other, project, otherProject, otherUser } = await twoWriters();
+    await other.get(`/api/projects/${project.id}`).expect(403);
+    await other.put(`/api/projects/${project.id}/trash`).expect(403);
+    await other.put(`/api/projects/${project.id}/restore`).expect(403);
+    await other.delete(`/api/projects/${project.id}`).expect(403);
+    await agent.put(`/api/projects/${project.id}`).send({ userId: otherUser.id }).expect(400);
+    await agent.get("/api/projects/1junk").expect(400);
+    await agent.get("/api/projects/-1").expect(400);
+    const parent = (await agent.post("/api/outline").send({ projectId: project.id, title: "Parent", order: 0 }).expect(201)).body;
+    const child = (await agent.post("/api/outline").send({ projectId: project.id, title: "Child", parentId: parent.id, order: 1 }).expect(201)).body;
+    await agent.put(`/api/outline/${parent.id}`).send({ parentId: child.id }).expect(400);
+    await other.post("/api/outline").send({ projectId: otherProject.id, title: "Cross link", parentId: parent.id, order: 0 }).expect(400);
+    await agent.delete(`/api/outline/${parent.id}`).expect(409);
+    await agent.delete(`/api/projects/${project.id}`).expect(409);
+    const entry = (await agent.post("/api/story-bible").send({ projectId: project.id, title: "Owned", entryType: "character" }).expect(201)).body;
+    await other.post("/api/story-bible").send({ projectId: otherProject.id, title: "Cross link", entryType: "character", relatedEntryIds: [entry.id] }).expect(400);
   });
-
-  describe('Token Authentication Integration', () => {
-    it('should work with different token formats', async () => {
-      const tokens = [
-        `user-${testUserId}-${Date.now()}`,
-        `user-${testUserId}-${Date.now() + 1000}`,
-        `user-${testUserId}-${Date.now() + 2000}`
-      ];
-
-      for (const token of tokens) {
-        const response = await request(app)
-          .get('/api/user')
-          .set('Authorization', `Bearer ${token}`)
-          .expect(200);
-
-        expect(response.body.id).toBe(testUserId);
-      }
-    });
-
-    it('should handle token and session authentication preference', async () => {
-      // Login to get session
-      const loginResponse = await request(app)
-        .post('/api/login')
-        .send({
-          username: testUser.username,
-          password: testUser.password
-        });
-
-      const cookies = loginResponse.headers['set-cookie'];
-      const sessionCookie = Array.isArray(cookies) 
-        ? cookies.find((cookie: string) => cookie.startsWith('quill_sid=')) || ''
-        : '';
-
-      const validToken = `user-${testUserId}-${Date.now()}`;
-
-      // Request with both session and token - should prefer session
-      const response = await request(app)
-        .get('/api/user')
-        .set('Cookie', sessionCookie)
-        .set('Authorization', `Bearer ${validToken}`)
-        .expect(200);
-
-      expect(response.body.id).toBe(testUserId);
-      expect(response.body.username).toBe(testUser.username);
-    });
-  });
-
-  describe('Error Handling and Edge Cases', () => {
-    it('should handle malformed authorization headers', async () => {
-      const malformedHeaders = [
-        'Bearer',
-        'bearer token',
-        'Basic dGVzdA==',
-        'Bearer ',
-        'Token abc123'
-      ];
-
-      for (const header of malformedHeaders) {
-        await request(app)
-          .get('/api/user')
-          .set('Authorization', header)
-          .expect(401);
-      }
-    });
-
-    it('should handle session tampering attempts', async () => {
-      const tamperedCookies = [
-        'quill_sid=tampered-session-id',
-        'quill_sid=',
-        'quill_sid=invalid.session.data'
-      ];
-
-      for (const cookie of tamperedCookies) {
-        await request(app)
-          .get('/api/user')
-          .set('Cookie', cookie)
-          .expect(401);
-      }
-    });
-
-    it('should handle missing Content-Type header in login', async () => {
-      const response = await request(app)
-        .post('/api/login')
-        .send(JSON.stringify({
-          username: testUser.username,
-          password: testUser.password
-        }))
-        .expect(401); // Should fail without proper Content-Type
-
-      expect(response.body).toHaveProperty('message');
-    });
-
-    it('should handle extremely long tokens', async () => {
-      const longToken = 'user-1-' + 'a'.repeat(10000);
-      
-      await request(app)
-        .get('/api/user')
-        .set('Authorization', `Bearer ${longToken}`)
-        .expect(401);
-    });
+  it("returns controlled errors and continues serving requests", async () => {
+    const { agent, storage } = await twoWriters();
+    const spy = jest.spyOn(storage, "getUserProjects").mockRejectedValueOnce(new Error("secret database details"));
+    const response = await agent.get("/api/projects").expect(500);
+    expect(response.body).toEqual({ message: "Internal server error" });
+    await agent.get("/api/projects").expect(200);
+    spy.mockRestore();
   });
 });

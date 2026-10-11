@@ -1,0 +1,354 @@
+import type { SaveWritingStyle } from "@shared/writing-styles";
+import { writingStyles } from "@shared/schema";
+import {
+  type User, type InsertUser,
+  type Project, type InsertProject,
+  type Chapter, type InsertChapter,
+  type Whiteboard, type InsertWhiteboard,
+  type OutlineItem, type InsertOutlineItem,
+  type StoryBibleEntry, type InsertStoryBibleEntry,
+  type PlotStructureTemplate, type InsertPlotStructureTemplate,
+  type PlotStructure, type InsertPlotStructure,
+  type PlotStructureSection, type InsertPlotStructureSection,
+  users, projects, chapters, whiteboards, outlineItems, storyBibleEntries,
+  plotStructureTemplates, plotStructures, plotStructureSections
+} from "@shared/schema";
+import { db } from "./db";
+import { eq, and, sql, getTableColumns } from "drizzle-orm";
+import session from "express-session";
+import connectPg from "connect-pg-simple";
+import { pool } from "./db";
+
+import type { IStorage } from "./storage";
+
+// The field comparison and update are one SQL statement. Concurrent writers
+// cannot both replace the same base value, and unrelated field edits can merge.
+function baseCondition(table: any, base?: Record<string, unknown>) {
+  const columns = getTableColumns(table);
+  return base && and(...Object.entries(base).map(([key, value]) => {
+    if (!columns[key]) throw new Error("Unknown draft field");
+    return sql`coalesce(to_jsonb(${columns[key]}), 'null'::jsonb) = ${JSON.stringify(value ?? null)}::jsonb`;
+  }));
+}
+
+export class DatabaseStorage implements IStorage {
+  sessionStore: session.Store;
+
+  constructor(private database: Pick<typeof db, "select" | "insert" | "update" | "delete" | "transaction" | "execute"> = db, store?: session.Store) {
+    if (store) { this.sessionStore = store; return; }
+    const PostgresSessionStore = connectPg(session);
+    this.sessionStore = new PostgresSessionStore({ 
+      pool,
+      createTableIfMissing: true,
+      tableName: 'session',
+      ttl: 60 * 60 * 24 * 7, // 7 days expiration, matches cookie in auth.ts
+      pruneSessionInterval: 60 // Prune every minute for development
+    });
+    console.log("DatabaseStorage: Using PostgreSQL session store");
+  }
+
+  async withProjectLock<T>(projectId: number, work: (storage: IStorage) => Promise<T>): Promise<T> {
+    return this.database.transaction(async transaction => {
+      // Project-scoped advisory lock serializes link validation + writes/deletes
+      // across processes. It touches no user data and releases on commit/rollback.
+      await transaction.execute(sql`select pg_advisory_xact_lock(5329233, ${projectId})`);
+      return work(new DatabaseStorage(transaction, this.sessionStore));
+    });
+  }
+
+  // User methods
+  async getUser(id: number): Promise<User | undefined> {
+    const [user] = await this.database.select().from(users).where(eq(users.id, id));
+    return user;
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await this.database.select().from(users).where(eq(users.username, username));
+    return user;
+  }
+
+  async createUser(insertUser: InsertUser): Promise<User> {
+    const [user] = await this.database.insert(users).values(insertUser).returning();
+    return user;
+  }
+
+  async getWritingStyles(userId: number) {
+    return this.database.select().from(writingStyles).where(eq(writingStyles.userId, userId)).orderBy(writingStyles.name);
+  }
+  async saveWritingStyle(userId: number, style: SaveWritingStyle) {
+    const [saved] = await this.database.insert(writingStyles).values({ ...style, userId })
+      .onConflictDoUpdate({ target: [writingStyles.userId, writingStyles.name], set: { definition: style.definition, updatedAt: new Date() } }).returning();
+    return saved;
+  }
+  async deleteWritingStyle(userId: number, id: number) {
+    const removed = await this.database.delete(writingStyles).where(and(eq(writingStyles.userId, userId), eq(writingStyles.id, id))).returning({ id: writingStyles.id });
+    return removed.length > 0;
+  }
+
+  // Project methods
+  async getProject(id: number): Promise<Project | undefined> {
+    const [project] = await this.database.select().from(projects).where(eq(projects.id, id));
+    return project;
+  }
+
+  async getUserProjects(userId: number): Promise<Project[]> {
+    return this.database.select().from(projects).where(
+      and(
+        eq(projects.userId, userId),
+        eq(projects.isTrashed, false)
+      )
+    );
+  }
+
+  async createProject(project: InsertProject): Promise<Project> {
+    const [newProject] = await this.database.insert(projects).values(project).returning();
+    return newProject;
+  }
+
+  async updateProject(id: number, projectUpdate: Partial<Project>): Promise<Project | undefined> {
+    const [updatedProject] = await this.database
+      .update(projects)
+      .set({ ...projectUpdate, updatedAt: new Date() })
+      .where(eq(projects.id, id))
+      .returning();
+    return updatedProject;
+  }
+
+  async deleteProject(id: number): Promise<boolean> {
+    const result = await this.database.delete(projects).where(eq(projects.id, id));
+    return !!result;
+  }
+
+  async trashProject(id: number): Promise<Project | undefined> {
+    return this.updateProject(id, { isTrashed: true });
+  }
+
+  async restoreProject(id: number): Promise<Project | undefined> {
+    return this.updateProject(id, { isTrashed: false });
+  }
+
+  // Chapter methods
+  async getChapter(id: number): Promise<Chapter | undefined> {
+    const [chapter] = await this.database.select().from(chapters).where(eq(chapters.id, id));
+    return chapter;
+  }
+
+  async getProjectChapters(projectId: number): Promise<Chapter[]> {
+    return this.database
+      .select()
+      .from(chapters)
+      .where(eq(chapters.projectId, projectId))
+      .orderBy(chapters.order);
+  }
+
+  async createChapter(chapter: InsertChapter): Promise<Chapter> {
+    const [newChapter] = await this.database.insert(chapters).values(chapter).returning();
+    return newChapter;
+  }
+
+  async updateChapter(id: number, chapterUpdate: Partial<Chapter>, base?: Record<string, unknown>): Promise<Chapter | undefined> {
+    const [updatedChapter] = await this.database
+      .update(chapters)
+      .set({ ...chapterUpdate, updatedAt: new Date() })
+      .where(and(eq(chapters.id, id), baseCondition(chapters, base)))
+      .returning();
+    return updatedChapter;
+  }
+
+  async deleteChapter(id: number): Promise<boolean> {
+    const result = await this.database.delete(chapters).where(eq(chapters.id, id));
+    return !!result;
+  }
+
+  // Whiteboard methods
+  async getWhiteboard(id: number): Promise<Whiteboard | undefined> {
+    const [whiteboard] = await this.database.select().from(whiteboards).where(eq(whiteboards.id, id));
+    return whiteboard;
+  }
+
+  async getProjectWhiteboards(projectId: number): Promise<Whiteboard[]> {
+    return this.database
+      .select()
+      .from(whiteboards)
+      .where(eq(whiteboards.projectId, projectId));
+  }
+
+  async createWhiteboard(whiteboard: InsertWhiteboard): Promise<Whiteboard> {
+    const [newWhiteboard] = await this.database.insert(whiteboards).values(whiteboard).returning();
+    return newWhiteboard;
+  }
+
+  async updateWhiteboard(id: number, whiteboardUpdate: Partial<Whiteboard>, base?: Record<string, unknown>): Promise<Whiteboard | undefined> {
+    const [updatedWhiteboard] = await this.database
+      .update(whiteboards)
+      .set({ ...whiteboardUpdate, updatedAt: new Date() })
+      .where(and(eq(whiteboards.id, id), baseCondition(whiteboards, base)))
+      .returning();
+    return updatedWhiteboard;
+  }
+
+  async deleteWhiteboard(id: number): Promise<boolean> {
+    const result = await this.database.delete(whiteboards).where(eq(whiteboards.id, id));
+    return !!result;
+  }
+
+  // Outline methods
+  async getOutlineItem(id: number): Promise<OutlineItem | undefined> {
+    const [outlineItem] = await this.database.select().from(outlineItems).where(eq(outlineItems.id, id));
+    return outlineItem;
+  }
+
+  async getProjectOutline(projectId: number): Promise<OutlineItem[]> {
+    return this.database
+      .select()
+      .from(outlineItems)
+      .where(eq(outlineItems.projectId, projectId))
+      .orderBy(outlineItems.order);
+  }
+
+  async createOutlineItem(outlineItem: InsertOutlineItem): Promise<OutlineItem> {
+    const [newOutlineItem] = await this.database.insert(outlineItems).values(outlineItem).returning();
+    return newOutlineItem;
+  }
+
+  async updateOutlineItem(id: number, outlineItemUpdate: Partial<OutlineItem>, base?: Record<string, unknown>): Promise<OutlineItem | undefined> {
+    const [updatedOutlineItem] = await this.database
+      .update(outlineItems)
+      .set({ ...outlineItemUpdate, updatedAt: new Date() })
+      .where(and(eq(outlineItems.id, id), baseCondition(outlineItems, base)))
+      .returning();
+    return updatedOutlineItem;
+  }
+
+  async deleteOutlineItem(id: number): Promise<boolean> {
+    const result = await this.database.delete(outlineItems).where(eq(outlineItems.id, id));
+    return !!result;
+  }
+
+  // Story Bible methods
+  async getStoryBibleEntry(id: number): Promise<StoryBibleEntry | undefined> {
+    const [entry] = await this.database.select().from(storyBibleEntries).where(eq(storyBibleEntries.id, id));
+    return entry;
+  }
+
+  async getProjectStoryBible(projectId: number): Promise<StoryBibleEntry[]> {
+    return this.database
+      .select()
+      .from(storyBibleEntries)
+      .where(eq(storyBibleEntries.projectId, projectId));
+  }
+
+  async createStoryBibleEntry(entry: InsertStoryBibleEntry): Promise<StoryBibleEntry> {
+    const [newEntry] = await this.database.insert(storyBibleEntries).values(entry).returning();
+    return newEntry;
+  }
+
+  async updateStoryBibleEntry(id: number, entryUpdate: Partial<StoryBibleEntry>, base?: Record<string, unknown>): Promise<StoryBibleEntry | undefined> {
+    const [updatedEntry] = await this.database
+      .update(storyBibleEntries)
+      .set({ ...entryUpdate, updatedAt: new Date() })
+      .where(and(eq(storyBibleEntries.id, id), baseCondition(storyBibleEntries, base)))
+      .returning();
+    return updatedEntry;
+  }
+
+  async deleteStoryBibleEntry(id: number): Promise<boolean> {
+    const result = await this.database.delete(storyBibleEntries).where(eq(storyBibleEntries.id, id));
+    return !!result;
+  }
+  
+  // Plot Structure Template methods
+  async getPlotStructureTemplate(id: number): Promise<PlotStructureTemplate | undefined> {
+    const [template] = await this.database.select().from(plotStructureTemplates).where(eq(plotStructureTemplates.id, id));
+    return template;
+  }
+  
+  async getAllPlotStructureTemplates(): Promise<PlotStructureTemplate[]> {
+    return this.database.select().from(plotStructureTemplates);
+  }
+  
+  async createPlotStructureTemplate(template: InsertPlotStructureTemplate): Promise<PlotStructureTemplate> {
+    const [newTemplate] = await this.database.insert(plotStructureTemplates).values(template).returning();
+    return newTemplate;
+  }
+  
+  async updatePlotStructureTemplate(id: number, templateUpdate: Partial<PlotStructureTemplate>): Promise<PlotStructureTemplate | undefined> {
+    const [updatedTemplate] = await this.database
+      .update(plotStructureTemplates)
+      .set({ ...templateUpdate, updatedAt: new Date() })
+      .where(eq(plotStructureTemplates.id, id))
+      .returning();
+    return updatedTemplate;
+  }
+  
+  async deletePlotStructureTemplate(id: number): Promise<boolean> {
+    const result = await this.database.delete(plotStructureTemplates).where(eq(plotStructureTemplates.id, id));
+    return !!result;
+  }
+  
+  // Plot Structure methods
+  async getPlotStructure(id: number): Promise<PlotStructure | undefined> {
+    const [structure] = await this.database.select().from(plotStructures).where(eq(plotStructures.id, id));
+    return structure;
+  }
+  
+  async getProjectPlotStructures(projectId: number): Promise<PlotStructure[]> {
+    return this.database
+      .select()
+      .from(plotStructures)
+      .where(eq(plotStructures.projectId, projectId));
+  }
+  
+  async createPlotStructure(structure: InsertPlotStructure): Promise<PlotStructure> {
+    const [newStructure] = await this.database.insert(plotStructures).values(structure).returning();
+    return newStructure;
+  }
+  
+  async updatePlotStructure(id: number, structureUpdate: Partial<PlotStructure>, base?: Record<string, unknown>): Promise<PlotStructure | undefined> {
+    const [updatedStructure] = await this.database
+      .update(plotStructures)
+      .set({ ...structureUpdate, updatedAt: new Date() })
+      .where(and(eq(plotStructures.id, id), baseCondition(plotStructures, base)))
+      .returning();
+    return updatedStructure;
+  }
+  
+  async deletePlotStructure(id: number): Promise<boolean> {
+    const result = await this.database.delete(plotStructures).where(eq(plotStructures.id, id));
+    return !!result;
+  }
+  
+  // Plot Structure Section methods
+  async getPlotStructureSection(id: number): Promise<PlotStructureSection | undefined> {
+    const [section] = await this.database.select().from(plotStructureSections).where(eq(plotStructureSections.id, id));
+    return section;
+  }
+  
+  async getPlotStructureSections(plotStructureId: number): Promise<PlotStructureSection[]> {
+    return this.database
+      .select()
+      .from(plotStructureSections)
+      .where(eq(plotStructureSections.plotStructureId, plotStructureId))
+      .orderBy(plotStructureSections.order);
+  }
+  
+  async createPlotStructureSection(section: InsertPlotStructureSection): Promise<PlotStructureSection> {
+    const [newSection] = await this.database.insert(plotStructureSections).values(section).returning();
+    return newSection;
+  }
+  
+  async updatePlotStructureSection(id: number, sectionUpdate: Partial<PlotStructureSection>, base?: Record<string, unknown>): Promise<PlotStructureSection | undefined> {
+    const [updatedSection] = await this.database
+      .update(plotStructureSections)
+      .set({ ...sectionUpdate, updatedAt: new Date() })
+      .where(and(eq(plotStructureSections.id, id), baseCondition(plotStructureSections, base)))
+      .returning();
+    return updatedSection;
+  }
+  
+  async deletePlotStructureSection(id: number): Promise<boolean> {
+    const result = await this.database.delete(plotStructureSections).where(eq(plotStructureSections.id, id));
+    return !!result;
+  }
+}
+

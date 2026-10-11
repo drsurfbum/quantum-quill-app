@@ -1,23 +1,3 @@
-import { beforeAll, afterAll, beforeEach, afterEach } from '@jest/globals';
-import { pool } from '../server/db';
-
-// Global test setup
-beforeAll(async () => {
-  // Database connection is already established in db.ts
-  console.log('Test suite starting - database connection ready');
-});
-
-afterAll(async () => {
-  // Close database connections
-  await pool.end();
-  console.log('Test suite completed - database connections closed');
-});
-
-// Clean up between tests
-beforeEach(async () => {
-  // Reset any test-specific state if needed
-});
-
-afterEach(async () => {
-  // Clean up any test data if needed
-});
+// Tests cannot import a real database integration, even if DATABASE_URL is set.
+jest.mock("../server/db", () => { throw new Error("Database access is forbidden in the isolated test suite"); });
+jest.mock("../server/database-storage", () => { throw new Error("Use injected MemStorage for isolated tests"); });

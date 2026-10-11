@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { useParams, useLocation } from "wouter";
+import { useEffect, useState, useRef } from "react";
+import { useParams, useLocation, useSearch } from "wouter";
 import SidebarNavigation from "@/components/sidebar-navigation";
 import ChapterSidebar from "@/components/chapter-sidebar";
 import RichTextEditor from "@/components/rich-text-editor";
@@ -18,8 +18,8 @@ import { useIsMobile } from "@/hooks/use-mobile";
 
 export default function Write() {
   const { id } = useParams();
-  const [location] = useLocation();
-  const searchParams = new URLSearchParams(location.split("?")[1] || "");
+  const [location, navigate] = useLocation();
+  const searchParams = new URLSearchParams(useSearch());
   const chapterId = searchParams.get("chapter");
   const { toast } = useToast();
   const isMobile = useIsMobile();
@@ -39,7 +39,9 @@ export default function Write() {
   const [selectedChapterId, setSelectedChapterId] = useState<string | null>(chapterId);
   
   const { data: project, isLoading: isLoadingProject } = useProject(id || '');
-  const { data: chapters = [], isLoading: isLoadingChapters } = useProjectChapters(id || '');
+  const { data: chapters = [], isLoading: isLoadingChapters, isSuccess: chaptersLoaded } = useProjectChapters(id || '');
+  const initializedProject = useRef<string | null>(null);
+  useEffect(() => { setSelectedChapterId(chapterId); }, [id, chapterId]);
   const { mutate: createChapter, isPending: isCreatingChapter } = useCreateChapter();
   
   // If no chapter is selected, select the first one
@@ -51,7 +53,8 @@ export default function Write() {
   
   // If no chapters exist, create one
   useEffect(() => {
-    if (chapters.length === 0 && !isLoadingChapters && !isCreatingChapter && id) {
+    if (chapters.length === 0 && chaptersLoaded && !isCreatingChapter && id && initializedProject.current !== id) {
+      initializedProject.current = id;
       createChapter(
         {
           title: "Chapter 1",
@@ -77,14 +80,14 @@ export default function Write() {
         }
       );
     }
-  }, [chapters, isLoadingChapters, id, createChapter, isCreatingChapter, toast]);
+  }, [chapters, chaptersLoaded, id, createChapter, isCreatingChapter, toast]);
   
   // Handle chapter selection
   const handleChapterSelect = (chapterId: string) => {
     setSelectedChapterId(chapterId);
     // Update URL with the new chapter ID
     const newUrl = `/project/${id}/write?chapter=${chapterId}`;
-    window.history.pushState({}, '', newUrl);
+    navigate(newUrl);
   };
   
   // Find selected chapter
@@ -206,7 +209,9 @@ export default function Write() {
                     {selectedChapter.title} {selectedChapter.isDraft ? "(Draft)" : "(Completed)"}
                   </h2>
                 </div>
-                <RichTextEditor 
+                <RichTextEditor
+                  key={selectedChapter.id}
+                  projectId={selectedChapter.projectId}
                   content={selectedChapter.content}
                   chapterId={selectedChapter.id}
                 />

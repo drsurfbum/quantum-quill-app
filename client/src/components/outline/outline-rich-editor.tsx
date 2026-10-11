@@ -1,14 +1,14 @@
-import { useEditor, EditorContent } from '@tiptap/react';
+import { useAutosave, withPendingEdits } from "@/hooks/use-autosave";
+import { SaveStatus } from "@/components/save-status";
+import { useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Heading from '@tiptap/extension-heading';
 import TextAlign from '@tiptap/extension-text-align';
 import Underline from '@tiptap/extension-underline';
 import Link from '@tiptap/extension-link';
 import Image from '@tiptap/extension-image';
-import { useCallback, useEffect, useState } from 'react';
-import { useUpdateOutlineItem } from '@/hooks/use-outline';
-import { useToast } from '@/hooks/use-toast';
-import { debounce, cn } from '@/lib/utils';
+import { useEffect, useState, useId } from 'react';
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { 
   Bold, 
@@ -28,6 +28,7 @@ import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import WritingSurface from '@/components/rich-text-editor/editor-content';
 
 interface OutlineRichEditorProps {
   item: OutlineItem;
@@ -35,20 +36,29 @@ interface OutlineRichEditorProps {
 }
 
 export default function OutlineRichEditor({ item, projectId }: OutlineRichEditorProps) {
-  const { toast } = useToast();
+  item = withPendingEdits(`/api/outline/${item.id}`, item);
+  const autosave = useAutosave(`/api/outline/${item.id}`, `/api/projects/${projectId}/outline`);
+  const labelId = useId();
+  const titleId = useId();
   const [title, setTitle] = useState(item.title);
   const [isCompleted, setIsCompleted] = useState(item.isCompleted || false);
-  const [saveButtonClicked, setSaveButtonClicked] = useState(false);
+  const saveButtonClicked = autosave.status === "saved";
 
   
-  const { mutate: updateItem, isError: isUpdateError, error: updateError } = useUpdateOutlineItem();
   
-  // Track if this is initial load to prevent auto-save on first click
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
   
   const editor = useEditor({
+    parseOptions: { preserveWhitespace: "full" },
+    editorProps: {
+      attributes: {
+        role: "textbox",
+        "aria-multiline": "true",
+        "aria-labelledby": labelId,
+        "data-placeholder": "Add notes for this outline section…",
+      },
+    },
     extensions: [
-      StarterKit,
+      StarterKit.configure({ heading: false }),
       Heading.configure({
         levels: [1, 2, 3],
       }),
@@ -61,127 +71,26 @@ export default function OutlineRichEditor({ item, projectId }: OutlineRichEditor
       }),
       Image,
     ],
-    content: item.content || '<p>Start writing here...</p>',
-    onUpdate: ({ editor }) => {
-      // Skip autosave on initial focus/click
-      if (isInitialLoad) {
-        setIsInitialLoad(false);
-        return;
-      }
-      
-      // Get HTML content
-      const html = editor.getHTML();
-      
-      // Only trigger save if content has actually changed
-      if (html !== item.content) {
-        // Trigger save without losing focus
-        handleContentChange(html);
-      }
-    },
+    content: item.content || "",
+    onUpdate: ({ editor }) => { autosave.save({ content: editor.getHTML() }); },
     // Only auto-focus on desktop devices
     autofocus: false,
   });
 
-  // Reset state when item changes
   useEffect(() => {
     setTitle(item.title);
     setIsCompleted(item.isCompleted || false);
-    setIsInitialLoad(true);
-    
-    if (editor && editor.isEditable) {
-      const content = item.content || '<p>Start writing here...</p>';
-      editor.commands.setContent(content);
-    }
+    editor?.commands.setContent(item.content || "", false, { preserveWhitespace: "full" });
   }, [item.id, editor]);
-
-  // Handle update errors
-  useEffect(() => {
-    if (isUpdateError) {
-      toast({
-        title: "Failed to save",
-        description: "There was an error saving your changes. Please try again.",
-        variant: "destructive",
-      });
-    }
-  }, [isUpdateError, toast]);
-  
-  // Set up debounced save with longer delay to prevent cursor jumping
-  const debouncedSave = useCallback(
-    debounce((newTitle: string, newContent: string, newIsCompleted: boolean) => {
-      // During initial load, don't trigger a save
-      if (isInitialLoad) {
-        return;
-      }
-      
-      // Skip save if content is empty/default or no real changes were made
-      const isDefaultContent = !newContent || 
-                             newContent === '<p>Start writing here...</p>' || 
-                             newContent === '<p></p>';
-      
-      const contentUnchanged = item.content === newContent ||
-                             (isDefaultContent && (!item.content || item.content === '<p>Start writing here...</p>'));
-                            
-      if (item.title === newTitle && contentUnchanged && item.isCompleted === newIsCompleted) {
-        return;
-      }
-
-      // Avoid saving empty/default content
-      if (isDefaultContent && item.title === newTitle && item.isCompleted === newIsCompleted) {
-        return;
-      }
-
-      // Keep track of editor focus state before saving
-      const wasFocused = editor?.isFocused;
-      const scrollPosition = window.scrollY;
-      
-      // Get the item ID at the time of save to prevent race conditions
-      const currentItemId = item.id;
-
-      updateItem({ 
-        id: currentItemId, 
-        title: newTitle, 
-        content: newContent,
-        isCompleted: newIsCompleted 
-      });
-    }, 1500), // Increased to 1500ms to prevent race conditions when switching sections
-    [updateItem, toast, item.id, item.title, item.content, item.isCompleted, editor, isInitialLoad]
-  );
-  
-  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newTitle = e.target.value;
-    setTitle(newTitle);
-    if (editor) {
-      debouncedSave(newTitle, editor.getHTML(), isCompleted);
-    }
+  const handleTitleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setTitle(event.target.value);
+    autosave.save({ title: event.target.value });
   };
-  
-  const handleContentChange = (html: string) => {
-    debouncedSave(title, html, isCompleted);
-  };
-
   const handleCompletedChange = (checked: boolean) => {
     setIsCompleted(checked);
-    if (editor) {
-      debouncedSave(title, editor.getHTML(), checked);
-    }
+    autosave.save({ isCompleted: checked });
   };
-  
-  const handleSave = () => {
-    if (editor) {
-      setSaveButtonClicked(true);
-      updateItem({ 
-        id: item.id, 
-        title, 
-        content: editor.getHTML(),
-        isCompleted
-      });
-      
-      // Reset the visual feedback after a short delay
-      setTimeout(() => {
-        setSaveButtonClicked(false);
-      }, 1000);
-    }
-  };
+  const handleSave = () => { void autosave.flush(); };
 
   if (!editor) {
     return null;
@@ -189,13 +98,17 @@ export default function OutlineRichEditor({ item, projectId }: OutlineRichEditor
   
   return (
     <div className="flex-grow flex flex-col overflow-hidden">
-      <div className="p-3 border-b border-neutral-200 dark:border-neutral-800 flex justify-between items-center bg-white dark:bg-neutral-900">
-        <Input 
-          value={title}
-          onChange={handleTitleChange}
-          className="font-medium text-lg border-0 px-0 max-w-md focus-visible:ring-0"
-          placeholder="Section title"
-        />
+      <div className="p-3 border-b border-neutral-200 dark:border-neutral-800 flex flex-wrap gap-4 justify-between items-center bg-white dark:bg-neutral-900">
+        <div className="min-w-0 flex-1 basis-60 max-w-md space-y-2">
+          <Label htmlFor={titleId}>Section title</Label>
+          <Input
+            id={titleId}
+            value={title}
+            onChange={handleTitleChange}
+            className="font-medium text-lg"
+            placeholder="Section title"
+          />
+        </div>
         <div className="flex items-center space-x-3">
           <div className="flex items-center space-x-2 mr-2">
             <Switch 
@@ -208,6 +121,7 @@ export default function OutlineRichEditor({ item, projectId }: OutlineRichEditor
               <span>{isCompleted ? "Completed" : "Mark as complete"}</span>
             </Label>
           </div>
+          <SaveStatus status={autosave.status} retry={autosave.flush} />
           <Button
             onClick={handleSave}
             size="sm"
@@ -326,10 +240,8 @@ export default function OutlineRichEditor({ item, projectId }: OutlineRichEditor
         </Button>
       </div>
       
-      <div className="flex-grow overflow-y-auto p-4 md:p-6 bg-white dark:bg-neutral-900">
-        <div className="max-w-3xl mx-auto">
-          <EditorContent editor={editor} className="prose prose-sm dark:prose-invert max-w-none min-h-[calc(100vh-180px)]" />
-        </div>
+      <div className="flex-grow overflow-y-auto p-4 md:p-6 bg-muted/40">
+        <WritingSurface editor={editor} label="Outline notes" labelId={labelId} />
       </div>
     </div>
   );

@@ -1,3 +1,8 @@
+import { readBibleFields, linkedTitle } from "@shared/story-bible";
+import { useEditorDraft } from "@/hooks/use-editor-draft";
+import { useAutosave, withPendingEdits } from "@/hooks/use-autosave";
+import { SaveStatus } from "@/components/save-status";
+import { FileUpload } from "@/components/ui/file-upload";
 import { useState, useCallback, useMemo, memo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,14 +14,15 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Save, Trash2, Plus, X, ChevronDown, ChevronRight, Calendar, Users, MapPin, Zap, Flag, Tag, ArrowLeft, Clock, Users2 } from 'lucide-react';
-import { useUpdateStoryBibleEntry, useDeleteStoryBibleEntry, useStoryBibleEntries } from '@/hooks/use-story-bible';
+import { Save, Trash2, Plus, X, ImageIcon, ChevronDown, ChevronRight, Calendar, Users, MapPin, Zap, Flag, Tag, ArrowLeft, Clock, Users2 } from 'lucide-react';
+import { useDeleteStoryBibleEntry, useStoryBibleEntries } from '@/hooks/use-story-bible';
 import { useToast } from '@/hooks/use-toast';
 import { StoryBibleEntry } from '@shared/schema';
-import { debounce } from 'lodash';
 
 // Event data structure based on specification
 interface EventData {
+  imageUrl?: string;
+  imageDescription?: string;
   // Header
   eventType?: string;
   status?: string;
@@ -109,14 +115,16 @@ const OUTCOME_TYPES = [
 ];
 
 const EventsEditor = memo(({ entry, projectId, onClose }: EventsEditorProps) => {
+  entry = withPendingEdits(`/api/story-bible/${entry.id}`, entry);
+  const autosave = useAutosave(`/api/story-bible/${entry.id}`, `/api/projects/${projectId}/story-bible`);
+
   const { toast } = useToast();
-  const updateStoryBibleEntry = useUpdateStoryBibleEntry({ skipInvalidation: true });
   const deleteStoryBibleEntry = useDeleteStoryBibleEntry();
   const { data: allEntries } = useStoryBibleEntries(projectId);
 
   const [title, setTitle] = useState(entry.title);
-  const [isSaving, setIsSaving] = useState(false);
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
+
 
   // Collapsible states - Date & Era and Core Summary expanded initially
   const [dateEraExpanded, setDateEraExpanded] = useState(true);
@@ -128,56 +136,9 @@ const EventsEditor = memo(({ entry, projectId, onClose }: EventsEditorProps) => 
   const [notesExpanded, setNotesExpanded] = useState(false);
 
   // Parse event data from content
-  const initialEventData = useMemo(() => {
-    if (!entry.content) return {
-      date: { year: '', isApproximate: false },
-      charactersInvolved: [],
-      groupsRacesInvolved: [],
-      locations: [],
-      worldElements: [],
-      tags: [],
-      includeOnTimeline: true
-    } as EventData;
-    
-    try {
-      const parsed = JSON.parse(entry.content);
-      if (typeof parsed === 'object' && parsed !== null) {
-        return {
-          date: { year: '', isApproximate: false },
-          charactersInvolved: [],
-          groupsRacesInvolved: [],
-          locations: [],
-          worldElements: [],
-          tags: [],
-          includeOnTimeline: true,
-          ...parsed
-        } as EventData;
-      }
-    } catch {
-      return {
-        narrativeContext: entry.content,
-        date: { year: '', isApproximate: false },
-        charactersInvolved: [],
-        groupsRacesInvolved: [],
-        locations: [],
-        worldElements: [],
-        tags: [],
-        includeOnTimeline: true
-      } as EventData;
-    }
-    
-    return {
-      date: { year: '', isApproximate: false },
-      charactersInvolved: [],
-      groupsRacesInvolved: [],
-      locations: [],
-      worldElements: [],
-      tags: [],
-      includeOnTimeline: true
-    } as EventData;
-  }, [entry.content]);
+  const initialEventData = useMemo(() => ({ date: { year: '', isApproximate: false }, charactersInvolved: [], groupsRacesInvolved: [], locations: [], worldElements: [], tags: entry.tags || [], includeOnTimeline: true, ...readBibleFields(entry) }) as EventData, [entry.content]);
 
-  const [eventDataState, setEventData] = useState<EventData>(initialEventData);
+  const [eventDataState, setEventData] = useEditorDraft<EventData>(initialEventData);
 
   // Available entries for linking
   const characterEntries = (allEntries || []).filter(e => e.entryType === 'characters');
@@ -186,67 +147,35 @@ const EventsEditor = memo(({ entry, projectId, onClose }: EventsEditorProps) => 
   const worldElementEntries = (allEntries || []).filter(e => e.entryType === 'world_elements');
   const eventEntries = (allEntries || []).filter(e => e.entryType === 'events' && e.id !== entry.id);
 
-  // Debounced save function - stable reference
-  const debouncedSave = useMemo(
-    () => debounce(async (titleToSave: string, dataToSave: EventData) => {
-      setIsSaving(true);
-      try {
-        await updateStoryBibleEntry.mutateAsync({
-          id: entry.id,
-          title: titleToSave,
-          content: JSON.stringify(dataToSave),
-        });
-        setHasUnsavedChanges(false);
-      } catch (error) {
-        console.error('Failed to save:', error);
-        toast({
-          title: "Error",
-          description: "Failed to save changes",
-          variant: "destructive",
-        });
-      } finally {
-        setIsSaving(false);
-      }
-    }, 1500),
-    [entry.id, updateStoryBibleEntry, toast]
-  );
-
   const updateEventData = useCallback((updates: Partial<EventData>) => {
-    setEventData(prev => {
-      const newData = { ...prev, ...updates };
-      setHasUnsavedChanges(true);
-      debouncedSave(title, newData);
-      return newData;
+    const next = setEventData(previous => ({ ...previous, ...updates }));
+    autosave.save({ content: JSON.stringify(next),
+      ...(Object.hasOwn(updates, 'tags') ? { tags: next.tags || [] } : {}),
     });
-  }, [title, debouncedSave]);
+  }, [setEventData, autosave.save]);
 
-  const updateNestedData = useCallback((key: keyof EventData, nestedUpdates: any) => {
-    setEventData(prev => {
-      const newData = {
-        ...prev,
-        [key]: { ...prev[key], ...nestedUpdates }
-      };
-      setHasUnsavedChanges(true);
-      debouncedSave(title, newData);
-      return newData;
-    });
-  }, [title, debouncedSave]);
+  const updateNestedData = useCallback((key: keyof EventData, nestedUpdates: Record<string, unknown>) => {
+    const next = setEventData(previous => ({
+      ...previous,
+      [key]: { ...(typeof previous[key] === "object" && previous[key] !== null ? previous[key] : {}), ...nestedUpdates }
+    }));
+    autosave.save({ content: JSON.stringify(next) });
+  }, [setEventData, autosave.save]);
 
-  // Handle title changes
   const handleTitleChange = useCallback((newTitle: string) => {
     setTitle(newTitle);
-    setHasUnsavedChanges(true);
-    debouncedSave(newTitle, eventDataState);
-  }, [eventDataState, debouncedSave]);
+    autosave.save({ title: newTitle });
+  }, [autosave.save]);
 
   // Reset state when entry changes
   useEffect(() => {
     setTitle(entry.title);
     setEventData(initialEventData);
-    setHasUnsavedChanges(false);
-  }, [entry.id, entry.title, initialEventData]);
+
+  }, [entry.id]);
 
   const handleDelete = async () => {
+    if (!await autosave.flush()) return;
     try {
       await deleteStoryBibleEntry.mutateAsync(entry.id);
       toast({
@@ -257,7 +186,7 @@ const EventsEditor = memo(({ entry, projectId, onClose }: EventsEditorProps) => 
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to delete event",
+        description: error instanceof Error ? error.message : "Failed to delete entry",
         variant: "destructive",
       });
     }
@@ -296,12 +225,16 @@ const EventsEditor = memo(({ entry, projectId, onClose }: EventsEditorProps) => 
               </Button>
             )}
             <div className="flex items-center gap-3">
-              <Input
-                value={title}
-                onChange={(e) => handleTitleChange(e.target.value)}
-                className="text-2xl font-bold border-none p-0 h-auto bg-transparent"
-                placeholder="Event Name (e.g., Battle of Black Crater)"
-              />
+              <div className="min-w-0 flex-1 space-y-2">
+                <Label htmlFor={`events-title-${entry.id}`}>Event title</Label>
+                <Input
+                  id={`events-title-${entry.id}`}
+                  value={title}
+                  onChange={(e) => handleTitleChange(e.target.value)}
+                  className="text-2xl font-bold h-12"
+                  placeholder="Event Name (e.g., Battle of Black Crater)"
+                />
+              </div>
               <div className="flex gap-2">
                 {eventDataState.eventType && (
                   <Badge variant="secondary">{eventDataState.eventType}</Badge>
@@ -315,8 +248,7 @@ const EventsEditor = memo(({ entry, projectId, onClose }: EventsEditorProps) => 
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {isSaving && <span className="text-sm text-muted-foreground">Saving...</span>}
-            {hasUnsavedChanges && !isSaving && <span className="text-sm text-muted-foreground">Unsaved changes</span>}
+            <SaveStatus status={autosave.status} retry={autosave.flush} />
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button variant="outline" size="sm">
@@ -507,18 +439,15 @@ const EventsEditor = memo(({ entry, projectId, onClose }: EventsEditorProps) => 
                           </Button>
                         </div>
                       ))}
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          updateEventData({ 
-                            locations: [...(eventDataState.locations || []), { id: 0, name: '', context: '' }]
-                          });
-                        }}
-                      >
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add Location
-                      </Button>
+                      <Select value="" onValueChange={(value) => {
+                        const location = locationEntries.find(item => item.id === Number(value));
+                        if (location && !(eventDataState.locations || []).some(item => item.id === location.id)) {
+                          updateEventData({ locations: [...(eventDataState.locations || []), { id: location.id, name: location.title, context: '' }] });
+                        }
+                      }}>
+                        <SelectTrigger aria-label="Add location"><SelectValue placeholder="Add location..." /></SelectTrigger>
+                        <SelectContent>{locationEntries.filter(item => !(eventDataState.locations || []).some(link => link.id === item.id)).map(item => <SelectItem key={item.id} value={String(item.id)}>{item.title}</SelectItem>)}</SelectContent>
+                      </Select>
                     </div>
                   </div>
                 </CardContent>
@@ -652,7 +581,7 @@ const EventsEditor = memo(({ entry, projectId, onClose }: EventsEditorProps) => 
             </CardHeader>
             <CardContent>
               <div className="text-lg font-medium">
-                {eventDataState.date?.year ? (
+                {(eventDataState.date?.year || eventDataState.date?.fictionalDate) ? (
                   <>
                     {eventDataState.date.isApproximate && '~'}
                     {eventDataState.date.month && eventDataState.date.day ? 

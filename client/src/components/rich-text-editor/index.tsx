@@ -1,4 +1,5 @@
-import { useEditor, EditorContent } from '@tiptap/react';
+import { useAutosave, withPendingEdits } from "@/hooks/use-autosave";
+import { useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Heading from '@tiptap/extension-heading';
 import TextAlign from '@tiptap/extension-text-align';
@@ -9,34 +10,45 @@ import TableCell from '@tiptap/extension-table-cell';
 import TableHeader from '@tiptap/extension-table-header';
 import TableRow from '@tiptap/extension-table-row';
 import Image from '@tiptap/extension-image';
-import { useCallback, useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useId } from 'react';
 import EditorMenuBar from './menu-bar';
-import './editor-content';
-import { useUpdateChapter } from '@/hooks/use-project';
-import { useToast } from '@/hooks/use-toast';
-import { debounce, cn } from '@/lib/utils';
+import WritingSurface from './editor-content';
+import { writingExtensions } from './formatting';
+import { cn } from '@/lib/utils';
 
 interface RichTextEditorProps {
   content: string | null;
   chapterId: number | string;
+  projectId: number;
   onChange?: (content: string) => void;
 }
 
 export default function RichTextEditor({ 
-  content = '<p>Start writing here...</p>', 
+  content = "",
   chapterId,
+  projectId,
   onChange 
 }: RichTextEditorProps) {
-  const { toast } = useToast();
+  const labelId = useId();
   const [wordCount, setWordCount] = useState(0);
-  const [saveStatus, setSaveStatus] = useState<'saved' | 'typing' | 'saving'>('saved');
+  const autosave = useAutosave(`/api/chapters/${chapterId}`, `/api/projects/${projectId}/chapters`);
+  const saveStatus = autosave.status;
   const [isFullscreen, setIsFullscreen] = useState(false);
   const editorContainerRef = useRef<HTMLDivElement>(null);
-  const { mutate: updateChapter } = useUpdateChapter();
 
   const editor = useEditor({
+    parseOptions: { preserveWhitespace: "full" },
+    editorProps: {
+      attributes: {
+        role: "textbox",
+        "aria-multiline": "true",
+        "aria-labelledby": labelId,
+        "data-placeholder": "Start writing your chapter here…",
+      },
+    },
     extensions: [
-      StarterKit,
+      ...writingExtensions,
+      StarterKit.configure({ heading: false }),
       Heading.configure({
         levels: [1, 2, 3],
       }),
@@ -55,7 +67,7 @@ export default function RichTextEditor({
       TableCell,
       Image,
     ],
-    content: content,
+    content: withPendingEdits(`/api/chapters/${chapterId}`, { content }).content || "",
     onUpdate: ({ editor }) => {
       const html = editor.getHTML();
       calculateWordCount(editor.getText());
@@ -72,44 +84,13 @@ export default function RichTextEditor({
     setWordCount(text ? words.length : 0);
   };
 
-  // Set up debounced save
-  const debouncedSave = useCallback(
-    debounce((html: string) => {
-      if (!chapterId) return;
-      
-      setSaveStatus('saving');
-      updateChapter(
-        { id: Number(chapterId), content: html },
-        {
-          onSuccess: () => {
-            setSaveStatus('saved');
-          },
-          onError: () => {
-            toast({
-              title: "Failed to save",
-              description: "There was an error saving your changes. Please try again.",
-              variant: "destructive",
-            });
-            setSaveStatus('saved');
-          }
-        }
-      );
-    }, 3000), // Increased from 1500ms to 3000ms (3 seconds)
-    [chapterId, updateChapter, toast]
-  );
-
-  const handleContentChange = (html: string) => {
-    setSaveStatus('typing'); // Show 'typing' instead of immediately 'saving'
-    debouncedSave(html);
-  };
-
-  // Set initial content when it changes externally
+  const handleContentChange = (html: string) => { autosave.save({ content: html }); };
   useEffect(() => {
-    if (editor && content && editor.getHTML() !== content) {
-      editor.commands.setContent(content);
-      calculateWordCount(editor.getText());
-    }
-  }, [editor, content]);
+    if (!editor) return;
+    const initial = withPendingEdits(`/api/chapters/${chapterId}`, { content }).content || "";
+    editor.commands.setContent(initial, false, { preserveWhitespace: "full" });
+    calculateWordCount(editor.getText());
+  }, [editor, chapterId]);
 
   // Handle fullscreen toggle
   const toggleFullscreen = () => {
@@ -149,19 +130,15 @@ export default function RichTextEditor({
         editor={editor} 
         wordCount={wordCount} 
         saveStatus={saveStatus}
+        onRetry={autosave.flush}
         isFullscreen={isFullscreen}
         onToggleFullscreen={toggleFullscreen}
       />
       <div className={cn(
-        "flex-grow overflow-y-auto p-4 md:p-8 lg:p-12 bg-white dark:bg-neutral-900",
+        "flex-grow overflow-y-auto p-4 md:p-6 lg:p-8 bg-muted/40",
         isFullscreen ? "max-h-[calc(100vh-48px)]" : ""
       )}>
-        <div className={cn(
-          "mx-auto focus:outline-none",
-          isFullscreen ? "max-w-3xl" : "max-w-prose"
-        )}>
-          <EditorContent editor={editor} className="editor-content" />
-        </div>
+        <WritingSurface editor={editor} label="Chapter text" labelId={labelId} />
       </div>
     </div>
   );

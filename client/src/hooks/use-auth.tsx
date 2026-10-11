@@ -1,10 +1,11 @@
+import { flushPendingSaves } from "@/hooks/use-autosave";
 import { createContext, ReactNode, useContext, useEffect } from "react";
 import {
   useQuery,
   useMutation,
   UseMutationResult,
 } from "@tanstack/react-query";
-import { apiRequest, getQueryFn, queryClient, setAuthToken, getAuthToken } from "@/lib/queryClient";
+import { apiRequest, getQueryFn, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
 type User = {
@@ -38,15 +39,7 @@ export const AuthContext = createContext<AuthContextType | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
   
-  // Initialize auth token from localStorage on component mount
-  useEffect(() => {
-    // Try to restore token from localStorage
-    const storedToken = localStorage.getItem('authToken');
-    if (storedToken && storedToken.length > 0) {
-      console.log("Restoring auth token from localStorage");
-      setAuthToken(storedToken);
-    }
-  }, []);
+  useEffect(() => { localStorage.removeItem("authToken"); }, []);
   const {
     data: user,
     error,
@@ -68,23 +61,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       const user = await res.json();
       
-      // Create and store auth token
-      const token = `user-${user.id}-${Date.now()}`;
-      console.log("Setting auth token for user:", user.id);
-      setAuthToken(token);
       
       return user;
     },
-    onSuccess: (user: User) => {
+    onSuccess: async (user: User) => {
+      await queryClient.cancelQueries();
+      queryClient.clear();
       queryClient.setQueryData(["/api/user"], user);
+      await flushPendingSaves();
       toast({
         title: "Login successful",
         description: `Welcome back, ${user.username}!`,
       });
     },
     onError: (error: Error) => {
-      // Clear token on error
-      setAuthToken(null);
       toast({
         title: "Login failed",
         description: error.message || "Invalid username or password",
@@ -104,23 +94,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       const user = await res.json();
       
-      // Create and store auth token for new user
-      const token = `user-${user.id}-${Date.now()}`;
-      console.log("Setting auth token for new user:", user.id);
-      setAuthToken(token);
       
       return user;
     },
-    onSuccess: (user: User) => {
+    onSuccess: async (user: User) => {
+      await queryClient.cancelQueries();
+      queryClient.clear();
       queryClient.setQueryData(["/api/user"], user);
+      await flushPendingSaves();
       toast({
         title: "Registration successful",
         description: `Welcome, ${user.username}!`,
       });
     },
     onError: (error: Error) => {
-      // Clear token on error
-      setAuthToken(null);
       toast({
         title: "Registration failed",
         description: error.message || "Could not create account",
@@ -131,37 +118,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      try {
-        // Try the server logout first, but don't fail if it doesn't work
-        await apiRequest("POST", "/api/logout");
-      } catch (error) {
-        console.warn("Server logout failed, continuing with client logout", error);
-      }
-      
-      // Clear auth token regardless of server response
-      setAuthToken(null);
-      console.log("Cleared auth token during logout");
+      if (!await flushPendingSaves()) throw new Error("Save your pending changes before logging out");
+      await apiRequest("POST", "/api/logout");
     },
-    onSuccess: () => {
+    onSuccess: async () => {
+      await queryClient.cancelQueries();
+      queryClient.clear();
       queryClient.setQueryData(["/api/user"], null);
-      // Invalidate all queries to force refetch with new auth state
-      queryClient.invalidateQueries();
-      
-      toast({
-        title: "Logged out",
-        description: "You have been logged out successfully",
-      });
+      toast({ title: "Logged out", description: "You have been logged out successfully" });
     },
     onError: (error: Error) => {
-      // Even on error, clear the token
-      setAuthToken(null);
-      queryClient.setQueryData(["/api/user"], null);
-      
-      toast({
-        title: "Logout had issues",
-        description: "You've been logged out, but with some errors: " + error.message,
-        variant: "destructive",
-      });
+      toast({ title: "Logout failed", description: error.message + ". Please try again.", variant: "destructive" });
     },
   });
 

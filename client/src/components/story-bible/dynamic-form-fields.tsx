@@ -20,6 +20,7 @@ interface DynamicFormFieldsProps {
   metadata: any;
   onMetadataChange: (metadata: any) => void;
   projectId: number;
+  currentEntryId?: number;
   disabled?: boolean;
 }
 
@@ -28,6 +29,7 @@ export function DynamicFormFields({
   metadata,
   onMetadataChange,
   projectId,
+  currentEntryId,
   disabled = false
 }: DynamicFormFieldsProps) {
   const { data: allEntries = [] } = useStoryBibleEntries(projectId);
@@ -37,8 +39,7 @@ export function DynamicFormFields({
   const categorySpecificFields = getCategorySpecificFields(entryType, metadata?.category);
 
   const updateMetadata = (fieldKey: string, value: any) => {
-    const updatedMetadata = { ...metadata, [fieldKey]: value };
-    onMetadataChange(updatedMetadata);
+    onMetadataChange({ [fieldKey]: value });
   };
 
   const addMultiSelectValue = (fieldKey: string) => {
@@ -78,7 +79,7 @@ export function DynamicFormFields({
   };
 
   const getLinkedEntries = (linkedTo: string) => {
-    return allEntries.filter(entry => entry.entryType === linkedTo);
+    return allEntries.filter(entry => entry.id !== currentEntryId && (linkedTo === "any" || entry.entryType === linkedTo));
   };
 
   const getLinkedEntryById = (entryId: number) => {
@@ -92,6 +93,7 @@ export function DynamicFormFields({
       case "text":
         return (
           <Input
+            aria-label={field.name}
             value={value || ""}
             onChange={(e) => updateMetadata(fieldKey, e.target.value)}
             disabled={disabled}
@@ -102,6 +104,7 @@ export function DynamicFormFields({
       case "textarea":
         return (
           <Textarea
+            aria-label={field.name}
             value={value || ""}
             onChange={(e) => updateMetadata(fieldKey, e.target.value)}
             disabled={disabled}
@@ -114,6 +117,7 @@ export function DynamicFormFields({
         return (
           <div className="flex items-center space-x-2">
             <Checkbox
+              aria-label={field.name}
               checked={value || false}
               onCheckedChange={(checked) => updateMetadata(fieldKey, checked === true)}
               disabled={disabled}
@@ -129,7 +133,7 @@ export function DynamicFormFields({
             onValueChange={(newValue) => updateMetadata(fieldKey, newValue === "__none__" ? "" : newValue)}
             disabled={disabled}
           >
-            <SelectTrigger>
+            <SelectTrigger aria-label={field.name}>
               <SelectValue placeholder={`Select ${field.name.toLowerCase()}...`} />
             </SelectTrigger>
             <SelectContent>
@@ -176,7 +180,7 @@ export function DynamicFormFields({
                     }
                   }}
                 >
-                  <SelectTrigger className="flex-1">
+                  <SelectTrigger aria-label={field.name} className="flex-1">
                     <SelectValue placeholder={`Add ${field.name.toLowerCase()}...`} />
                   </SelectTrigger>
                   <SelectContent>
@@ -228,7 +232,7 @@ export function DynamicFormFields({
                   }
                 }}
               >
-                <SelectTrigger>
+                <SelectTrigger aria-label={field.name}>
                   <SelectValue placeholder={`Select ${field.name.toLowerCase()}...`} />
                 </SelectTrigger>
                 <SelectContent>
@@ -287,7 +291,7 @@ export function DynamicFormFields({
                   }
                 }}
               >
-                <SelectTrigger>
+                <SelectTrigger aria-label={field.name}>
                   <SelectValue placeholder={`Add ${field.name.toLowerCase()}...`} />
                 </SelectTrigger>
                 <SelectContent>
@@ -338,7 +342,7 @@ export function DynamicFormFields({
         </CardHeader>
         <CardContent className="space-y-4">
           {fieldEntries.map(([fieldKey, field]) => (
-            <div key={fieldKey} className="space-y-2">
+            <div key={fieldKey} data-field={fieldKey} className="space-y-2">
               <Label className="text-sm font-medium">
                 {field.name}
                 {field.required && <span className="text-destructive ml-1">*</span>}

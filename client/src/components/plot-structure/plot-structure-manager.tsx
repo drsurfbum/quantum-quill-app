@@ -130,7 +130,7 @@ export default function PlotStructureManager({ projectId }: PlotStructureManager
         </Button>
       </div>
 
-      {state.plotStructureId ? (
+      {state.plotStructureId && plotStructures.some(plot => plot.id === state.plotStructureId) ? (
         <StablePlotStructureEditor />
       ) : (
         <div className="flex-1 p-4 overflow-auto">
