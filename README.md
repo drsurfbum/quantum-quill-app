@@ -1,3 +1,5 @@
+> **Recovered October 11, 2026.** See [Local setup](LOCAL_SETUP.md) to run this project and [Restart audit](docs/RESTART_AUDIT.md) for verified feature status and known issues. The historical overview below contains claims that the audit corrects.
+
 # QQ - AI-Enhanced Creative Writing Platform
 
 A comprehensive web platform for AI-enhanced creative writing, featuring advanced storytelling tools with intelligent content management and collaborative story development.

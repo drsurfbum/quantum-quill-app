@@ -67,3 +67,11 @@ replit.nix
 
 # Attached assets (development only)
 attached_assets/
+# Local recovery and database state
+.env.*
+!.env.example
+*.dump
+*.sql
+*.bundle
+.local/
+recovery/
