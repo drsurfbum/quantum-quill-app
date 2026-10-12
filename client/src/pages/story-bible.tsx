@@ -158,12 +158,12 @@ export default function StoryBible() {
   }
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden bg-background">
-      <div className="flex flex-row flex-1 w-full h-full overflow-hidden">
+    <div className="h-dvh flex flex-col overflow-hidden bg-background">
+      <div className="flex flex-row flex-1 min-h-0 w-full overflow-hidden">
         <SidebarNavigation onCollapsedChange={setIsCollapsed} />
         
-        <main className="flex-grow overflow-auto flex flex-col w-full" style={{ marginLeft: isMobile && isCollapsed ? '56px' : '0' }}>
-          <header className="h-16 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between px-4 sm:px-6">
+        <main className="flex-1 min-h-0 min-w-0 overflow-hidden flex flex-col" style={{ marginLeft: isMobile && isCollapsed ? '56px' : '0' }}>
+          <header className="h-16 shrink-0 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between px-4 sm:px-6">
             <div className="flex items-center">
               {projectLoading ? (
                 <Skeleton className="h-6 w-48" />
@@ -179,7 +179,7 @@ export default function StoryBible() {
             </div>
           </header>
 
-          <div className="border-b border-neutral-200 dark:border-neutral-800">
+          <div className="shrink-0 overflow-x-auto border-b border-neutral-200 dark:border-neutral-800">
             <Tabs defaultValue="story-bible">
               <TabsList className="mx-4 h-10 w-auto">
                 <Link href={`/project/${id}/write`}>
@@ -221,10 +221,17 @@ export default function StoryBible() {
             </Tabs>
           </div>
 
-          {/* Main Content */}
-          <div className="flex-1 overflow-hidden">
+          {/* One bounded scroll surface for the dashboard and every entry editor.
+              Reset position only when opening/closing an entry, never on autosave. */}
+          <div
+            key={editorState.mountKey || "dashboard"}
+            role="region"
+            aria-label="Story Bible content"
+            tabIndex={0}
+            className="flex-1 min-h-0 overflow-y-auto [scrollbar-gutter:stable]"
+          >
             {editorState.mode === "dashboard" ? (
-              <div className="h-full p-6">
+              <div className="p-4 sm:p-6">
                 <SimplifiedBentoDashboard
                   projectId={projectId}
                   onCreateEntry={handleCreateEntry}
@@ -232,28 +239,26 @@ export default function StoryBible() {
                 />
               </div>
             ) : editorState.mode === "editor" && editorState.entryData ? (
-              <div className="h-full overflow-auto" key={editorState.mountKey}>
-                <div className="p-6">
-                  <div className="mb-4">
-                    <Button
-                      variant="ghost"
-                      onClick={handleBackToDashboard}
-                      className="mb-4"
-                    >
-                      <ArrowLeft className="h-4 w-4 mr-2" />
-                      Back to Dashboard
-                    </Button>
-                  </div>
-                  <ConversionPreview entry={editorState.entryData} />
-                  <RelationshipNavigation.Provider value={handleEditEntry}>
-                  <EditorRenderer 
+              <div className="p-4 sm:p-6">
+                <div className="mb-4">
+                  <Button
+                    variant="ghost"
+                    onClick={handleBackToDashboard}
+                    className="mb-4"
+                  >
+                    <ArrowLeft className="h-4 w-4 mr-2" />
+                    Back to Dashboard
+                  </Button>
+                </div>
+                <ConversionPreview entry={editorState.entryData} />
+                <RelationshipNavigation.Provider value={handleEditEntry}>
+                  <EditorRenderer
                     entry={editorState.entryData}
                     projectId={projectId}
                     onClose={handleBackToDashboard}
                   />
                   <EntryLinks entry={editorState.entryData} onOpen={handleEditEntry} />
-                  </RelationshipNavigation.Provider>
-                </div>
+                </RelationshipNavigation.Provider>
               </div>
             ) : null}
           </div>

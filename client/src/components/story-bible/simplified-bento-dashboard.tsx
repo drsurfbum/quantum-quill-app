@@ -238,7 +238,8 @@ export function SimplifiedBentoDashboard({ projectId, onCreateEntry, onEditEntry
             </Button>
           </div>
 
-          <ScrollArea className="max-h-96">
+          {/* Keep long results in the page scroll surface instead of a clipped viewport. */}
+          <div>
             <div className="space-y-4">
               {Object.entries(resultsByType).map(([entryType, entries]) => {
                 const taxonomy = getEnhancedTaxonomyByKey(entryType);
@@ -333,7 +334,7 @@ export function SimplifiedBentoDashboard({ projectId, onCreateEntry, onEditEntry
                 );
               })}
             </div>
-          </ScrollArea>
+          </div>
         </CardContent>
       </Card>
     );
@@ -701,8 +702,8 @@ export function SimplifiedBentoDashboard({ projectId, onCreateEntry, onEditEntry
 
         <Card className="shadow-sm">
           <CardContent className="pt-4">
-            <div className="flex items-center gap-3">
-              <div className="relative flex-1">
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="relative basis-full sm:basis-0 sm:flex-1 min-w-0">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Search across all categories..."
