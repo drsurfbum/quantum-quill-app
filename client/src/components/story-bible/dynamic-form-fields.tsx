@@ -1,3 +1,5 @@
+import { RelationshipSection } from "./relationships";
+import { relationshipTypeFor } from "@shared/relationships";
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -33,6 +35,7 @@ export function DynamicFormFields({
   disabled = false
 }: DynamicFormFieldsProps) {
   const { data: allEntries = [] } = useStoryBibleEntries(projectId);
+  const entry = allEntries.find(item => item.id === currentEntryId);
   const [newMultiSelectValue, setNewMultiSelectValue] = useState<Record<string, string>>({});
 
   const taxonomyFields = getEnhancedTaxonomyFields(entryType);
@@ -56,34 +59,6 @@ export function DynamicFormFields({
   const removeMultiSelectValue = (fieldKey: string, valueToRemove: string) => {
     const currentValues = metadata[fieldKey] || [];
     updateMetadata(fieldKey, currentValues.filter((v: string) => v !== valueToRemove));
-  };
-
-  const addLinkedValue = (fieldKey: string, entryId: string) => {
-    const field = taxonomyFields[fieldKey] || categorySpecificFields[fieldKey];
-    if (!field) return;
-
-    const entryIdNum = parseInt(entryId);
-    if (field.type === "multi-select-linked") {
-      const currentValues = metadata[fieldKey] || [];
-      if (!currentValues.includes(entryIdNum)) {
-        updateMetadata(fieldKey, [...currentValues, entryIdNum]);
-      }
-    } else if (field.type === "single-select-linked") {
-      updateMetadata(fieldKey, entryIdNum);
-    }
-  };
-
-  const removeLinkedValue = (fieldKey: string, entryId: number) => {
-    const currentValues = metadata[fieldKey] || [];
-    updateMetadata(fieldKey, currentValues.filter((id: number) => id !== entryId));
-  };
-
-  const getLinkedEntries = (linkedTo: string) => {
-    return allEntries.filter(entry => entry.id !== currentEntryId && (linkedTo === "any" || entry.entryType === linkedTo));
-  };
-
-  const getLinkedEntryById = (entryId: number) => {
-    return allEntries.find(entry => entry.id === entryId);
   };
 
   const renderField = (fieldKey: string, field: TaxonomyField) => {
@@ -203,124 +178,8 @@ export function DynamicFormFields({
         );
 
       case "single-select-linked":
-        const linkedEntries = getLinkedEntries(field.linkedTo!);
-        const selectedEntry = value ? getLinkedEntryById(value) : null;
-        
-        return (
-          <div className="space-y-2">
-            {selectedEntry && (
-              <div className="p-2 bg-muted rounded flex items-center justify-between">
-                <span className="text-sm">{selectedEntry.title}</span>
-                {!disabled && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => updateMetadata(fieldKey, null)}
-                    className="h-6 w-6 p-0"
-                  >
-                    <X className="h-3 w-3" />
-                  </Button>
-                )}
-              </div>
-            )}
-            {!disabled && !selectedEntry && linkedEntries.length > 0 && (
-              <Select
-                value="__select__"
-                onValueChange={(entryId) => {
-                  if (entryId !== "__select__") {
-                    addLinkedValue(fieldKey, entryId);
-                  }
-                }}
-              >
-                <SelectTrigger aria-label={field.name}>
-                  <SelectValue placeholder={`Select ${field.name.toLowerCase()}...`} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__select__" disabled>Select an entry...</SelectItem>
-                  {linkedEntries.map((entry) => (
-                    <SelectItem key={entry.id} value={entry.id.toString()}>
-                      <div className="flex flex-col">
-                        <span className="font-medium">{entry.title}</span>
-                        <span className="text-xs text-muted-foreground">
-                          {entry.category || 'No category'}
-                        </span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-            {!disabled && !selectedEntry && linkedEntries.length === 0 && (
-              <div className="text-sm text-muted-foreground p-2 border rounded">
-                No {field.linkedTo} entries available to link
-              </div>
-            )}
-          </div>
-        );
-
       case "multi-select-linked":
-        const linkedEntriesMulti = getLinkedEntries(field.linkedTo!);
-        const selectedEntries = (value || []).map((id: number) => getLinkedEntryById(id)).filter(Boolean);
-        const availableEntries = linkedEntriesMulti.filter(entry => !(value || []).includes(entry.id));
-        
-        return (
-          <div className="space-y-2">
-            <div className="flex flex-wrap gap-1 min-h-[2rem] p-2 border rounded-md">
-              {selectedEntries.map((entry: any) => (
-                <Badge key={entry.id} variant="secondary" className="gap-1">
-                  {entry.title}
-                  {!disabled && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-4 w-4 p-0 hover:bg-destructive hover:text-destructive-foreground"
-                      onClick={() => removeLinkedValue(fieldKey, entry.id)}
-                    >
-                      <X className="h-3 w-3" />
-                    </Button>
-                  )}
-                </Badge>
-              ))}
-            </div>
-            {!disabled && availableEntries.length > 0 && (
-              <Select
-                value="__add__"
-                onValueChange={(entryId) => {
-                  if (entryId !== "__add__") {
-                    addLinkedValue(fieldKey, entryId);
-                  }
-                }}
-              >
-                <SelectTrigger aria-label={field.name}>
-                  <SelectValue placeholder={`Add ${field.name.toLowerCase()}...`} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__add__" disabled>Add entry...</SelectItem>
-                  {availableEntries.map((entry) => (
-                    <SelectItem key={entry.id} value={entry.id.toString()}>
-                      <div className="flex flex-col">
-                        <span className="font-medium">{entry.title}</span>
-                        <span className="text-xs text-muted-foreground">
-                          {entry.category || 'No category'}
-                        </span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-            {!disabled && availableEntries.length === 0 && linkedEntriesMulti.length > 0 && (
-              <div className="text-sm text-muted-foreground p-2 border rounded">
-                All available {field.linkedTo} entries are already linked
-              </div>
-            )}
-            {linkedEntriesMulti.length === 0 && (
-              <div className="text-sm text-muted-foreground p-2 border rounded">
-                No {field.linkedTo} entries available to link
-              </div>
-            )}
-          </div>
-        );
+        return entry ? <RelationshipSection entry={entry} title={field.name} kinds={[relationshipTypeFor(`metadata.${fieldKey}`, entryType)]} /> : <p className="text-sm text-muted-foreground">Save this entry first to add relationships.</p>;
 
       default:
         return <div className="text-sm text-muted-foreground">Unsupported field type: {field.type}</div>;

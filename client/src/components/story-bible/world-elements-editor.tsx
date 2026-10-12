@@ -1,5 +1,6 @@
+import { RelationshipSection } from "./relationships";
 import { fieldOptions } from "@shared/bible-catalog";
-import { readBibleFields, linkedTitle } from "@shared/story-bible";
+import { readBibleFields } from "@shared/story-bible";
 import { useEditorDraft } from "@/hooks/use-editor-draft";
 import { useAutosave, withPendingEdits } from "@/hooks/use-autosave";
 import { SaveStatus } from "@/components/save-status";
@@ -665,6 +666,10 @@ const WorldElementsEditor = memo(({ entry, projectId, onClose }: WorldElementsEd
             </Card>
           </Collapsible>
 
+          <RelationshipSection entry={entry} title="Origins & historical events" kinds={["history"]} />
+          <RelationshipSection entry={entry} title="Usage & impact" kinds={["used_by","affects"]} />
+          <RelationshipSection entry={entry} title="References & connections" kinds={["reference","associated","related"]} />
+          <RelationshipSection entry={entry} title="World element hierarchy" kinds={["parent"]} />
           {/* Details / Lore Hooks - Collapsed by default */}
           <Collapsible open={loreHooksExpanded} onOpenChange={setLoreHooksExpanded}>
             <Card>
@@ -806,14 +811,7 @@ const WorldElementsEditor = memo(({ entry, projectId, onClose }: WorldElementsEd
                 )}
               </div>
               
-              {worldElementDataState.parentElement && (
-                <div>
-                  <Label className="text-sm text-muted-foreground">Parent Element</Label>
-                  <Badge variant="outline" className="mt-1">
-                    {linkedTitle(allEntries, worldElementDataState.parentElement.id, worldElementDataState.parentElement.name)}
-                  </Badge>
-                </div>
-              )}
+
             </CardContent>
           </Card>
 

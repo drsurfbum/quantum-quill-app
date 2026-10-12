@@ -1,5 +1,7 @@
 # Durable drafts and Story Bible integrity
 
+> October 11 follow-up: [shared relationships](SHARED_RELATIONSHIPS.md) now provide typed links, searchable pickers, stubs, backlinks, revision checks and archive/delete behavior. Original payloads remain intact; the content migration review gate is unchanged.
+
 October 11, 2026. Follow-up to the field audit. This pass implements durable recovery first, then compatible schema handling and relationship integrity. The latest stabilization adds server revision metadata; recovered writing is not normalized or reclassified.
 
 ## Writing recovery

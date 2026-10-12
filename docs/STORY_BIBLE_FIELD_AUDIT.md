@@ -1,5 +1,7 @@
 # Story Bible field audit
 
+> October 11 follow-up: [shared relationships](SHARED_RELATIONSHIPS.md) now provide typed links, searchable pickers, stubs, backlinks, revision checks and archive/delete behavior. Original payloads remain intact; the content migration review gate is unchanged.
+
 > Follow-up: [durable draft recovery and schema/relationship integrity](DRAFT_RECOVERY_AND_DATA_INTEGRITY.md) is implemented and verified locally. That report supersedes the memory-only/conflict and unchecked-relationship limitations below; migration and unfinished feature work remain.
 
 October 11, 2026. Local working changes only. Read alongside [the restart audit](RESTART_AUDIT.md), [autosave audit](AUTOSAVE_AUDIT.md), and [development roadmap](STORY_BIBLE_ROADMAP.md).

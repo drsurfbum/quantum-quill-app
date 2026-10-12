@@ -83,12 +83,16 @@ export function bibleLinks(entry: Partial<StoryBibleEntry>): BibleLink[] {
   const taxonomy = Object.values(ENHANCED_TAXONOMY).find(item => item.key === entry.entryType);
   const fields = { ...taxonomy?.fields, ...taxonomy?.categoryFields?.[metadata.category] };
   for (const [key, field] of Object.entries(fields)) if (field.type.endsWith("-linked")) add(`metadata.${key}`, metadata[key], field.linkedTo, ["parentGroup", "parentLocation", "parentElement"].includes(key));
-  if (entry.entryType === "locations") add("metadata.nearbyLocations", metadata.nearbyLocations, "locations");
+  if (entry.entryType === "locations") {
+    add("metadata.nearbyLocations", metadata.nearbyLocations, "locations");
+    add("metadata.controllingGroups", metadata.controllingGroups, "groups_races");
+    add("metadata.notableCharacters", metadata.notableCharacters, "characters");
+  }
   const data = parseContent(entry.content); if (!data || !structuredTypes.has(entry.entryType || "")) return links;
   const types: Record<string, string> = { locations: "locations", charactersInvolved: "characters", groupsRacesInvolved: "groups_races", worldElements: "world_elements", linkedEvents: "events", majorEvents: "events", affectedLocations: "locations", linkedCharacters: "characters", linkedLocations: "locations", researchReferences: "research", parentElement: "world_elements", childElements: "world_elements" };
   for (const [key, type] of Object.entries(types)) add(`content.${key}`, data[key], type, key === "parentElement");
   for (const key of ["linkedElements", "users"]) if (Array.isArray(data[key])) for (const item of data[key]) {
-    const targetType = ({ character: "characters", group: "groups_races" } as Record<string, string>)[item.type] || item.type;
+    const targetType = ({ character: "characters", group: "groups_races" } as Record<string, string>)[item?.type] || item?.type;
     add(`content.${key}`, item, targetType);
   }
   return links;

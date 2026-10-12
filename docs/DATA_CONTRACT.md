@@ -1,5 +1,7 @@
 # Story Bible data contract — version 2
 
+> October 11 follow-up: [shared relationships](SHARED_RELATIONSHIPS.md) now provide typed links, searchable pickers, stubs, backlinks, revision checks and archive/delete behavior. Original payloads remain intact; the content migration review gate is unchanged.
+
 Status: implemented as a pure compatibility reader, validated document format and conversion preview. The restored-database rehearsal is complete. **The working/recovered databases still use their original storage layout. No production content migration or entry conversion has been applied.**
 
 ## One contract for seven types

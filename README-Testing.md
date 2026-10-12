@@ -74,3 +74,9 @@ See [the recovery/integrity report](docs/DRAFT_RECOVERY_AND_DATA_INTEGRITY.md) f
 The synthetic browser server exposes `/__fixture` controls for a write outage, reconnect, a concurrent server edit and a failed write. Use only its synthetic accounts on port 5057. New writes require the record revision; recovery always reviews the current server version.
 
 `tests/bible-contract.test.ts` checks all seven schemas, shared catalog identity, lossless compatibility, unknown fields, ambiguous types and non-mutating conversion previews. `scripts/rehearse-bible-contract.ts` restores an explicit recovery dump into a uniquely named disposable database, stages/compares/rolls back, then removes that database. It never takes a production database URL. See [the contract](docs/DATA_CONTRACT.md) and [the recovered-field report](docs/DATA_CONTRACT_REHEARSAL.md).
+
+## Shared relationships
+
+`npm test` includes the common relationship API and all editor field walkthroughs. `npx tsx tests/postgres-stabilization.ts` creates its own disposable database and verifies the additive relationship migration, atomic stub rollback, concurrent hierarchy guards, and link revisions. It never targets the recovered or working database.
+
+For an already configured local database, the explicit additive migration is `npm run db:migrate:relationships` with `DATABASE_URL` set. Back up first. See [relationship behavior and evidence](docs/SHARED_RELATIONSHIPS.md).

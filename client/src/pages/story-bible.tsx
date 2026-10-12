@@ -1,3 +1,4 @@
+import { RelationshipNavigation } from "@/components/story-bible/relationships";
 import { ConversionPreview } from "@/components/story-bible/conversion-preview";
 import { EntryLinks } from "@/components/story-bible/entry-links";
 import { useParams, useLocation, Link } from "wouter";
@@ -244,12 +245,14 @@ export default function StoryBible() {
                     </Button>
                   </div>
                   <ConversionPreview entry={editorState.entryData} />
+                  <RelationshipNavigation.Provider value={handleEditEntry}>
                   <EditorRenderer 
                     entry={editorState.entryData}
                     projectId={projectId}
                     onClose={handleBackToDashboard}
                   />
                   <EntryLinks entry={editorState.entryData} onOpen={handleEditEntry} />
+                  </RelationshipNavigation.Provider>
                 </div>
               </div>
             ) : null}

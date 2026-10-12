@@ -1,3 +1,5 @@
+import { relationshipInput } from "@shared/relationships";
+import { createRelationship, changeRelationship, projectRelationships } from "./relationships";
 import { BIBLE_TYPES } from "@shared/bible-catalog";
 import { previewBibleDocument } from "@shared/bible-contract";
 import { saveWritingStyleSchema } from "@shared/writing-styles";
@@ -187,6 +189,27 @@ export function registerRoutes(app: Express, storage: IStorage, directory = path
     get: storage.getStoryBibleEntry.bind(storage), list: storage.getProjectStoryBible.bind(storage),
     create: data => createBibleEntry(storage, data), update: (id, data, base) => updateBibleEntry(storage, id, data, base), remove: id => deleteBibleEntry(storage, id),
   });
+  app.get("/api/projects/:projectId/relationships", handler(async (req, res) => {
+    const projectId = routeId(req.params.projectId); await projectFor(req, projectId);
+    res.json(await projectRelationships(storage, projectId));
+  }));
+  const linkCreate = relationshipInput.omit({ targetId: true }).extend({ targetId: idSchema.optional(), requestId: z.string().uuid(), stub: z.object({ title, entryType: z.enum(BIBLE_TYPES) }).strict().optional() }).strict()
+    .refine(data => !!data.targetId !== !!data.stub, "Choose an existing target or create one stub, not both.");
+  app.post("/api/projects/:projectId/relationships", handler(async (req, res) => {
+    const projectId = routeId(req.params.projectId); await projectFor(req, projectId);
+    const { requestId, stub, ...input } = linkCreate.parse(req.body);
+    res.status(201).json(await createRelationship(storage, projectId, input, requestId, stub));
+  }));
+  app.put("/api/projects/:projectId/relationships/:linkId", handler(async (req, res) => {
+    const projectId = routeId(req.params.projectId); await projectFor(req, projectId);
+    const { _version, ...input } = relationshipInput.extend({ _version: z.string().min(1).max(100) }).strict().parse(req.body);
+    res.json(await changeRelationship(storage, projectId, req.params.linkId, _version, input));
+  }));
+  app.delete("/api/projects/:projectId/relationships/:linkId", handler(async (req, res) => {
+    const projectId = routeId(req.params.projectId); await projectFor(req, projectId);
+    const { _version } = z.object({ _version: z.string().min(1).max(100) }).strict().parse(req.body);
+    await changeRelationship(storage, projectId, req.params.linkId, _version); res.status(204).end();
+  }));
   app.get("/api/story-bible/:id/contract", handler(async (req, res) => {
     const entry = await storage.getStoryBibleEntry(routeId(req.params.id));
     if (!entry) fail(404, "Entry not found");

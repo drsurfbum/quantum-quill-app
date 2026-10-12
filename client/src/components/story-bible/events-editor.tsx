@@ -1,5 +1,7 @@
+import { TagInput } from "./tag-input";
+import { RelationshipSection } from "./relationships";
 import { fieldOptions } from "@shared/bible-catalog";
-import { readBibleFields, linkedTitle } from "@shared/story-bible";
+import { readBibleFields } from "@shared/story-bible";
 import { useEditorDraft } from "@/hooks/use-editor-draft";
 import { useAutosave, withPendingEdits } from "@/hooks/use-autosave";
 import { SaveStatus } from "@/components/save-status";
@@ -387,63 +389,19 @@ const EventsEditor = memo(({ entry, projectId, onClose }: EventsEditorProps) => 
                     </Select>
                   </div>
 
-                  <div>
-                    <Label>Location(s)</Label>
-                    <div className="space-y-2">
-                      {(eventDataState.locations || []).map((location, index) => (
-                        <div key={index} className="flex gap-2 items-center p-2 bg-muted rounded">
-                          <Select
-                            value={location.id?.toString() || ''}
-                            onValueChange={(value) => {
-                              const selectedLocation = locationEntries.find(e => e.id.toString() === value);
-                              if (selectedLocation) {
-                                const updatedLocations = [...(eventDataState.locations || [])];
-                                updatedLocations[index] = { 
-                                  id: selectedLocation.id, 
-                                  name: selectedLocation.title,
-                                  context: location.context 
-                                };
-                                updateEventData({ locations: updatedLocations });
-                              }
-                            }}
-                          >
-                            <SelectTrigger className="flex-1">
-                              <SelectValue placeholder="Select location" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {locationEntries.map((loc) => (
-                                <SelectItem key={loc.id} value={loc.id.toString()}>{loc.title}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              const updatedLocations = (eventDataState.locations || []).filter((_, i) => i !== index);
-                              updateEventData({ locations: updatedLocations });
-                            }}
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ))}
-                      <Select value="" onValueChange={(value) => {
-                        const location = locationEntries.find(item => item.id === Number(value));
-                        if (location && !(eventDataState.locations || []).some(item => item.id === location.id)) {
-                          updateEventData({ locations: [...(eventDataState.locations || []), { id: location.id, name: location.title, context: '' }] });
-                        }
-                      }}>
-                        <SelectTrigger aria-label="Add location"><SelectValue placeholder="Add location..." /></SelectTrigger>
-                        <SelectContent>{locationEntries.filter(item => !(eventDataState.locations || []).some(link => link.id === item.id)).map(item => <SelectItem key={item.id} value={String(item.id)}>{item.title}</SelectItem>)}</SelectContent>
-                      </Select>
-                    </div>
-                  </div>
+                  <RelationshipSection entry={entry} title="Event locations" kinds={["occurs_at"]} />
                 </CardContent>
               </CollapsibleContent>
             </Card>
           </Collapsible>
 
+          <RelationshipSection entry={entry} title="Participants" kinds={["participant"]} />
+          <RelationshipSection entry={entry} title="Consequences & follow-ups" kinds={["consequence"]} />
+          <Card><CardHeader><CardTitle className="text-lg">Outcome</CardTitle></CardHeader><CardContent className="space-y-3">
+            <label className="text-sm">Outcome type<Input value={eventDataState.outcomeType || ""} onChange={e => updateEventData({ outcomeType: e.target.value })} placeholder="Victory, discovery, turning point…" /></label>
+            <label className="text-sm">Outcome tags<TagInput placeholder="Add outcome tag..." tags={eventDataState.outcomeTags || []} onChange={outcomeTags => updateEventData({ outcomeTags })} /></label>
+          </CardContent></Card>
+          <RelationshipSection entry={entry} title="References & other connections" kinds={["reference","related","associated","history"]} />
           {/* Narrative Context - Collapsible */}
           <Collapsible open={narrativeExpanded} onOpenChange={setNarrativeExpanded}>
             <Card>

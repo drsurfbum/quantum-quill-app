@@ -1,5 +1,6 @@
+import { RelationshipSection } from "./relationships";
 import { fieldOptions } from "@shared/bible-catalog";
-import { readBibleFields, linkedTitle } from "@shared/story-bible";
+import { readBibleFields } from "@shared/story-bible";
 import { useEditorDraft } from "@/hooks/use-editor-draft";
 import { useAutosave, withPendingEdits } from "@/hooks/use-autosave";
 import { SaveStatus } from "@/components/save-status";
@@ -165,24 +166,9 @@ const DetailsEditor = memo(({ entry, projectId, onClose }: DetailsEditorProps) =
     updateDetailData({ tags: (detailDataState.tags || []).filter(tag => tag !== tagToRemove) });
   };
 
-  const addLinkedElement = (elementId: number, elementName: string, elementType: string) => {
-    const existingElement = detailDataState.linkedElements.find(el => el.id === elementId);
-    if (!existingElement) {
-      updateDetailData({
-        linkedElements: [...detailDataState.linkedElements, {
-          id: elementId,
-          name: elementName,
-          type: elementType as any
-        }]
-      });
-    }
-  };
 
-  const removeLinkedElement = (elementId: number) => {
-    updateDetailData({
-      linkedElements: detailDataState.linkedElements.filter(el => el.id !== elementId)
-    });
-  };
+
+
 
   // Auto-generate title from summary if title is empty
   const generateTitleFromSummary = () => {
@@ -272,110 +258,7 @@ const DetailsEditor = memo(({ entry, projectId, onClose }: DetailsEditorProps) =
               <CollapsibleContent>
                 <CardContent className="space-y-4">
                   {/* Linked Elements */}
-                  <div>
-                    <Label>Linked Elements</Label>
-                    <div className="flex flex-wrap gap-2 mb-2">
-                      {detailDataState.linkedElements.map((element) => (
-                        <Badge key={element.id} variant="outline" className="flex items-center gap-1">
-                          {element.type === 'characters' && <Users className="h-3 w-3" />}
-                          {element.type === 'locations' && <MapPin className="h-3 w-3" />}
-                          {element.type === 'events' && <Calendar className="h-3 w-3" />}
-                          {element.type === 'world_elements' && <Zap className="h-3 w-3" />}
-                          {element.type === 'groups_races' && <Users className="h-3 w-3" />}
-                          {linkedTitle(allEntries, element.id, element.name)}
-                          <button
-                            onClick={() => removeLinkedElement(element.id)}
-                            className="hover:bg-red-500 hover:text-white rounded-full p-0.5"
-                          >
-                            <X className="h-3 w-3" />
-                          </button>
-                        </Badge>
-                      ))}
-                    </div>
-                    
-                    {/* Add element dropdowns */}
-                    <div className="grid grid-cols-2 gap-2">
-                      <Select onValueChange={(value) => {
-                        const id = Number(value);
-                        const name = (allEntries || []).find(e => e.id === id)?.title || '';
-                        addLinkedElement(id, name, 'characters');
-                      }}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Add Character" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {characterEntries.map((char) => (
-                            <SelectItem key={char.id} value={char.id.toString()}>
-                              {char.title}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      
-                      <Select onValueChange={(value) => {
-                        const id = Number(value);
-                        const name = (allEntries || []).find(e => e.id === id)?.title || '';
-                        addLinkedElement(id, name, 'locations');
-                      }}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Add Location" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {locationEntries.map((loc) => (
-                            <SelectItem key={loc.id} value={loc.id.toString()}>
-                              {loc.title}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      
-                      <Select onValueChange={(value) => {
-                        const id = Number(value);
-                        const name = (allEntries || []).find(e => e.id === id)?.title || '';
-                        addLinkedElement(id, name, 'events');
-                      }}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Add Event" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {eventEntries.map((event) => (
-                            <SelectItem key={event.id} value={event.id.toString()}>
-                              {event.title}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      
-                      <Select onValueChange={(value) => {
-                        const id = Number(value);
-                        const name = (allEntries || []).find(e => e.id === id)?.title || '';
-                        addLinkedElement(id, name, 'world_elements');
-                      }}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Add World Element" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {worldElementEntries.map((element) => (
-                            <SelectItem key={element.id} value={element.id.toString()}>
-                              {element.title}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <Select onValueChange={value => { const target = (allEntries || []).find(item => item.id === Number(value)); if (target) addLinkedElement(target.id, target.title, 'groups_races'); }}>
-                        <SelectTrigger><SelectValue placeholder="Add Group / Race" /></SelectTrigger>
-                        <SelectContent>{(allEntries || []).filter(item => item.entryType === 'groups_races' && item.id !== entry.id).map(item => <SelectItem key={item.id} value={String(item.id)}>{item.title}</SelectItem>)}</SelectContent>
-                      </Select>
-                      <Select onValueChange={value => { const target = (allEntries || []).find(item => item.id === Number(value)); if (target) addLinkedElement(target.id, target.title, 'research'); }}>
-                        <SelectTrigger><SelectValue placeholder="Add Research" /></SelectTrigger>
-                        <SelectContent>{(allEntries || []).filter(item => item.entryType === 'research' && item.id !== entry.id).map(item => <SelectItem key={item.id} value={String(item.id)}>{item.title}</SelectItem>)}</SelectContent>
-                      </Select>
-                      <Select onValueChange={value => { const target = (allEntries || []).find(item => item.id === Number(value)); if (target) addLinkedElement(target.id, target.title, 'details'); }}>
-                        <SelectTrigger><SelectValue placeholder="Add Detail" /></SelectTrigger>
-                        <SelectContent>{(allEntries || []).filter(item => item.entryType === 'details' && item.id !== entry.id).map(item => <SelectItem key={item.id} value={String(item.id)}>{item.title}</SelectItem>)}</SelectContent>
-                      </Select>
-                    </div>
-                  </div>
+                  <RelationshipSection entry={entry} title="Linked applications" kinds={["application"]} />
                   
                   <div className="grid grid-cols-2 gap-4">
                     <div>
@@ -594,28 +477,7 @@ const DetailsEditor = memo(({ entry, projectId, onClose }: DetailsEditorProps) =
           </Card>
 
           {/* Links Summary */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Links Summary</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-wrap gap-2">
-                {detailDataState.linkedElements.map((element) => (
-                  <Badge key={element.id} variant="outline" className="text-xs">
-                    {element.type === 'characters' && <Users className="h-3 w-3 mr-1" />}
-                    {element.type === 'locations' && <MapPin className="h-3 w-3 mr-1" />}
-                    {element.type === 'events' && <Calendar className="h-3 w-3 mr-1" />}
-                    {element.type === 'world_elements' && <Zap className="h-3 w-3 mr-1" />}
-                    {element.type === 'groups_races' && <Users className="h-3 w-3 mr-1" />}
-                    {linkedTitle(allEntries, element.id, element.name)}
-                  </Badge>
-                ))}
-                {detailDataState.linkedElements.length === 0 && (
-                  <p className="text-sm text-muted-foreground">No linked elements</p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+          <RelationshipSection entry={entry} title="Other connections" kinds={["related","reference","associated","history"]} />
 
           {/* Tags */}
           <Card>

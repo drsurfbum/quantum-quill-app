@@ -1,3 +1,4 @@
+import type { BibleRelationshipRow } from "@shared/schema";
 import type { SaveWritingStyle } from "@shared/writing-styles";
 import type { SavedWritingStyle } from "@shared/schema";
 import { matchesBase } from "@shared/draft";
@@ -61,6 +62,9 @@ export interface IStorage {
   updateOutlineItem(id: number, outlineItem: Partial<OutlineItem>, base?: Record<string, unknown>): Promise<OutlineItem | undefined>;
   deleteOutlineItem(id: number): Promise<boolean>;
 
+  getBibleRelationships(projectId: number): Promise<BibleRelationshipRow[]>;
+  putBibleRelationship(row: BibleRelationshipRow): Promise<BibleRelationshipRow>;
+
   // Story Bible methods
   getStoryBibleEntry(id: number): Promise<StoryBibleEntry | undefined>;
   getProjectStoryBible(projectId: number): Promise<StoryBibleEntry[]>;
@@ -91,6 +95,9 @@ export interface IStorage {
 }
 
 export class MemStorage implements IStorage {
+  private relationshipRows = new Map<string, BibleRelationshipRow>();
+  async getBibleRelationships(projectId: number) { return Array.from(this.relationshipRows.values()).filter(row => row.projectId === projectId); }
+  async putBibleRelationship(row: BibleRelationshipRow) { this.relationshipRows.set(`${row.projectId}:${row.id}`, row); return row; }
   private projectLocks = new Map<number, Promise<void>>();
   async withProjectLock<T>(projectId: number, work: (storage: IStorage) => Promise<T>): Promise<T> {
     const previous = this.projectLocks.get(projectId) || Promise.resolve();

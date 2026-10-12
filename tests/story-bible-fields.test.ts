@@ -1,4 +1,6 @@
 import './editor-dom';
+import { EntryLinks } from '../client/src/components/story-bible/entry-links';
+import { relationshipTypeFor } from '../shared/relationships';
 // Toast expiry timers are unrelated to persistence and otherwise outlive these tests.
 jest.mock('../client/src/hooks/use-toast', () => ({ useToast: () => ({ toast: jest.fn() }) }));
 import http from 'node:http';
@@ -103,7 +105,7 @@ beforeAll(async () => {
 });
 afterAll(async () => { queryClient.clear(); queryClient.setDefaultOptions(previousQueryDefaults); server.closeAllConnections(); await new Promise<void>(resolve => server.close(() => resolve())); });
 beforeEach(() => {
-  queryClient.clear(); queryClient.setQueryData(['/api/user'], owner);
+  queryClient.clear(); queryClient.setQueryData(['/api/user'], owner); window.localStorage.clear();
   jest.spyOn(global, 'fetch').mockImplementation(async (path, init) => {
     const method = (init?.method || 'GET').toLowerCase();
     let request = (context.agent as any)[method](String(path));
@@ -120,6 +122,46 @@ afterEach(async () => {
   await act(async () => { await flushPendingSaves(); root.unmount(); });
   container.remove(); queryClient.clear(); jest.restoreAllMocks();
 });
+
+// Shared relationship controls use explicit, revision-checked writes rather than
+// copying IDs/names into prose JSON. Keep the original field suite on this path.
+const linkUrl = () => `/api/projects/${projectId}/relationships`;
+const sectionFor = (label: string) => container.querySelector<HTMLElement>(`section[aria-label=${JSON.stringify(label)}]`)!;
+const button = (scope: ParentNode, text: string) => [...scope.querySelectorAll('button')].find(node => node.textContent === text)!;
+async function until(predicate: () => boolean) {
+  for (let i=0;i<100 && !predicate();i++) await act(async () => { await new Promise(resolve => setTimeout(resolve,10)); });
+  if (!predicate()) throw new Error('Relationship UI did not settle: ' + document.body.textContent?.slice(-1000));
+}
+async function dialogChange(label: string, value: string) {
+  const dialog=document.querySelector('[role="dialog"]')!;
+  const input = [...dialog.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>('input,textarea,select')].find(node=>node.getAttribute('aria-label')===label || node.closest('label')?.childNodes[0]?.textContent?.trim()===label || (node.id && dialog.querySelector(`label[for="${node.id}"]`)?.textContent===label))!;
+  if(!input) throw new Error('Missing dialog field '+label);
+  await act(async()=>{input.value=value;Simulate.change(input);});
+}
+async function addLink(section: Element, peer: any, kind?: string) {
+  await click(button(section,'Add link'));
+  await until(()=>!!document.querySelector('[role="dialog"]'));
+  if(kind) await dialogChange('Relationship type',kind);
+  const dialog=document.querySelector('[role="dialog"]')!;
+  await dialogChange('Search entries',peer.title);
+  await until(()=>!![...dialog.querySelectorAll('button')].find(node=>node.textContent?.startsWith(peer.title)));
+  await click([...dialog.querySelectorAll('button')].find(node=>node.textContent?.startsWith(peer.title))!);
+  await dialogChange('Role','Witness'); await dialogChange('Context','Exact context');
+  await dialogChange('From (optional)','Third Age'); await dialogChange('Until (optional)','Cycle 12');
+  await click(button(dialog,'Add relationship'));
+  await until(()=>!document.querySelector('[role="dialog"]'));
+  const links=(await context.agent.get(linkUrl()).expect(200)).body;
+  const link=links.find((value:any)=>value.sourceId===entry.id&&value.targetId===peer.id&&(!kind||value.relationshipType===kind));
+  expect(link).toMatchObject({role:'Witness',context:'Exact context',startDate:'Third Age',endDate:'Cycle 12'});
+  expect(link).not.toHaveProperty('name'); return link;
+}
+async function removeLink(id:string) {
+  await until(()=>!!container.querySelector(`[data-relationship-id=${JSON.stringify(id)}]`));
+  await click(button(container.querySelector(`[data-relationship-id=${JSON.stringify(id)}]`)!,'Remove link'));
+  await click(button(document.querySelector('[role="dialog"]')!,'Remove relationship'));
+  await until(()=>!document.querySelector('[role="dialog"]'));
+  expect((await context.agent.get(linkUrl()).expect(200)).body.some((link:any)=>link.id===id)).toBe(false);
+}
 
 // Explicit field inventory: selector -> persistence path. Category branches are separate cases.
 const textCases: [string, any, string[], string?][] = [
@@ -263,28 +305,18 @@ it.each(Object.keys(editors).filter(type => type !== 'fallback'))('%s image URL,
   await enter(ph(placeholder), 'https://example.test/replacement.png');
   saved = await fresh(); expect(data(saved).imageDescription || '').toBe('');
 });
-it.each(['groups_races','locations'])('%s parent selector restores and clears its saved relationship', async type => {
-  await create(type);
-  const label = type === 'groups_races' ? 'Parent Group' : 'Parent Location';
-  const key = type === 'groups_races' ? 'parentGroup' : 'parentLocation';
-  const peer = peers.find(e => e.entryType === type);
-  await select(combo(label), peer.title);
-  let saved = await fresh(); expect(data(saved)[key]).toBe(String(peer.id)); expect(combo(label).textContent).toBe(peer.title);
-  await select(combo(label), type === 'groups_races' ? 'None' : '-- No Parent Location --');
-  saved = await fresh(); expect(data(saved)[key]).toBe('');
+it.each(['groups_races','locations'])('%s parent links restore and clear through the shared picker', async type => {
+  await create(type); const peer=peers.find(e=>e.entryType===type);
+  const link=await addLink(sectionFor(type==='groups_races'?'Group hierarchy':'Location hierarchy'),peer,'parent');
+  const saved=await fresh(); expect(container.textContent).toContain(peer.title); expect(data(saved)[type==='groups_races'?'parentGroup':'parentLocation']).toBeUndefined();
+  await removeLink(link.id);
 });
-it.each(['details','research'])('%s every linked-element picker preserves full titles including separators', async type => {
+it.each(['details','research'])('%s linked applications preserve full titles without copying names', async type => {
   await create(type);
-  const types = type === 'details' ? ['characters','locations','events','world_elements'] : ['characters','locations','world_elements'];
-  for (const linkType of types) {
-    const peer = peers.find(e => e.entryType === linkType);
-    const picker = [...container.querySelectorAll('[role="combobox"]')].find(node => node.textContent?.toLowerCase().includes(linkType === 'world_elements' ? 'world element' : linkType.slice(0,-1)))!;
-    await select(picker, peer.title);
-  }
-  let saved = await fresh();
-  for (const linkType of types) { const peer = peers.find(e => e.entryType === linkType); expect(data(saved).linkedElements).toContainEqual({ id: peer.id, name: peer.title, type: linkType }); }
-  for (const linkType of types) await click(removeByText(peers.find(e => e.entryType === linkType).title));
-  saved = await fresh(); expect(data(saved).linkedElements).toEqual([]);
+  const links=[];
+  for(const linkType of ['characters','locations','events','world_elements','groups_races','details','research']) links.push(await addLink(sectionFor('Linked applications'),peers.find(e=>e.entryType===linkType),'application'));
+  const saved=await fresh(); expect(data(saved).linkedElements || []).toEqual([]);
+  for(const link of links) await removeLink(link.id);
 });
 const dynamicCases = Object.values(ENHANCED_TAXONOMY).flatMap(tax => [
   [tax.key, '', tax.fields] as const,
@@ -293,6 +325,7 @@ const dynamicCases = Object.values(ENHANCED_TAXONOMY).flatMap(tax => [
 it.each(dynamicCases)('generic %s / %s: all declared dynamic fields round-trip and clear', async (type, category, fields) => {
   await create('fallback', category ? { category } : {}, {}, type);
   const expected: Record<string, any> = {};
+  const fieldLinks: Record<string,string> = {};
   // Category controls determine the field list; test them after their dependent fields.
   const ordered = Object.entries(fields).sort(([a], [b]) => Number(a === 'category') - Number(b === 'category'));
   for (const [key, spec] of ordered) {
@@ -305,8 +338,7 @@ it.each(dynamicCases)('generic %s / %s: all declared dynamic fields round-trip a
     else {
       if (spec.type.includes('linked')) {
         const peer = peers.find(e => spec.linkedTo === 'any' || e.entryType === spec.linkedTo);
-        expected[key] = spec.type.startsWith('multi') ? [peer.id] : peer.id;
-        await select(section.querySelector('[role="combobox"]')!);
+        const link = await addLink(section, peer, relationshipTypeFor(`metadata.${key}`, type)); fieldLinks[key] = link.id;
       } else {
         expected[key] = spec.type === 'multi-select' ? [spec.options![0]] : spec.options![0];
         await select(section.querySelector('[role="combobox"]')!, spec.choices?.[0]?.label || spec.options![0]);
@@ -322,6 +354,7 @@ it.each(dynamicCases)('generic %s / %s: all declared dynamic fields round-trip a
       await change(`[data-field="${key}"] ${spec.type === 'text' ? 'input' : 'textarea'}`, ''); expected[key] = '';
     } else if (spec.type === 'checkbox') { await click(section.querySelector('[role="checkbox"]')); expected[key] = false; }
     else if (spec.type === 'single-select') { expect(section.textContent).toContain(spec.choices?.find(option => option.value === expected[key])?.label || expected[key]); await select(section.querySelector('[role="combobox"]')!, 'None'); expected[key] = ''; }
+    else if(spec.type.includes('linked')) { await removeLink(fieldLinks[key]); }
     else {
       expect(section.textContent).toContain(spec.type === 'multi-select' ? expected[key][0] : peers.find(e => e.id === (Array.isArray(expected[key]) ? expected[key][0] : expected[key])).title);
       await click(section.querySelector('button:not([role="combobox"])'));
@@ -349,49 +382,30 @@ it('generic classification persists while type changes require a conversion prev
   expect(combo('Entry Type').getAttribute('data-disabled')).not.toBeNull();
   saved = await fresh(); expect(saved).toMatchObject({ entryType: 'world_elements', category: 'Flora', subcategory: 'Subtype' }); expect(saved.metadata.legacyUnrendered).toBe('keep');
 });
-it('event location picker saves real links, supports removal and fictional-only dates', async () => {
-  await create('events');
-  const peer = peers.find(e => e.entryType === 'locations');
-  await select(field('[aria-label="Add location"]'), peer.title);
-  let saved = await fresh(); expect(data(saved).locations).toEqual([{ id: peer.id, name: peer.title, context: '' }]);
-  const selected = [...container.querySelectorAll('[role="combobox"]')].find(n => n.textContent === peer.title)!;
-  await click(selected.parentElement!.querySelector('button:not([role="combobox"])'));
-  await change('#fictionalDate', 'Cycle 12, Sol 82'); saved = await fresh(); expect(data(saved).locations).toEqual([]);
+it('event location picker saves real links and fictional-only dates', async () => {
+  await create('events'); const link=await addLink(sectionFor('Event locations'),peers.find(e=>e.entryType==='locations'),'occurs_at');
+  await fresh(); await removeLink(link.id); await change('#fictionalDate','Cycle 12, Sol 82'); await fresh();
   expect(container.textContent).toContain('Cycle 12, Sol 82'); expect(container.textContent).not.toContain('Date not set');
 });
-it('location create-parent control uses returned record and persists the link', async () => {
-  await create('locations');
-  Object.defineProperty(globalThis, 'prompt', { configurable: true, value: jest.fn(() => 'Fresh synthetic parent') });
-  await select(combo('Parent Location'), '+ Create New Location');
-  // Wait for the create mutation rather than assuming one render completes the API round trip.
-  for (let i=0; i<30 && !combo('Parent Location').textContent?.includes('Fresh synthetic parent'); i++) await act(async () => { await new Promise(resolve => setTimeout(resolve, 10)); });
-  const saved = await fresh(); const parent = (await context.agent.get(`/api/story-bible/${data(saved).parentLocation}`).expect(200)).body;
-  expect(parent.title).toBe('Fresh synthetic parent'); expect(combo('Parent Location').textContent).toBe(parent.title);
+it('location stub creation links the returned record atomically', async () => {
+  await create('locations'); await click(button(sectionFor('Location hierarchy'),'Add link'));
+  const dialog=document.querySelector('[role="dialog"]')!;
+  await click(button(dialog,'Create a new stub…')); await dialogChange('Stub name','Fresh synthetic parent');
+  await click(button(dialog,'Create stub and link')); await until(()=>!document.querySelector('[role="dialog"]'));
+  const link=(await context.agent.get(linkUrl()).expect(200)).body.find((row:any)=>row.sourceId===entry.id);
+  const parent=(await context.agent.get(`/api/story-bible/${link.targetId}`).expect(200)).body;
+  expect(parent.title).toBe('Fresh synthetic parent'); await fresh(); expect(container.textContent).toContain(parent.title); await removeLink(link.id);
 });
-it.each(['characters','groups_races','locations','fallback'])('%s existing relationship controls link, reload and unlink', async type => {
-  await create(type);
-  const peer = peers.find(e => e.entryType === (type === 'groups_races' ? 'locations' : 'characters'));
-  if (type === 'locations') {
-    const row = [...container.querySelectorAll('span')].find(n => n.textContent === peer.title)!.parentElement!.parentElement!;
-    await click(row.querySelector('button'));
-    const group = peers.find(e => e.entryType === 'groups_races');
-    const groupRow = [...container.querySelectorAll('span')].find(n => n.textContent === group.title)!.parentElement!.parentElement!;
-    await click(groupRow.querySelector('button'));
-  } else {
-    const picker = [...container.querySelectorAll('[role="combobox"]')].find(n => n.textContent?.includes(type === 'groups_races' ? 'Link to location' : 'Link to another entry'))!;
-    await select(picker, type === 'groups_races' ? peer.title : peer.title + 'characters • No category');
-  }
-  let saved = await fresh(); expect(saved.relatedEntryIds).toContain(peer.id);
-  await click(removeByText(peer.title)); saved = await fresh(); expect(saved.relatedEntryIds).not.toContain(peer.id);
+it.each(['characters','groups_races','locations','fallback'])('%s relationships create, reload and unlink', async type=>{
+  await create(type); const title=type==='groups_races'?'Home & references':type==='locations'?'Other connections':'Relationships';
+  const link=await addLink(sectionFor(title),peers.find(e=>e.entryType==='characters'),'related');
+  await fresh(); await removeLink(link.id);
 });
-it('location nearby links and research topic choices can be added and removed', async () => {
-  await create('locations'); const peer = peers.find(e => e.entryType === 'locations');
-  const picker = [...container.querySelectorAll('[role="combobox"]')].find(n => n.textContent?.includes('nearby'))!;
-  await select(picker, peer.title); let saved = await fresh(); expect(data(saved).nearbyLocations).toEqual([peer.id]);
-  await click(removeByText(peer.title)); saved = await fresh(); expect(data(saved).nearbyLocations).toEqual([]);
-  await act(async () => root.render(React.createElement('div')));
-  await create('research'); const topic = await select(combo('Topics'));
-  saved = await fresh(); expect(data(saved).topics).toEqual([topic]); await click(removeByText(topic)); saved = await fresh(); expect(data(saved).topics).toEqual([]);
+it('location nearby links and research topic choices add and remove',async()=>{
+  await create('locations'); const link=await addLink(sectionFor('Nearby locations'),peers.find(e=>e.entryType==='locations'),'nearby');
+  await fresh(); await removeLink(link.id); await act(async()=>root.render(React.createElement('div')));
+  await create('research'); const topic=await select(combo('Topics')); let saved=await fresh(); expect(data(saved).topics).toEqual([topic]);
+  await click(removeByText(topic)); saved=await fresh(); expect(data(saved).topics).toEqual([]);
 });
 it('detail title generation and blank-title recovery preserve body edits', async () => {
   await create('details'); await change('#shortSummary', 'A summary for a generated title'); await change('input', '');
@@ -437,21 +451,41 @@ it('dashboard searches metadata, honors type/archive filters and opens category 
   await select(field('[aria-label="Archive filter"]'), 'Archived entries');
   expect(container.textContent).toContain(archived.title); expect(container.textContent).not.toContain(active.title);
 });
-it('group member link control includes and removes the selected character', async () => {
-  await create('groups_races'); const peer = peers.find(e => e.entryType === 'characters');
-  const row = [...container.querySelectorAll('span')].find(n => n.textContent === peer.title)!.parentElement!.parentElement!;
-  await click(row.querySelector('button')); let saved = await fresh(); expect(saved.relatedEntryIds).toContain(peer.id);
-  await click(removeByText(peer.title)); saved = await fresh(); expect(saved.relatedEntryIds).not.toContain(peer.id);
+it('group member link control includes and removes the selected character',async()=>{
+  await create('groups_races'); const link=await addLink(sectionFor('Membership & leadership'),peers.find(e=>e.entryType==='characters'),'member');
+  await fresh(); await removeLink(link.id);
 });
-it('event location replacement keeps context and saves the selected target', async () => {
-  const original = peers.find(e => e.entryType === 'locations');
-  await create('events', {}, { locations: [{ id: original.id, name: original.title, context: 'Before the battle' }] });
-  const second = (await context.agent.post('/api/story-bible').send({ title: 'Replacement location', projectId, entryType: 'locations', content: '' }).expect(201)).body;
-  await act(async () => { queryClient.setQueryData([listUrl()], [entry, ...peers, second]); });
-  const picker = [...container.querySelectorAll('[role="combobox"]')].find(n => n.textContent === original.title)!;
-  await select(picker, second.title); const saved = await fresh();
-  expect(data(saved).locations).toEqual([{ id: second.id, name: second.title, context: 'Before the battle' }]);
+it('recovered event location retargeting keeps context and original payload',async()=>{
+  const original=peers.find(e=>e.entryType==='locations');
+  await create('events',{}, {locations:[{id:original.id,name:'Stale copied title',context:'Before the battle'}]});
+  const second=(await context.agent.post('/api/story-bible').send({title:'Replacement location',projectId,entryType:'locations',content:''}).expect(201)).body;
+  await act(async()=>{queryClient.setQueryData([listUrl()],[entry,...peers,second]);});
+  await until(()=>!!button(sectionFor('Event locations'),'Edit link')); await click(button(sectionFor('Event locations'),'Edit link'));
+  const dialog=document.querySelector('[role="dialog"]')!; await dialogChange('Search entries',second.title);
+  await click([...dialog.querySelectorAll('button')].find(node=>node.textContent?.startsWith(second.title))!);
+  await click(button(dialog,'Save relationship')); await until(()=>!document.querySelector('[role="dialog"]'));
+  const link=(await context.agent.get(linkUrl()).expect(200)).body.find((row:any)=>row.sourceId===entry.id);
+  expect(link).toMatchObject({targetId:second.id,context:'Before the battle'});
+  const saved=await fresh(); expect(data(saved).locations[0].name).toBe('Stale copied title'); expect(container.textContent).not.toContain('Stale copied title');
 });
+
+it.each([
+ ['events','Participants','participant','characters'], ['events','Consequences & follow-ups','consequence','events'],
+ ['groups_races','Membership & leadership','leader','characters'], ['locations','Governance & history','governed_by','groups_races'],
+ ['locations','Governance & history','history','events'], ['world_elements','Usage & impact','used_by','characters'],
+ ['world_elements','Usage & impact','affects','locations'], ['world_elements','Origins & historical events','history','events'],
+ ['world_elements','References & connections','reference','research']
+])('%s %s supports roles, context, dates and rename-target round trips',async(type,section,kind,target)=>{
+ await create(type); const peer=peers.find(e=>e.entryType===target); const link=await addLink(sectionFor(section),peer,kind);
+ const latest=(await context.agent.get(`/api/story-bible/${peer.id}`).expect(200)).body;
+ await context.agent.put(`/api/story-bible/${peer.id}`).send({_revision:latest.revision,title:'Renamed target '+peer.id}).expect(200);
+ await act(async()=>{await queryClient.invalidateQueries({queryKey:[listUrl()]});});
+ await until(()=>!!sectionFor(section).textContent?.includes('Renamed target '+peer.id));
+ expect(sectionFor(section).textContent).toContain('Renamed target '+peer.id);
+ await removeLink(link.id);
+ await context.agent.put(`/api/story-bible/${peer.id}`).send({_revision:latest.revision+1,title:peer.title}).expect(200);
+});
+
 
 it('search retains legacy narrative when a structured entry also has metadata', () => {
   const legacy = { title: 'Legacy event', entryType: 'events', content: 'Original prose', metadata: { notes: 'Side annotation' }, tags: [] } as any;
@@ -459,4 +493,55 @@ it('search retains legacy narrative when a structured entry also has metadata', 
   expect(bibleEntrySearchText(legacy)).toContain('side annotation');
   expect(bibleEntrySearchText({ ...legacy, content: JSON.stringify({ shortSummary: 'Visible words' }) })).toContain('visible words');
   expect(bibleEntrySearchText({ ...legacy, content: JSON.stringify({ shortSummary: 'Visible words' }) })).not.toContain('shortsummary');
+});
+
+it('relationship form survives a failed write and remount with explicit recovery and account scoping', async()=>{
+ await create('events'); const peer=peers.find(e=>e.entryType==='characters');
+ await click(button(sectionFor('Participants'),'Add link')); let dialog=document.querySelector('[role="dialog"]')!;
+ await dialogChange('Search entries',peer.title); await click([...dialog.querySelectorAll('button')].find(node=>node.textContent?.startsWith(peer.title))!);
+ await dialogChange('Context','Unsent witness context');
+ const fail=jest.spyOn(context.storage,'putBibleRelationship').mockRejectedValueOnce(new Error('Synthetic offline failure'));
+ await click(button(dialog,'Add relationship')); await until(()=>!!dialog.querySelector('[role="alert"]'));
+ expect((await context.agent.get(linkUrl()).expect(200)).body.some((link:any)=>link.sourceId===entry.id)).toBe(false);
+ await click(button(dialog,'Close — keep draft')); await fresh(); await click(button(sectionFor('Participants'),'Add link'));
+ dialog=document.querySelector('[role="dialog"]')!; expect(dialog.textContent).toContain('Restore relationship draft');
+ expect((dialog.querySelector('textarea') as HTMLTextAreaElement).value).toBe('');
+ await click(button(dialog,'Restore relationship draft')); expect((dialog.querySelector('textarea') as HTMLTextAreaElement).value).toBe('Unsent witness context');
+ await click(button(dialog,'Close — keep draft')); await act(async()=>root.render(React.createElement('div')));
+ const privateKey=Object.keys(window.localStorage).find(key=>key.startsWith('quantum-quill:relationship-draft:'))!;
+ expect(privateKey).toContain(`:${owner.id}:${projectId}:${entry.id}:`);
+ queryClient.setQueryData(['/api/user'],{...owner,id:999}); await mount(); await click(button(sectionFor('Participants'),'Add link'));
+ dialog=document.querySelector('[role="dialog"]')!; expect(dialog.textContent).not.toContain('Restore relationship draft');
+ expect((dialog.querySelector('textarea') as HTMLTextAreaElement).value).toBe('');
+ await click(button(dialog,'Close — keep draft')); await act(async()=>root.render(React.createElement('div')));
+ queryClient.setQueryData(['/api/user'],owner); await mount(); await click(button(sectionFor('Participants'),'Add link'));
+ dialog=document.querySelector('[role="dialog"]')!; await click(button(dialog,'Restore relationship draft')); await click(button(dialog,'Add relationship')); await until(()=>!document.querySelector('[role="dialog"]'));
+ expect((await context.agent.get(linkUrl()).expect(200)).body).toContainEqual(expect.objectContaining({sourceId:entry.id,context:'Unsent witness context'})); expect(window.localStorage.getItem(privateKey)).toBeNull(); fail.mockRestore();
+});
+it('relationship conflict requires reviewing the latest values before replacing them',async()=>{
+ await create('events'); const link=await addLink(sectionFor('Participants'),peers.find(e=>e.entryType==='characters'),'participant');
+ await click(button(sectionFor('Participants'),'Edit link')); let dialog=document.querySelector('[role="dialog"]')!; await dialogChange('Context','My revised context');
+ const {id,projectId:unused,revision,version,unavailable,...serverInput}=link;
+ await context.agent.put(`${linkUrl()}/${id}`).send({...serverInput,context:'Other device context',_version:version}).expect(200);
+ await click(button(dialog,'Save relationship')); await until(()=>dialog.textContent?.includes('Current saved relationship')===true);
+ expect(dialog.textContent).toContain('Other device context');
+ expect((await context.agent.get(linkUrl()).expect(200)).body.find((row:any)=>row.id===id).context).toBe('Other device context');
+ await click(button(dialog,'Use this reviewed version as my base')); await click(button(dialog,'Save relationship')); await until(()=>!document.querySelector('[role="dialog"]'));
+ expect((await context.agent.get(linkUrl()).expect(200)).body.find((row:any)=>row.id===id).context).toBe('My revised context');
+});
+it('backlinks resolve current source titles and open the linked entry',async()=>{
+ await create('events'); const target=peers.find(e=>e.entryType==='characters'); const link=await addLink(sectionFor('Participants'),target,'participant');
+ const open=jest.fn(); await act(async()=>root.render(React.createElement(QueryClientProvider,{client:queryClient},React.createElement(EntryLinks,{entry:target,onOpen:open}))));
+ await until(()=>!!container.querySelector(`[data-backlink-id=${JSON.stringify(link.id)}]`)); await click(button(container.querySelector(`[data-backlink-id=${JSON.stringify(link.id)}]`)!,entry.title)); await until(()=>open.mock.calls.length===1);
+ expect(open.mock.calls[0][0]).toMatchObject({id:entry.id,title:entry.title});
+});
+
+it('shared archive action retains links and supports restoring every entry type',async()=>{
+ await create('world_elements'); const link=await addLink(sectionFor('References & connections'),peers.find(e=>e.entryType==='research'),'reference');
+ const onOpen=jest.fn();
+ await act(async()=>root.render(React.createElement(QueryClientProvider,{client:queryClient},React.createElement(EntryLinks,{entry,onOpen}))));
+ await click(button(container,'Archive entry')); await until(()=>onOpen.mock.calls.length===1);
+ expect(onOpen.mock.calls[0][0].isArchived).toBe(true); expect((await context.agent.get(linkUrl()).expect(200)).body).toContainEqual(expect.objectContaining({id:link.id}));
+ await until(()=>!!button(container,'Restore entry')); await click(button(container,'Restore entry')); await until(()=>onOpen.mock.calls.length===2);
+ expect(onOpen.mock.calls[1][0].isArchived).toBe(false);
 });

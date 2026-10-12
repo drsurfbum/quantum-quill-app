@@ -1,3 +1,4 @@
+import { RelationshipSection } from "./relationships";
 import { useEditorDraft } from "@/hooks/use-editor-draft";
 import { useAutosave, withPendingEdits } from "@/hooks/use-autosave";
 import { SaveStatus } from "@/components/save-status";
@@ -35,7 +36,6 @@ export function EnhancedBibleEditor({ entry, projectId, onClose }: EnhancedBible
   const [category, setCategory] = useState(entry.category || "");
   const [subcategory, setSubcategory] = useState(entry.subcategory || "");
   const [tags, setTags] = useState<string[]>(entry.tags || []);
-  const [relatedEntryIds, setRelatedEntryIds] = useState<number[]>(entry.relatedEntryIds || []);
   const [metadata, setMetadata] = useEditorDraft<Record<string, any>>(entry.metadata || {});
   const [isArchived, setIsArchived] = useState(entry.isArchived || false);
   const [priority, setPriority] = useState(entry.priority || 0);
@@ -56,7 +56,6 @@ export function EnhancedBibleEditor({ entry, projectId, onClose }: EnhancedBible
     setCategory(entry.category || "");
     setSubcategory(entry.subcategory || "");
     setTags(entry.tags || []);
-    setRelatedEntryIds(entry.relatedEntryIds || []);
     setMetadata(entry.metadata || {});
     setIsArchived(entry.isArchived || false);
     setPriority(entry.priority || 0);
@@ -122,19 +121,9 @@ export function EnhancedBibleEditor({ entry, projectId, onClose }: EnhancedBible
     }
   };
 
-  const handleAddRelatedEntry = (entryId: number) => {
-    if (!relatedEntryIds.includes(entryId)) {
-      const next = [...relatedEntryIds, entryId];
-      setRelatedEntryIds(next);
-      autosave.save({ relatedEntryIds: next });
-    }
-  };
 
-  const handleRemoveRelatedEntry = (entryId: number) => {
-    const next = relatedEntryIds.filter(id => id !== entryId);
-    setRelatedEntryIds(next);
-    autosave.save({ relatedEntryIds: next });
-  };
+
+
 
   const togglePriority = () => {
     const newPriority = priority > 0 ? 0 : 1;
@@ -250,64 +239,7 @@ export function EnhancedBibleEditor({ entry, projectId, onClose }: EnhancedBible
           />
 
           {/* Related Entries */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Link className="h-4 w-4" />
-                Related Entries
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {/* Current Related Entries */}
-              {relatedEntryIds.length > 0 && (
-                <div className="space-y-2">
-                  {relatedEntryIds.map(id => {
-                    const relatedEntry = availableForLinking.find(e => e.id === id);
-                    if (!relatedEntry) return null;
-                    return (
-                      <div key={id} className="flex items-center justify-between p-2 bg-muted rounded">
-                        <div className="flex-1">
-                          <div className="font-medium text-sm">{relatedEntry.title}</div>
-                          <div className="text-xs text-muted-foreground">
-                            {relatedEntry.entryType} • {relatedEntry.category || 'No category'}
-                          </div>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleRemoveRelatedEntry(id)}
-                          className="h-6 w-6 p-0"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-
-              {/* Add Related Entry */}
-              <Select onValueChange={(value) => handleAddRelatedEntry(parseInt(value))}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Link to another entry..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableForLinking
-                    .filter(e => !relatedEntryIds.includes(e.id))
-                    .map((e) => (
-                      <SelectItem key={e.id} value={e.id.toString()}>
-                        <div className="flex flex-col">
-                          <span className="font-medium">{e.title}</span>
-                          <span className="text-xs text-muted-foreground">
-                            {e.entryType} • {e.category || 'No category'}
-                          </span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
-            </CardContent>
-          </Card>
+          <RelationshipSection entry={entry} title="Relationships" kinds={["related","reference"]} />
 
           {/* Entry Status */}
           <Card>

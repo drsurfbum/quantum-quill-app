@@ -1,3 +1,4 @@
+import { RelationshipSection } from "./relationships";
 import { fieldChoices } from "@shared/bible-catalog";
 import { TagInput } from "./tag-input";
 import { useEditorDraft } from "@/hooks/use-editor-draft";
@@ -34,7 +35,6 @@ export function LocationsEditor({ entry, projectId, onClose }: LocationsEditorPr
   const [content, setContent] = useState(entry.content || "");
   const [category, setCategory] = useState(entry.category || "");
   const [tags, setTags] = useState<string[]>(entry.tags || []);
-  const [relatedEntryIds, setRelatedEntryIds] = useState<number[]>(entry.relatedEntryIds || []);
   const [metadata, setMetadata] = useEditorDraft<Record<string, any>>(entry.metadata || {});
   const [isArchived, setIsArchived] = useState(entry.isArchived || false);
   const [priority, setPriority] = useState(entry.priority || 0);
@@ -164,33 +164,13 @@ export function LocationsEditor({ entry, projectId, onClose }: LocationsEditorPr
     updateMetadata({ worldElements: updatedElements });
   };
 
-  const handleAddRelatedEntry = (entryId: number) => {
-    if (!relatedEntryIds.includes(entryId)) {
-      const updatedIds = [...relatedEntryIds, entryId];
-      setRelatedEntryIds(updatedIds);
-      debouncedSave({ relatedEntryIds: updatedIds });
-    }
-  };
 
-  const handleRemoveRelatedEntry = (entryId: number) => {
-    const updatedIds = relatedEntryIds.filter(id => id !== entryId);
-    setRelatedEntryIds(updatedIds);
-    debouncedSave({ relatedEntryIds: updatedIds });
-  };
 
-  const handleAddNearbyLocation = (locationId: number) => {
-    if (!nearbyLocations.includes(locationId)) {
-      const updatedNearby = [...nearbyLocations, locationId];
-      setNearbyLocations(updatedNearby);
-      updateMetadata({ nearbyLocations: updatedNearby });
-    }
-  };
 
-  const handleRemoveNearbyLocation = (locationId: number) => {
-    const updatedNearby = nearbyLocations.filter(id => id !== locationId);
-    setNearbyLocations(updatedNearby);
-    updateMetadata({ nearbyLocations: updatedNearby });
-  };
+
+
+
+
 
   const handleDelete = async () => {
     if (!await autosave.flush()) return;
@@ -342,59 +322,7 @@ export function LocationsEditor({ entry, projectId, onClose }: LocationsEditorPr
                     </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="parentLocation">Parent Location</Label>
-                    <Select 
-                      value={parentLocation || "none"}
-                      onValueChange={async (value) => {
-                        if (value === "__create_new__") {
-                          const locationName = prompt("Enter name for new location:");
-                          if (locationName?.trim()) {
-                            try {
-                              const newLocation = await createMutation.mutateAsync({
-                                projectId,
-                                entryType: "locations",
-                                title: locationName.trim(),
-                                content: "",
-                              });
-                              const newValue = newLocation.data.id.toString();
-                              setParentLocation(newValue);
-                              updateMetadata({ parentLocation: newValue });
-                              toast({
-                                title: "Location created",
-                                description: `Created "${locationName.trim()}" and set as parent location`,
-                              });
-                            } catch (error) {
-                              toast({
-                                title: "Error",
-                                description: "Failed to create new location",
-                                variant: "destructive",
-                              });
-                            }
-                          }
-                        } else {
-                          const newValue = value === "none" ? "" : value;
-                          setParentLocation(newValue);
-                          updateMetadata({ parentLocation: newValue });
-                        }
-                      }}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select parent location..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">-- No Parent Location --</SelectItem>
-                        {locationEntries.map((location) => (
-                          <SelectItem key={location.id} value={location.id.toString()}>
-                            {location.title}
-                          </SelectItem>
-                        ))}
-                        <SelectItem value="__create_new__" className="text-blue-600 font-medium">
-                          + Create New Location
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  <RelationshipSection entry={entry} title="Location hierarchy" kinds={["parent"]} />
 
                   <div className="space-y-2">
                     <Label htmlFor="tagline">Short Notes / Tagline</Label>
@@ -667,65 +595,8 @@ export function LocationsEditor({ entry, projectId, onClose }: LocationsEditorPr
           </Collapsible>
 
           {/* Inhabitants & Governance Card */}
-          <Collapsible open={inhabitantsExpanded} onOpenChange={setInhabitantsExpanded}>
-            <Card>
-              <CollapsibleTrigger asChild>
-                <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
-                  <CardTitle className="text-xl flex items-center justify-between">
-                    Inhabitants & Governance
-                    {inhabitantsExpanded ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
-                  </CardTitle>
-                </CardHeader>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                <CardContent className="space-y-6">
-                  <div className="space-y-2">
-                    <Label>Controlling Groups/Races</Label>
-                    <div className="space-y-2">
-                      {groupEntries.map((group) => (
-                        <div key={group.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                          <div>
-                            <span className="font-medium">{group.title}</span>
-                            <Badge variant="outline" className="ml-2 text-xs">Controller</Badge>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleAddRelatedEntry(group.id)}
-                            disabled={relatedEntryIds.includes(group.id)}
-                          >
-                            {relatedEntryIds.includes(group.id) ? "Linked" : "Link"}
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Notable Characters</Label>
-                    <div className="space-y-2">
-                      {characterEntries.map((character) => (
-                        <div key={character.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                          <div>
-                            <span className="font-medium">{character.title}</span>
-                            <Badge variant="outline" className="ml-2 text-xs">Resident</Badge>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleAddRelatedEntry(character.id)}
-                            disabled={relatedEntryIds.includes(character.id)}
-                          >
-                            {relatedEntryIds.includes(character.id) ? "Linked" : "Link"}
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </CardContent>
-              </CollapsibleContent>
-            </Card>
-          </Collapsible>
+          <RelationshipSection entry={entry} title="Governance & history" kinds={["governed_by","history","associated"]} />
+          <RelationshipSection entry={entry} title="Inhabitants" kinds={["inhabitant"]} />
 
           {/* Relational Connections Card */}
           <Collapsible open={relationalExpanded} onOpenChange={setRelationalExpanded}>
@@ -740,44 +611,7 @@ export function LocationsEditor({ entry, projectId, onClose }: LocationsEditorPr
               </CollapsibleTrigger>
               <CollapsibleContent>
                 <CardContent className="space-y-6">
-                  <div className="space-y-4">
-                    <Label>Nearby or Connected Locations</Label>
-                    {nearbyLocations.length > 0 && (
-                      <div className="space-y-2">
-                        {nearbyLocations.map((locationId) => {
-                          const location = locationEntries.find(l => l.id === locationId);
-                          if (!location) return null;
-                          return (
-                            <div key={locationId} className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-950 rounded-lg">
-                              <span>{location.title}</span>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleRemoveNearbyLocation(locationId)}
-                                className="h-6 w-6 p-0"
-                              >
-                                <X className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                    <Select onValueChange={(value) => handleAddNearbyLocation(parseInt(value))}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Add nearby location..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {locationEntries
-                          .filter(location => !nearbyLocations.includes(location.id))
-                          .map((location) => (
-                            <SelectItem key={location.id} value={location.id.toString()}>
-                              {location.title}
-                            </SelectItem>
-                          ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  <RelationshipSection entry={entry} title="Nearby locations" kinds={["nearby"]} />
 
                   <div className="space-y-4">
                     <Label>World Elements Present</Label>
@@ -899,41 +733,7 @@ export function LocationsEditor({ entry, projectId, onClose }: LocationsEditorPr
           </Card>
 
           {/* Links & Related Entries */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Links & Related Entries</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {relatedEntryIds.length > 0 && (
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Related Entries</Label>
-                  {relatedEntryIds.map(id => {
-                    const relatedEntry = availableForLinking.find(e => e.id === id);
-                    if (!relatedEntry) return null;
-                    return (
-                      <div key={id} className="flex items-center justify-between p-2 bg-muted rounded-lg">
-                        <div className="flex-1">
-                          <div className="font-medium text-sm">{relatedEntry.title}</div>
-                          <div className="text-xs text-muted-foreground capitalize">
-                            {relatedEntry.entryType.replace('_', ' ')}
-                          </div>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleRemoveRelatedEntry(id)}
-                          className="h-6 w-6 p-0 hover:bg-destructive/10 hover:text-destructive"
-                          title="Unlink entry"
-                        >
-                          <X className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <RelationshipSection entry={entry} title="Other connections" kinds={["related","reference"]} />
 
         </div>
       </div>

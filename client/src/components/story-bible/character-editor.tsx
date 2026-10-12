@@ -1,3 +1,4 @@
+import { RelationshipSection } from "./relationships";
 import { fieldChoices } from "@shared/bible-catalog";
 import { TagInput } from "./tag-input";
 import { useEditorDraft } from "@/hooks/use-editor-draft";
@@ -34,7 +35,6 @@ export function CharacterEditor({ entry, projectId, onClose }: CharacterEditorPr
   const [content, setContent] = useState(entry.content || "");
   const [category, setCategory] = useState(entry.category || "");
   const [tags, setTags] = useState<string[]>(entry.tags || []);
-  const [relatedEntryIds, setRelatedEntryIds] = useState<number[]>(entry.relatedEntryIds || []);
   const [metadata, setMetadata] = useEditorDraft<Record<string, any>>(entry.metadata || {});
   const [isArchived, setIsArchived] = useState(entry.isArchived || false);
   const [priority, setPriority] = useState(entry.priority || 0);
@@ -133,19 +133,9 @@ export function CharacterEditor({ entry, projectId, onClose }: CharacterEditorPr
     updateMetadata({ abilities: updatedAbilities });
   };
 
-  const handleAddRelatedEntry = (entryId: number) => {
-    if (!relatedEntryIds.includes(entryId)) {
-      const updatedIds = [...relatedEntryIds, entryId];
-      setRelatedEntryIds(updatedIds);
-      debouncedSave({ relatedEntryIds: updatedIds });
-    }
-  };
 
-  const handleRemoveRelatedEntry = (entryId: number) => {
-    const updatedIds = relatedEntryIds.filter(id => id !== entryId);
-    setRelatedEntryIds(updatedIds);
-    debouncedSave({ relatedEntryIds: updatedIds });
-  };
+
+
 
   const handleDelete = async () => {
     if (!await autosave.flush()) return;
@@ -574,70 +564,7 @@ export function CharacterEditor({ entry, projectId, onClose }: CharacterEditorPr
         <div className="space-y-6">
           
           {/* Relationships Card */}
-          <Collapsible open={relationshipsExpanded} onOpenChange={setRelationshipsExpanded}>
-            <Card>
-              <CollapsibleTrigger asChild>
-                <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
-                  <CardTitle className="text-lg flex items-center justify-between">
-                    Relationships
-                    {relationshipsExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                  </CardTitle>
-                </CardHeader>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                <CardContent className="space-y-3">
-                  {/* Current Related Entries */}
-                  {relatedEntryIds.length > 0 && (
-                    <div className="space-y-2">
-                      {relatedEntryIds.map(id => {
-                        const relatedEntry = availableForLinking.find(e => e.id === id);
-                        if (!relatedEntry) return null;
-                        return (
-                          <div key={id} className="flex items-center justify-between p-2 bg-muted rounded-lg">
-                            <div className="flex-1">
-                              <div className="font-medium text-sm">{relatedEntry.title}</div>
-                              <div className="text-xs text-muted-foreground">
-                                {relatedEntry.entryType} • {relatedEntry.category || 'No category'}
-                              </div>
-                            </div>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleRemoveRelatedEntry(id)}
-                              className="h-6 w-6 p-0"
-                            >
-                              <X className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-
-                  {/* Add Related Entry */}
-                  <Select onValueChange={(value) => handleAddRelatedEntry(parseInt(value))}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Link to another entry..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableForLinking
-                        .filter(e => !relatedEntryIds.includes(e.id))
-                        .map((e) => (
-                          <SelectItem key={e.id} value={e.id.toString()}>
-                            <div className="flex flex-col">
-                              <span className="font-medium">{e.title}</span>
-                              <span className="text-xs text-muted-foreground">
-                                {e.entryType} • {e.category || 'No category'}
-                              </span>
-                            </div>
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
-                </CardContent>
-              </CollapsibleContent>
-            </Card>
-          </Collapsible>
+          <RelationshipSection entry={entry} title="Relationships" kinds={["related","affiliation","home","history","associated"]} />
 
           {/* Tags */}
           <Card>
@@ -678,25 +605,7 @@ export function CharacterEditor({ entry, projectId, onClose }: CharacterEditorPr
           </Card>
 
           {/* Research/References Card */}
-          <Collapsible open={researchExpanded} onOpenChange={setResearchExpanded}>
-            <Card>
-              <CollapsibleTrigger asChild>
-                <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
-                  <CardTitle className="text-lg flex items-center justify-between">
-                    Research & References
-                    {researchExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                  </CardTitle>
-                </CardHeader>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground">
-                    Link to research entries, reference images, or inspiration sources...
-                  </p>
-                </CardContent>
-              </CollapsibleContent>
-            </Card>
-          </Collapsible>
+          <RelationshipSection entry={entry} title="Research references" kinds={["reference"]} />
 
         </div>
       </div>

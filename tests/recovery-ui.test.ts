@@ -1,3 +1,4 @@
+import { legacyRelationships } from "../shared/relationships";
 import "./editor-dom";
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -54,7 +55,10 @@ it("resolves outgoing names and backlinks from IDs and opens the selected entry"
   const current: any = { id: 801, projectId: 1, entryType: "details", title: "Detail", content: JSON.stringify({ linkedElements: [{ id: 802, name: "Stale name", type: "characters" }] }), metadata: {} };
   const character: any = { id: 802, projectId: 1, entryType: "characters", title: "Current character name", content: "", metadata: {}, relatedEntryIds: [801] };
   queryClient.setQueryData(["/api/projects/1/story-bible"], [current, character]);
+  const links = legacyRelationships([current, character]);
+  queryClient.setQueryData(["/api/projects/1/relationships"], links);
+  jest.spyOn(global, "fetch").mockImplementation(async url => new Response(JSON.stringify(String(url).endsWith('/relationships') ? links : String(url) === '/api/story-bible/802' ? character : [current,character]), {status:200}));
   const onOpen = jest.fn(); await mount(React.createElement(EntryLinks, { entry: current, onOpen }));
-  expect(container.textContent).toContain("Entries linking here"); expect(container.textContent).not.toContain("Stale name");
-  await click("Current character name"); expect(onOpen).toHaveBeenCalledWith(character);
+  expect(container.textContent).toContain("Backlinks"); expect(container.textContent).not.toContain("Stale name");
+  await click("Current character name"); await act(async()=>{await new Promise(resolve=>setTimeout(resolve,10));}); expect(onOpen).toHaveBeenCalledWith(character);
 });

@@ -1,3 +1,4 @@
+import { bibleRelationships, type BibleRelationshipRow } from "@shared/schema";
 import type { SaveWritingStyle } from "@shared/writing-styles";
 import { writingStyles } from "@shared/schema";
 import {
@@ -54,6 +55,15 @@ export class DatabaseStorage implements IStorage {
       await transaction.execute(sql`select pg_advisory_xact_lock(5329233, ${projectId})`);
       return work(new DatabaseStorage(transaction, this.sessionStore));
     });
+  }
+
+  async getBibleRelationships(projectId: number) {
+    return this.database.select().from(bibleRelationships).where(eq(bibleRelationships.projectId, projectId));
+  }
+  async putBibleRelationship(row: BibleRelationshipRow) {
+    const [result] = await this.database.insert(bibleRelationships).values(row)
+      .onConflictDoUpdate({ target: [bibleRelationships.projectId, bibleRelationships.id], set: row }).returning();
+    return result;
   }
 
   // User methods

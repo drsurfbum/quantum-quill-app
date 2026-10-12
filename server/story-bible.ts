@@ -1,3 +1,6 @@
+import { assertHierarchy, projectRelationships } from "./relationships";
+import { resolvedRelationships } from "@shared/relationships";
+import { legacyClassification } from "@shared/bible-contract";
 import { matchesBase } from "@shared/draft";
 import type { IStorage } from "./storage";
 import type { StoryBibleEntry } from "@shared/schema";
@@ -14,6 +17,7 @@ async function validateLinks(storage: IStorage, current: Partial<StoryBibleEntry
     if (link.targetId === next.id) reject("An entry cannot link to itself");
     const target = await storage.getStoryBibleEntry(link.targetId);
     if (!target || target.projectId !== next.projectId) reject("Linked entries must belong to this project");
+    if (legacyClassification(target).archived) reject("Restore the archived target before adding a relationship");
     if (link.targetType && target.entryType !== link.targetType) reject(`This relationship requires an entry of type ${link.targetType}`);
     if (link.parent) {
       const seen = new Set<number>();
@@ -48,6 +52,12 @@ export async function updateBibleEntry(storage: IStorage, id: number, patch: Par
     if (patch.entryType && patch.entryType !== current.entryType) throw Object.assign(new Error("Changing entry type requires a conversion preview. Use Preview conversion; the original record will be retained."), { status: 400, code: "CONVERSION_REQUIRED" });
     if (!matchesBase(current, base)) return;
     const prepared = prepareBiblePatch(current, patch);
+    // Validate new parent changes against both the overlay and legacy formats.
+    const next = { ...current, ...prepared };
+    if (JSON.stringify(bibleLinks(current).filter(link => link.parent || link.field.endsWith("childElements"))) !== JSON.stringify(bibleLinks(next).filter(link => link.parent || link.field.endsWith("childElements")))) {
+      const entries = await scoped.getProjectStoryBible(current.projectId);
+      assertHierarchy(resolvedRelationships(entries.map(entry => entry.id === id ? next : entry), await scoped.getBibleRelationships(current.projectId)));
+    }
     await validateLinks(scoped, current, { ...current, ...prepared });
     // Derived mirrored fields participate in the same atomic update too.
     const expected = base && { ...Object.fromEntries(Object.keys(prepared).map(key => [key, current[key as keyof StoryBibleEntry]])), ...base };
@@ -57,8 +67,8 @@ export async function updateBibleEntry(storage: IStorage, id: number, patch: Par
 export async function deleteBibleEntry(storage: IStorage, id: number) {
   const entry = await storage.getStoryBibleEntry(id); if (!entry) return false;
   return storage.withProjectLock(entry.projectId, async scoped => {
-    const incoming = (await scoped.getProjectStoryBible(entry.projectId)).filter(other => other.id !== id && bibleLinks(other).some(link => link.targetId === id));
-    if (incoming.length) throw Object.assign(new Error(`Remove incoming relationships first (${incoming.length} linked entries). You can archive this entry instead.`), { status: 409 });
+    const connected = (await projectRelationships(scoped, entry.projectId)).filter(link => link.sourceId === id || link.targetId === id);
+    if (connected.length) throw Object.assign(new Error(`Remove incoming relationships and outgoing links first (${connected.length} relationships). Archive this entry to preserve its connections instead.`), { status: 409, code: "ENTRY_LINKED" });
     return scoped.deleteStoryBibleEntry(id);
   });
 }

@@ -1,3 +1,4 @@
+import { RelationshipSection } from "./relationships";
 import { fieldChoices } from "@shared/bible-catalog";
 import { TagInput } from "./tag-input";
 import { useEditorDraft } from "@/hooks/use-editor-draft";
@@ -34,7 +35,6 @@ export function GroupsRacesEditor({ entry, projectId, onClose }: GroupsRacesEdit
   const [content, setContent] = useState(entry.content || "");
   const [category, setCategory] = useState(entry.category || "");
   const [tags, setTags] = useState<string[]>(entry.tags || []);
-  const [relatedEntryIds, setRelatedEntryIds] = useState<number[]>(entry.relatedEntryIds || []);
   const [metadata, setMetadata] = useEditorDraft<Record<string, any>>(entry.metadata || {});
   const [isArchived, setIsArchived] = useState(entry.isArchived || false);
   const [priority, setPriority] = useState(entry.priority || 0);
@@ -175,19 +175,9 @@ export function GroupsRacesEditor({ entry, projectId, onClose }: GroupsRacesEdit
     updateMetadata({ rivalries: updatedRivalries });
   };
 
-  const handleAddRelatedEntry = (entryId: number) => {
-    if (!relatedEntryIds.includes(entryId)) {
-      const updatedIds = [...relatedEntryIds, entryId];
-      setRelatedEntryIds(updatedIds);
-      debouncedSave({ relatedEntryIds: updatedIds });
-    }
-  };
 
-  const handleRemoveRelatedEntry = (entryId: number) => {
-    const updatedIds = relatedEntryIds.filter(id => id !== entryId);
-    setRelatedEntryIds(updatedIds);
-    debouncedSave({ relatedEntryIds: updatedIds });
-  };
+
+
 
   const handleDelete = async () => {
     if (!await autosave.flush()) return;
@@ -376,26 +366,7 @@ export function GroupsRacesEditor({ entry, projectId, onClose }: GroupsRacesEdit
               </CollapsibleTrigger>
               <CollapsibleContent>
                 <CardContent className="space-y-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="parentGroup">Parent Group</Label>
-                    <Select value={parentGroup || "__none__"} onValueChange={(value) => {
-                      const next = value === "__none__" ? "" : value;
-                      setParentGroup(next);
-                      updateMetadata({ parentGroup: next });
-                    }}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select parent group..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="__none__">None</SelectItem>
-                        {groupEntries.map((group) => (
-                          <SelectItem key={group.id} value={group.id.toString()}>
-                            {group.title}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  <RelationshipSection entry={entry} title="Group hierarchy" kinds={["parent"]} />
 
                   <div className="space-y-4">
                     <Label>Sub-groups / Child Races</Label>
@@ -473,27 +444,7 @@ export function GroupsRacesEditor({ entry, projectId, onClose }: GroupsRacesEdit
               </CollapsibleTrigger>
               <CollapsibleContent>
                 <CardContent className="space-y-6">
-                  <div className="space-y-2">
-                    <Label>Notable Members</Label>
-                    <div className="space-y-2">
-                      {characterEntries.map((character) => (
-                        <div key={character.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                          <div>
-                            <span className="font-medium">{character.title}</span>
-                            <Badge variant="outline" className="ml-2 text-xs">Member</Badge>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleAddRelatedEntry(character.id)}
-                            disabled={relatedEntryIds.includes(character.id)}
-                          >
-                            {relatedEntryIds.includes(character.id) ? "Linked" : "Link"}
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                  <RelationshipSection entry={entry} title="Membership & leadership" kinds={["member","leader"]} />
 
                   <div className="space-y-2">
                     <Label htmlFor="leadershipStructure">Leadership Structure</Label>
@@ -656,7 +607,7 @@ export function GroupsRacesEditor({ entry, projectId, onClose }: GroupsRacesEdit
               <CollapsibleContent>
                 <CardContent className="space-y-6">
                   <div className="space-y-4">
-                    <Label>Alliances</Label>
+                    <Label>Alliance notes (free text)</Label>
                     {alliances.length > 0 && (
                       <div className="space-y-2">
                         {alliances.map((alliance, index) => (
@@ -688,7 +639,7 @@ export function GroupsRacesEditor({ entry, projectId, onClose }: GroupsRacesEdit
                   </div>
 
                   <div className="space-y-4">
-                    <Label>Rivalries</Label>
+                    <Label>Rivalry notes (free text)</Label>
                     {rivalries.length > 0 && (
                       <div className="space-y-2">
                         {rivalries.map((rivalry, index) => (
@@ -723,6 +674,7 @@ export function GroupsRacesEditor({ entry, projectId, onClose }: GroupsRacesEdit
             </Card>
           </Collapsible>
 
+          <RelationshipSection entry={entry} title="Group connections & history" kinds={["ally","rival","history","associated"]} />
           {/* Notes / Internal Comments Card */}
           <Collapsible open={notesExpanded} onOpenChange={setNotesExpanded}>
             <Card>
@@ -768,56 +720,7 @@ export function GroupsRacesEditor({ entry, projectId, onClose }: GroupsRacesEdit
           </Card>
 
           {/* Affiliations & Links */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Affiliations & Links</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label className="text-sm font-medium">Home Location(s)</Label>
-                <Select onValueChange={(value) => handleAddRelatedEntry(parseInt(value))}>
-                  <SelectTrigger className="mt-1">
-                    <SelectValue placeholder="Link to location..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {locationEntries.map((location) => (
-                      <SelectItem key={location.id} value={location.id.toString()}>
-                        {location.title}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {relatedEntryIds.length > 0 && (
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Related Entries</Label>
-                  {relatedEntryIds.map(id => {
-                    const relatedEntry = availableForLinking.find(e => e.id === id);
-                    if (!relatedEntry) return null;
-                    return (
-                      <div key={id} className="flex items-center justify-between p-2 bg-muted rounded-lg">
-                        <div className="flex-1">
-                          <div className="font-medium text-sm">{relatedEntry.title}</div>
-                          <div className="text-xs text-muted-foreground">
-                            {relatedEntry.entryType}
-                          </div>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleRemoveRelatedEntry(id)}
-                          className="h-6 w-6 p-0"
-                        >
-                          <X className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <RelationshipSection entry={entry} title="Home & references" kinds={["home","related","reference"]} />
 
           {/* Group/Race Image */}
           <Card>

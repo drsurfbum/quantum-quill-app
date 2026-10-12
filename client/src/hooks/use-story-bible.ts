@@ -7,8 +7,8 @@ export const useStoryBibleEntries = (projectId: string | number, options?: { sta
   return useQuery<StoryBibleEntry[]>({
     queryKey: [`/api/projects/${projectId}/story-bible`],
     enabled: !!projectId,
-    staleTime: options?.staleTime || 30000, // Keep data fresh for 30 seconds to reduce refetches
-    refetchOnWindowFocus: false, // Prevent refetch on window focus
+    staleTime: options?.staleTime ?? 30000, // Keep data fresh for 30 seconds to reduce refetches
+    refetchOnWindowFocus: true, // Resolve renamed targets when returning from another tab
   });
 };
 

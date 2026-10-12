@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, jsonb, timestamp, varchar, uniqueIndex } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, jsonb, timestamp, varchar, uniqueIndex, primaryKey } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import type { WritingStyle } from "./writing-styles";
@@ -158,6 +158,24 @@ export const insertStoryBibleEntrySchema = createInsertSchema(storyBibleEntries)
 
 export type InsertStoryBibleEntry = z.infer<typeof insertStoryBibleEntrySchema>;
 export type StoryBibleEntry = typeof storyBibleEntries.$inferSelect;
+
+// Shared relationship overlay. Original recovered payloads are never rewritten.
+export const bibleRelationships = pgTable("bible_relationships", {
+  id: text("id").notNull(),
+  projectId: integer("project_id").notNull(),
+  sourceId: integer("source_id").notNull(),
+  targetId: integer("target_id").notNull(),
+  relationshipType: text("relationship_type").notNull().$type<import("./relationships").RelationshipType>(),
+  role: text("role").notNull().default(""),
+  context: text("context").notNull().default(""),
+  startDate: text("start_date").notNull().default(""),
+  endDate: text("end_date").notNull().default(""),
+  revision: integer("revision").notNull().default(1),
+  isDeleted: boolean("is_deleted").notNull().default(false),
+  legacyPayload: jsonb("legacy_payload"),
+  requestHash: text("request_hash"),
+}, table => [primaryKey({ columns: [table.projectId, table.id] })]);
+export type BibleRelationshipRow = typeof bibleRelationships.$inferSelect;
 
 // Plot Structure Templates
 export const plotStructureTemplates = pgTable("plot_structure_templates", {

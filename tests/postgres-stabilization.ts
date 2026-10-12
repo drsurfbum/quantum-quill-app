@@ -33,6 +33,9 @@ try {
   await pool.query(revisions); await pool.query(revisions);
   const after = await pool.query("SELECT to_jsonb(c) - 'revision' AS record FROM chapters c UNION ALL SELECT to_jsonb(b) - 'revision' FROM story_bible_entries b");
   assert.deepEqual(after.rows, before.rows); // Byte-for-byte strings and metadata stay untouched.
+  const relationshipsMigration = await readFile(new URL("../migrations/0003_bible_relationships.sql", import.meta.url), "utf8");
+  await pool.query(relationshipsMigration); await pool.query(relationshipsMigration);
+  assert.deepEqual((await pool.query("SELECT to_jsonb(c) - 'revision' AS record FROM chapters c UNION ALL SELECT to_jsonb(b) - 'revision' FROM story_bible_entries b")).rows, before.rows);
   const { DatabaseStorage } = await import("../server/database-storage");
   const { updateBibleEntry, deleteBibleEntry } = await import("../server/story-bible");
   const storage = new DatabaseStorage(dbModule.db, new session.MemoryStore());
@@ -57,6 +60,30 @@ try {
   const updated = await updateBibleEntry(storage, detail.id, { content: JSON.stringify({ content: "New", tags: ["x"], isArchived: true, unknown: { retained: 1 } }) }, { content: "Original notes" });
   assert.equal(JSON.parse(updated!.content!)._legacyContent, "Original notes");
   assert.deepEqual(updated!.tags, ["x"]); assert.equal(updated!.isArchived, true);
+  const { createRelationship, changeRelationship, projectRelationships } = await import("../server/relationships");
+  const target = await storage.createStoryBibleEntry({projectId:1,entryType:"characters",title:"Witness"});
+  const event = await storage.createStoryBibleEntry({projectId:1,entryType:"events",title:"Discovery"});
+  const requestId = randomUUID();
+  const linkInput = {sourceId:event.id,targetId:target.id,relationshipType:"participant" as const,role:"Witness",context:"Observed",startDate:"Era One",endDate:""};
+  const link = await createRelationship(storage,1,linkInput,requestId);
+  assert.equal((await createRelationship(storage,1,linkInput,requestId)).id,link.id);
+  const competing = await Promise.allSettled(["A","B"].map(context=>changeRelationship(storage,1,link.id,link.version,{...linkInput,context})));
+  assert.equal(competing.filter(result=>result.status==="fulfilled").length,1);
+  const latest = (await projectRelationships(storage,1)).find(item=>item.id===link.id)!;
+  await assert.rejects(()=>deleteBibleEntry(storage,target.id),/relationships/);
+  await changeRelationship(storage,1,link.id,latest.version);
+  assert.ok(!(await projectRelationships(storage,1)).find(item=>item.id===link.id));
+  // A database failure after the stub INSERT rolls both operations back.
+  await pool.query(`CREATE FUNCTION fail_test_relationship() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.context = 'synthetic failure' THEN RAISE EXCEPTION 'synthetic failure'; END IF; RETURN NEW; END; $$;
+    CREATE TRIGGER fail_relationship BEFORE INSERT ON bible_relationships FOR EACH ROW EXECUTE FUNCTION fail_test_relationship();`);
+  const entryCount = (await storage.getProjectStoryBible(1)).length;
+  await assert.rejects(()=>createRelationship(storage,1,{...linkInput,targetId:undefined,context:"synthetic failure"},randomUUID(),{title:"Must roll back",entryType:"characters"}),/synthetic failure/);
+  assert.equal((await storage.getProjectStoryBible(1)).length,entryCount);
+  await pool.query("DROP TRIGGER fail_relationship ON bible_relationships; DROP FUNCTION fail_test_relationship()");
+  const hierarchy = await Promise.all(["North","South"].map(title=>storage.createStoryBibleEntry({projectId:1,entryType:"locations",title})));
+  const hierarchies = await Promise.allSettled([[hierarchy[0],hierarchy[1]],[hierarchy[1],hierarchy[0]]].map(([source,target])=>createRelationship(storage,1,{sourceId:source.id,targetId:target.id,relationshipType:"parent",role:"",context:"",startDate:"",endDate:""},randomUUID())));
+  assert.equal(hierarchies.filter(result=>result.status==="fulfilled").length,1);
+  assert.equal(hierarchies.filter(result=>result.status==="rejected").length,1);
   await pool.query("CREATE TABLE users (id serial PRIMARY KEY, username text NOT NULL UNIQUE, password text NOT NULL, email text NOT NULL, created_at timestamp DEFAULT now())");
   const migration = await readFile(new URL("../migrations/0001_writing_styles.sql", import.meta.url), "utf8");
   await pool.query(migration); await pool.query(migration); // Additive and repeatable.
@@ -71,7 +98,10 @@ try {
   assert.equal(await storage.deleteWritingStyle(writer.id, savedStyle.id), true);
   assert.equal((await storage.getWritingStyles(writer.id)).length, 0);
   assert.equal((await storage.getWritingStyles(otherWriter.id)).length, 1);
-  console.log("PASS: PostgreSQL additive revision migration leaves writing unchanged, rejects stale/ABA writes, atomic drafts, JSON equality, concurrent parent locks, deletion guards, legacy normalization, writing-style migration/upsert, and account isolation in an isolated scratch database.");
+  const beforeRollback = (await pool.query("SELECT to_jsonb(b) as record FROM story_bible_entries b ORDER BY id")).rows;
+  await pool.query("DROP TABLE bible_relationships");
+  assert.deepEqual((await pool.query("SELECT to_jsonb(b) as record FROM story_bible_entries b ORDER BY id")).rows, beforeRollback);
+  console.log("PASS: Shared relationships, lost-response idempotency, atomic stub rollback, cross-process hierarchy locks, revision conflicts; PostgreSQL additive revision migration leaves writing unchanged, rejects stale/ABA writes, atomic drafts, JSON equality, concurrent parent locks, deletion guards, legacy normalization, writing-style migration/upsert, and account isolation in an isolated scratch database.");
 } finally {
   await pool?.end();
   if (created) { assert.match(name, /^qq_stabilization_[a-f0-9]{32}$/); await admin.query(`DROP DATABASE "${name}"`); }
