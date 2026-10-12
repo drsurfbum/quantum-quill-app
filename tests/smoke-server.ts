@@ -43,7 +43,7 @@ storage.updateChapter = async (...args) => {
 // Optional latency for repeatable manual navigation/race checks.
 const saveDelay = Number(process.env.QQ_SMOKE_SAVE_DELAY_MS || 0);
 if (!Number.isFinite(saveDelay) || saveDelay < 0 || saveDelay > 10000) throw new Error("Invalid synthetic save delay");
-for (const name of ["updateChapter", "updateOutlineItem", "updateStoryBibleEntry", "updatePlotStructureSection"] as const) {
+for (const name of ["updateScene", "updateChapter", "updateOutlineItem", "updateStoryBibleEntry", "updatePlotStructureSection"] as const) {
   const original = storage[name].bind(storage);
   storage[name] = (async (id: number, patch: any, base?: Record<string, unknown>) => {
     if (writesOffline) throw Object.assign(new Error("Synthetic write outage. Your draft is kept."), { status: 503 });

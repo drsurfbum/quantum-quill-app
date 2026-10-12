@@ -46,12 +46,12 @@ afterEach(async () => {
   container.remove(); queryClient.clear(); jest.restoreAllMocks(); jest.useRealTimers();
 });
 
-it.each(["chapters", "outline"])("%s: slow save, continued typing, immediate navigation, reopen, and empty text", async resource => {
+it.each(["chapters", "scenes", "outline"])("%s: slow save, continued typing, immediate navigation, reopen, and empty text", async resource => {
   const url = `/api/${resource}/${id}`;
   records[url] = { id, revision: 0, title: "Synthetic", content: "<p>Original</p>", projectId: 1, isCompleted: false };
   const initial = { ...records[url] };
-  const mount = (value = initial) => resource === "chapters"
-    ? React.createElement(RichTextEditor, { key: id, chapterId: id, revision: value.revision, projectId: 1, content: value.content })
+  const mount = (value = initial) => (resource === "chapters" || resource === "scenes")
+    ? React.createElement(RichTextEditor, { resource, key: id, chapterId: id, revision: value.revision, projectId: 1, content: value.content })
     : React.createElement(OutlineRichEditor, { key: id, item: value, projectId: 1 });
   await act(async () => render(mount()));
   expect(global.fetch).not.toHaveBeenCalled(); // Initialization must not save placeholders.

@@ -63,7 +63,7 @@ export default function ChapterSidebar({ projectId, selectedChapterId, isVisible
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [chapterIdToDelete, setChapterIdToDelete] = useState<number | null>(null);
 
-  const handleCreateChapter = () => {
+  const handleCreateChapter = (writingMode: "chapter" | "scenes" = "chapter") => {
     const nextOrder = chapters.length ? Math.max(...chapters.map(c => c.order)) + 1 : 0;
     
     createChapter(
@@ -71,10 +71,12 @@ export default function ChapterSidebar({ projectId, selectedChapterId, isVisible
         title: `Chapter ${chapters.length + 1}`,
         projectId: Number(projectId),
         order: nextOrder,
+        writingMode,
         isDraft: true
       },
       {
         onSuccess: (data) => {
+          onChapterSelect?.(String(data.id));
           toast({
             title: "Chapter created",
             description: "Your new chapter has been created."
@@ -199,9 +201,7 @@ export default function ChapterSidebar({ projectId, selectedChapterId, isVisible
       )}>
         <div className="p-3 border-b border-neutral-200 dark:border-neutral-800 flex justify-between items-center">
           <h3 className="font-medium">Chapters</h3>
-          <Button variant="ghost" size="icon" onClick={handleCreateChapter} disabled={isCreating}>
-            <PlusCircle className="h-4 w-4" />
-          </Button>
+          <DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon" aria-label="Add chapter" disabled={isCreating}><PlusCircle className="h-4 w-4" /></Button></DropdownMenuTrigger><DropdownMenuContent><DropdownMenuItem onSelect={() => handleCreateChapter("chapter")}>New chapter</DropdownMenuItem><DropdownMenuItem onSelect={() => handleCreateChapter("scenes")}>New scene chapter</DropdownMenuItem></DropdownMenuContent></DropdownMenu>
         </div>
         
         <ScrollArea className="flex-grow">

@@ -13,7 +13,8 @@
     "test": "jest --runInBand",
     "db:migrate:writing-styles": "tsx scripts/migrate-writing-styles.ts",
     "db:migrate:revisions": "tsx scripts/migrate-writing-revisions.ts",
-    "db:migrate:relationships": "tsx scripts/migrate-bible-relationships.ts"
+    "db:migrate:relationships": "tsx scripts/migrate-bible-relationships.ts",
+    "db:migrate:wizards": "tsx scripts/migrate-wizards-and-scenes.ts"
   },
   "dependencies": {
     "@auth/core": "^0.38.0",

@@ -48,7 +48,7 @@ export const useUpdateProject = () => {
 // Create chapter
 export const useCreateChapter = () => {
   return useMutation({
-    mutationFn: async (data: { title: string, projectId: number, order: number, isDraft?: boolean }) => {
+    mutationFn: async (data: { title: string, projectId: number, order: number, writingMode?: "chapter" | "scenes", isDraft?: boolean }) => {
       const res = await apiRequest('POST', '/api/chapters', data);
       return res.json();
     },

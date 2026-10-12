@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import BlueprintWizard from '@/components/blueprint-wizard';
+import { useAuth } from '@/hooks/use-auth';
 import { 
   useProjectPlotStructures, 
   usePlotStructureActions,
@@ -51,6 +53,8 @@ interface PlotStructureManagerProps {
 }
 
 export default function PlotStructureManager({ projectId }: PlotStructureManagerProps) {
+  const { user } = useAuth();
+  const [blueprintOpen, setBlueprintOpen] = useState(false);
   const numericProjectId = typeof projectId === 'string' ? parseInt(projectId) : projectId;
   const { toast } = useToast();
   const { state, setPlotStructureId } = useAppState();
@@ -118,6 +122,7 @@ export default function PlotStructureManager({ projectId }: PlotStructureManager
 
   return (
     <div className="flex flex-col h-full">
+      {blueprintOpen && state.plotStructureId && <BlueprintWizard key={`${user?.id}:${numericProjectId}:${state.plotStructureId}`} projectId={numericProjectId} structureId={state.plotStructureId} onClose={() => setBlueprintOpen(false)} />}
       <div className="border-b p-4 flex justify-between items-center">
         <div>
           <h2 className="text-xl font-bold">Plot Structures</h2>
@@ -125,9 +130,11 @@ export default function PlotStructureManager({ projectId }: PlotStructureManager
             Organize and plan your story with structured templates
           </p>
         </div>
+        <div className="flex flex-wrap gap-2">
+        {plotStructures.some(p => p.id === state.plotStructureId) && <Button variant="outline" onClick={() => setBlueprintOpen(true)}>Blueprint Wizard</Button>}
         <Button onClick={() => setTemplateSelectorOpen(true)}>
           <Plus className="h-4 w-4 mr-1" /> New Structure
-        </Button>
+        </Button></div>
       </div>
 
       {state.plotStructureId && plotStructures.some(plot => plot.id === state.plotStructureId) ? (

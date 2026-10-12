@@ -1,3 +1,4 @@
+import { scenes, creationRequests, type Scene, type InsertScene, type CreationRequest } from "@shared/schema";
 import { bibleRelationships, type BibleRelationshipRow } from "@shared/schema";
 import type { SaveWritingStyle } from "@shared/writing-styles";
 import { writingStyles } from "@shared/schema";
@@ -64,6 +65,19 @@ export class DatabaseStorage implements IStorage {
     const [result] = await this.database.insert(bibleRelationships).values(row)
       .onConflictDoUpdate({ target: [bibleRelationships.projectId, bibleRelationships.id], set: row }).returning();
     return result;
+  }
+
+  async withCreationTransaction<T>(scope: number, work: (storage: IStorage) => Promise<T>) { return this.withProjectLock(scope, work); }
+  async getCreationRequest(scope: number, requestId: string) {
+    const [row] = await this.database.select().from(creationRequests).where(and(eq(creationRequests.scope, scope), eq(creationRequests.requestId, requestId))); return row;
+  }
+  async putCreationRequest(row: CreationRequest) { await this.database.insert(creationRequests).values(row); }
+  async getScene(id: number) { const [row] = await this.database.select().from(scenes).where(eq(scenes.id, id)); return row; }
+  async getProjectScenes(projectId: number) { return this.database.select().from(scenes).where(eq(scenes.projectId, projectId)).orderBy(scenes.order, scenes.id); }
+  async createScene(scene: InsertScene) { const [row] = await this.database.insert(scenes).values(scene).returning(); return row; }
+  async updateScene(id: number, patch: Partial<Scene>, base?: Record<string, unknown>) {
+    const [row] = await this.database.update(scenes).set({ ...patch, revision: sql`${scenes.revision} + 1`, updatedAt: new Date() })
+      .where(and(eq(scenes.id, id), baseCondition(scenes, base))).returning(); return row;
   }
 
   // User methods

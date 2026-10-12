@@ -1,3 +1,5 @@
+import { createProjectFromWizard, createSceneSafely, blueprintSource, buildBlueprint } from "./planning";
+import { scenePatchSchema } from "@shared/planning";
 import { relationshipInput } from "@shared/relationships";
 import { createRelationship, changeRelationship, projectRelationships } from "./relationships";
 import { BIBLE_TYPES } from "@shared/bible-catalog";
@@ -55,6 +57,7 @@ type Resource<T extends Child, C> = {
   remove: (id: number) => Promise<boolean>;
   validate?: (data: C | Partial<T>, projectId: number, id?: number) => Promise<void>;
   beforeDelete?: (item: T) => Promise<void>;
+  lockWrites?: boolean;
 };
 
 export function registerRoutes(app: Express, storage: IStorage, directory = path.join(process.cwd(), "uploads")) {
@@ -82,7 +85,9 @@ export function registerRoutes(app: Express, storage: IStorage, directory = path
   }));
 
   // All project child operations go through the same ownership check.
-  function resource<T extends Child, C extends { projectId: number }>(config: Resource<T, C>) {
+  function resource<T extends Child, C extends { projectId: number }>(configure: Resource<T, C> | ((scoped: IStorage) => Resource<T, C>)) {
+    const using = (scoped: IStorage) => typeof configure === "function" ? configure(scoped) : configure;
+    const config = using(storage);
     const owned = async (req: Request) => {
       const item = await config.get(routeId(req.params.id));
       if (!item) fail(404, "Not found");
@@ -98,22 +103,22 @@ export function registerRoutes(app: Express, storage: IStorage, directory = path
     app.post(`/api/${config.route}`, handler(async (req, res) => {
       const data = config.schema.parse(req.body);
       await projectFor(req, data.projectId);
-      await config.validate?.(data, data.projectId);
-      res.status(201).json(await config.create(data));
+      const create = async (scoped = storage) => { const config = using(scoped); await config.validate?.(data, data.projectId); return config.create(data); };
+      res.status(201).json(await (config.lockWrites ? storage.withProjectLock(data.projectId, create) : create()));
     }));
     app.put(`/api/${config.route}/:id`, handler(async (req, res) => {
       const item = await owned(req);
       const { patch, base, revision } = draftBody(req.body);
       const data = config.updateSchema.parse(patch);
-      await config.validate?.(data, item.projectId, item.id);
-      const result = await config.update(item.id, data, checkedBase(base, revision));
+      const update = async (scoped = storage) => { const config = using(scoped); await config.validate?.(data, item.projectId, item.id); return config.update(item.id, data, checkedBase(base, revision)); };
+      const result = await (config.lockWrites ? storage.withProjectLock(item.projectId, update) : update());
       if (!result) fail(409, "This record changed elsewhere. Review both versions before restoring your draft.", "REVISION_CONFLICT");
       res.json(result);
     }));
     app.delete(`/api/${config.route}/:id`, handler(async (req, res) => {
       const item = await owned(req);
-      await config.beforeDelete?.(item);
-      await config.remove(item.id);
+      const remove = async (scoped = storage) => { const config = using(scoped); await config.beforeDelete?.(item); await config.remove(item.id); };
+      if (config.lockWrites) await storage.withProjectLock(item.projectId, remove); else await remove();
       res.status(204).end();
     }));
   }
@@ -135,7 +140,38 @@ export function registerRoutes(app: Express, storage: IStorage, directory = path
     }
   }
 
-  const projectCreate = insertProjectSchema.omit({ userId: true }).extend({ title }).strict();
+  app.post("/api/project-setup", handler(async (req, res) => {
+    res.status(201).json(await createProjectFromWizard(storage, req.user!.id, req.body));
+  }));
+  app.get("/api/projects/:projectId/scenes", handler(async (req, res) => {
+    const projectId = routeId(req.params.projectId); await projectFor(req, projectId);
+    res.json(await storage.getProjectScenes(projectId));
+  }));
+  const sceneFor = async (req: Request) => {
+    const scene = await storage.getScene(routeId(req.params.id));
+    if (!scene) fail(404, "Scene not found"); await projectFor(req, scene.projectId); return scene;
+  };
+  app.get("/api/scenes/:id", handler(async (req, res) => res.json(await sceneFor(req))));
+  app.post("/api/projects/:projectId/scenes", handler(async (req, res) => {
+    const projectId = routeId(req.params.projectId); await projectFor(req, projectId);
+    res.status(201).json(await createSceneSafely(storage, projectId, req.body));
+  }));
+  app.put("/api/scenes/:id", handler(async (req, res) => {
+    const scene = await sceneFor(req), { patch, base, revision } = draftBody(req.body);
+    const result = await storage.updateScene(scene.id, scenePatchSchema.parse(patch), checkedBase(base, revision));
+    if (!result) fail(409, "This scene changed elsewhere. Review both versions before restoring your draft.", "REVISION_CONFLICT");
+    res.json(result);
+  }));
+  app.get("/api/projects/:projectId/blueprint/:structureId", handler(async (req, res) => {
+    const projectId = routeId(req.params.projectId); await projectFor(req, projectId);
+    res.json(await storage.withProjectLock(projectId, scoped => blueprintSource(scoped, projectId, routeId(req.params.structureId))));
+  }));
+  app.post("/api/projects/:projectId/blueprint", handler(async (req, res) => {
+    const projectId = routeId(req.params.projectId); await projectFor(req, projectId);
+    res.status(201).json(await buildBlueprint(storage, projectId, req.body));
+  }));
+
+  const projectCreate = insertProjectSchema.omit({ userId: true, settings: true }).extend({ title }).strict();
   const projectUpdate = projectCreate.partial().extend({ isArchived: z.boolean().optional() }).strict();
   app.get("/api/projects", handler(async (req, res) => res.json(await storage.getUserProjects(req.user!.id))));
   app.get("/api/projects/:id", handler(async (req, res) => res.json(await projectFor(req, routeId(req.params.id)))));
@@ -161,11 +197,17 @@ export function registerRoutes(app: Express, storage: IStorage, directory = path
     res.status(204).end();
   }));
 
-  const chapter = insertChapterSchema.extend({ projectId: idSchema, title }).strict();
-  resource<Chapter, z.infer<typeof chapter>>({ route: "chapters", listRoute: "chapters", schema: chapter,
-    updateSchema: chapter.omit({ projectId: true }).partial().strict(),
+  const chapter = insertChapterSchema.extend({ projectId: idSchema, title, writingMode: z.enum(["chapter", "scenes"]).optional() }).strict();
+  resource<Chapter, z.infer<typeof chapter>>(storage => ({ lockWrites: true, route: "chapters", listRoute: "chapters", schema: chapter,
+    updateSchema: chapter.omit({ projectId: true, writingMode: true }).partial().strict(),
     get: storage.getChapter.bind(storage), list: storage.getProjectChapters.bind(storage),
-    create: storage.createChapter.bind(storage), update: storage.updateChapter.bind(storage), remove: storage.deleteChapter.bind(storage) });
+    create: storage.createChapter.bind(storage), update: storage.updateChapter.bind(storage), remove: storage.deleteChapter.bind(storage),
+    validate: async (data, projectId, id) => {
+      const mode = id ? (await storage.getChapter(id))?.writingMode : data.writingMode;
+      if (mode === "scenes" && data.content) fail(409, "Write in the scenes of this chapter. Chapter prose cannot be mixed with scenes.", "CHAPTER_PROSE_PROTECTED");
+    },
+    beforeDelete: async item => { if ((await storage.getProjectScenes(item.projectId)).some(scene => scene.chapterId === item.id)) fail(409, "This chapter contains scenes. Keep it to preserve their writing.", "CHAPTER_HAS_SCENES"); },
+  }));
   const whiteboard = insertWhiteboardSchema.extend({ projectId: idSchema, name: title }).strict();
   resource<Whiteboard, z.infer<typeof whiteboard>>({ route: "whiteboards", listRoute: "whiteboards", schema: whiteboard,
     updateSchema: whiteboard.omit({ projectId: true }).partial().strict(),
@@ -232,7 +274,7 @@ export function registerRoutes(app: Express, storage: IStorage, directory = path
     res.json(template);
   }));
   const plot = insertPlotStructureSchema.extend({ projectId: idSchema, templateId: idSchema, name: title, parentId: idSchema.nullable().optional() }).strict();
-  resource<PlotStructure, z.infer<typeof plot>>({ route: "plot-structures", listRoute: "plot-structures", schema: plot,
+  resource<PlotStructure, z.infer<typeof plot>>(storage => ({ lockWrites: true, route: "plot-structures", listRoute: "plot-structures", schema: plot,
     updateSchema: plot.omit({ projectId: true, templateId: true }).partial().strict(),
     get: storage.getPlotStructure.bind(storage), list: storage.getProjectPlotStructures.bind(storage),
     create: storage.createPlotStructure.bind(storage), update: storage.updatePlotStructure.bind(storage), remove: storage.deletePlotStructure.bind(storage),
@@ -243,7 +285,7 @@ export function registerRoutes(app: Express, storage: IStorage, directory = path
     beforeDelete: async (item) => {
       if ((await storage.getPlotStructureSections(item.id)).length || (await storage.getProjectPlotStructures(item.projectId)).some(child => child.parentId === item.id)) fail(409, "Remove sections and nested structures first");
     },
-  });
+  }));
 
   const sectionCreate = insertPlotStructureSectionSchema.extend({ plotStructureId: idSchema, title }).strict();
   const sectionUpdate = sectionCreate.omit({ plotStructureId: true, sectionKey: true }).partial().strict();
@@ -260,20 +302,25 @@ export function registerRoutes(app: Express, storage: IStorage, directory = path
   app.get("/api/plot-structure-sections/:id", handler(async (req, res) => res.json(await sectionFor(req))));
   app.post("/api/plot-structure-sections", handler(async (req, res) => {
     const data = sectionCreate.parse(req.body);
-    await structureFor(req, data.plotStructureId);
-    res.status(201).json(await storage.createPlotStructureSection(data));
+    const structure = await structureFor(req, data.plotStructureId);
+    res.status(201).json(await storage.withProjectLock(structure.projectId, scoped => scoped.createPlotStructureSection(data)));
   }));
   app.put("/api/plot-structure-sections/:id", handler(async (req, res) => {
     const section = await sectionFor(req);
     const { patch, base, revision } = draftBody(req.body);
     const data = sectionUpdate.parse(patch);
-    const result = await storage.updatePlotStructureSection(section.id, data, checkedBase(base, revision));
+    const structure = await structureFor(req, section.plotStructureId);
+    const result = await storage.withProjectLock(structure.projectId, scoped => scoped.updatePlotStructureSection(section.id, data, checkedBase(base, revision)));
     if (!result) fail(409, "This section changed elsewhere. Review both versions before restoring your draft.", "REVISION_CONFLICT");
     res.json(result);
   }));
   app.delete("/api/plot-structure-sections/:id", handler(async (req, res) => {
     const section = await sectionFor(req);
-    await storage.deletePlotStructureSection(section.id);
+    const structure = await structureFor(req, section.plotStructureId);
+    await storage.withProjectLock(structure.projectId, async scoped => {
+      if ((await scoped.getProjectScenes(structure.projectId)).some(scene => scene.linkedSectionId === section.id)) fail(409, "This beat is linked to manuscript scenes and cannot be deleted.", "BEAT_HAS_SCENES");
+      await scoped.deletePlotStructureSection(section.id);
+    });
     res.status(204).end();
   }));
 

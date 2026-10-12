@@ -17,7 +17,7 @@ try {
   const dbModule = await import("../server/db"); pool = dbModule.pool;
   assert.equal((await pool.query("select current_database() as name")).rows[0].name, name);
   await pool.query(`
-    CREATE TABLE chapters (id serial primary key, project_id integer not null, title text not null, content text default '', "order" integer not null, is_draft boolean default true, created_at timestamp default now(), updated_at timestamp default now());
+    CREATE TABLE chapters (id serial primary key, writing_mode text not null default 'chapter', project_id integer not null, title text not null, content text default '', "order" integer not null, is_draft boolean default true, created_at timestamp default now(), updated_at timestamp default now());
     CREATE TABLE story_bible_entries (id serial primary key, project_id integer not null, entry_type text not null, title text not null, content text default '', category text, subcategory text, tags text[], related_entry_ids integer[], metadata jsonb default '{}', is_archived boolean default false, priority integer default 0, created_at timestamp default now(), updated_at timestamp default now());
   `);
   await pool.query(`

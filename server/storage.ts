@@ -1,3 +1,4 @@
+import type { Scene, InsertScene, CreationRequest } from "@shared/schema";
 import type { BibleRelationshipRow } from "@shared/schema";
 import type { SaveWritingStyle } from "@shared/writing-styles";
 import type { SavedWritingStyle } from "@shared/schema";
@@ -19,6 +20,14 @@ import session from "express-session";
 import createMemoryStore from "memorystore";
 
 export interface IStorage {
+  withCreationTransaction<T>(scope: number, work: (storage: IStorage) => Promise<T>): Promise<T>;
+  getCreationRequest(scope: number, requestId: string): Promise<CreationRequest | undefined>;
+  putCreationRequest(request: CreationRequest): Promise<void>;
+  getScene(id: number): Promise<Scene | undefined>;
+  getProjectScenes(projectId: number): Promise<Scene[]>;
+  createScene(scene: InsertScene): Promise<Scene>;
+  updateScene(id: number, patch: Partial<Scene>, base?: Record<string, unknown>): Promise<Scene | undefined>;
+
   withProjectLock<T>(projectId: number, work: (storage: IStorage) => Promise<T>): Promise<T>;
   // Session store
   sessionStore: session.Store;
@@ -95,6 +104,47 @@ export interface IStorage {
 }
 
 export class MemStorage implements IStorage {
+  private scenesMap = new Map<number, Scene>();
+  private sceneId = 1;
+  private creationRequestsMap = new Map<string, CreationRequest>();
+  async getCreationRequest(scope: number, id: string) { return this.creationRequestsMap.get(`${scope}:${id}`); }
+  async putCreationRequest(request: CreationRequest) { this.creationRequestsMap.set(`${request.scope}:${request.requestId}`, request); }
+  async getScene(id: number) { return this.scenesMap.get(id); }
+  async getProjectScenes(projectId: number) { return [...this.scenesMap.values()].filter(s => s.projectId === projectId).sort((a,b) => a.order - b.order || a.id - b.id); }
+  async createScene(scene: InsertScene): Promise<Scene> {
+    const result: Scene = { ...scene, id: this.sceneId++, linkedSectionId: scene.linkedSectionId ?? null,
+      summary: scene.summary ?? "", content: scene.content ?? "", revision: 0, createdAt: new Date(), updatedAt: new Date() };
+    this.scenesMap.set(result.id, result); return result;
+  }
+  async updateScene(id: number, patch: Partial<Scene>, base?: Record<string, unknown>) {
+    const scene = this.scenesMap.get(id);
+    if (!scene || !matchesBase(scene, base)) return undefined;
+    const result = { ...scene, ...patch, revision: scene.revision + 1, updatedAt: new Date() };
+    this.scenesMap.set(id, result); return result;
+  }
+  // Creation callbacks only insert rows. Roll back their inserts, not unrelated projects.
+  async withCreationTransaction<T>(scope: number, work: (storage: IStorage) => Promise<T>): Promise<T> {
+    return this.withProjectLock(scope, async storage => {
+      const inserted = { projects: [] as number[], chapters: [] as number[], scenes: [] as number[], requests: [] as string[] };
+      const scoped = new Proxy(storage, {
+        get(target, key) {
+          if (key === "createProject") return async (data: InsertProject) => { const row = await target.createProject(data); inserted.projects.push(row.id); return row; };
+          if (key === "createChapter") return async (data: InsertChapter) => { const row = await target.createChapter(data); inserted.chapters.push(row.id); return row; };
+          if (key === "createScene") return async (data: InsertScene) => { const row = await target.createScene(data); inserted.scenes.push(row.id); return row; };
+          if (key === "putCreationRequest") return async (row: CreationRequest) => { await target.putCreationRequest(row); inserted.requests.push(`${row.scope}:${row.requestId}`); };
+          const value = Reflect.get(target, key); return typeof value === "function" ? value.bind(target) : value;
+        },
+      });
+      try { return await work(scoped); } catch (error) {
+        inserted.scenes.forEach(id => this.scenesMap.delete(id));
+        inserted.chapters.forEach(id => this.chaptersMap.delete(id));
+        inserted.projects.forEach(id => this.projectsMap.delete(id));
+        inserted.requests.forEach(id => this.creationRequestsMap.delete(id));
+        throw error;
+      }
+    });
+  }
+
   private relationshipRows = new Map<string, BibleRelationshipRow>();
   async getBibleRelationships(projectId: number) { return Array.from(this.relationshipRows.values()).filter(row => row.projectId === projectId); }
   async putBibleRelationship(row: BibleRelationshipRow) { this.relationshipRows.set(`${row.projectId}:${row.id}`, row); return row; }
@@ -216,6 +266,7 @@ export class MemStorage implements IStorage {
       updatedAt: now,
       isArchived: false,
       isTrashed: false,
+      settings: insertProject.settings || {},
       description: insertProject.description || null
     };
     this.projectsMap.set(id, project);
@@ -267,6 +318,7 @@ export class MemStorage implements IStorage {
       revision: 0,
       createdAt: now,
       updatedAt: now,
+      writingMode: insertChapter.writingMode || "chapter",
       content: insertChapter.content || "",
       isDraft: insertChapter.isDraft !== undefined ? insertChapter.isDraft : true
     };

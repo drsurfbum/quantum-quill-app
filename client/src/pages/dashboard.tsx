@@ -3,7 +3,7 @@ import SidebarNavigation from "@/components/sidebar-navigation";
 import { useAuth } from "@/hooks/use-auth";
 import { Plus, Loader2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { useCreateProject } from "@/hooks/use-project";
+import NewProjectWizard from "@/components/new-project-wizard";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
 import { type Project } from "@shared/schema";
@@ -24,7 +24,7 @@ export default function Dashboard() {
   }, [isMobile]);
   
   // Create project mutation
-  const createProjectMutation = useCreateProject();
+  const [wizardOpen, setWizardOpen] = useState(false);
   
   // Fetch projects
   const { data: projects, isLoading, error } = useQuery<Project[]>({
@@ -32,32 +32,11 @@ export default function Dashboard() {
   });
 
   // Handle create project button click
-  const handleCreateProject = () => {
-    createProjectMutation.mutate(
-      { 
-        title: "New Project", 
-        description: "My new writing project" 
-      },
-      {
-        onSuccess: () => {
-          toast({
-            title: "Project created",
-            description: "Your new project has been created successfully",
-          });
-        },
-        onError: (error) => {
-          toast({
-            title: "Failed to create project",
-            description: error.message,
-            variant: "destructive",
-          });
-        }
-      }
-    );
-  };
+  const handleCreateProject = () => setWizardOpen(true);
 
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-background">
+      {wizardOpen && <NewProjectWizard key={user?.id} onClose={() => setWizardOpen(false)} />}
       <div className="flex flex-row flex-1 w-full h-full overflow-hidden">
         <SidebarNavigation onCollapsedChange={setIsCollapsed} />
         <div className="flex-1 p-4 md:p-8 overflow-y-auto w-full" style={{marginLeft: isCollapsed ? '56px' : '0'}}>
@@ -68,14 +47,10 @@ export default function Dashboard() {
             </div>
             <Button 
               onClick={handleCreateProject} 
-              disabled={createProjectMutation.isPending}
+
               className="w-full sm:w-auto"
             >
-              {createProjectMutation.isPending ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <Plus className="h-4 w-4 mr-2" />
-              )}
+              <Plus className="h-4 w-4 mr-2" />
               New Project
             </Button>
           </div>
@@ -122,13 +97,9 @@ export default function Dashboard() {
                       size="sm" 
                       className="w-full"
                       onClick={handleCreateProject}
-                      disabled={createProjectMutation.isPending}
+
                     >
-                      {createProjectMutation.isPending ? (
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      ) : (
-                        <Plus className="h-4 w-4 mr-2" />
-                      )}
+                      <Plus className="h-4 w-4 mr-2" />
                       Create Project
                     </Button>
                   </div>

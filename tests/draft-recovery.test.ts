@@ -152,3 +152,21 @@ it("allows reload only when every pending draft has an intact durable checkpoint
   expect(hasUnprotectedPendingSaves()).toBe(true);
   queue.discard();
 });
+
+it("scene drafts survive reload, stay project/account scoped and preserve newer server writing on conflict", async () => {
+  const owner = 799, url = "/api/scenes/799";
+  queryClient.setQueryData(["/api/user"], { id: owner });
+  withPendingEdits(url, { id: 799, projectId: 7, revision: 0, title: "Scene", content: "original", summary: "plan" });
+  const queue = getSaveQueue(url, "/api/projects/7/scenes");
+  const fetch = jest.spyOn(global, "fetch").mockRejectedValue(new Error("offline"));
+  queue.enqueue({ content: "offline scene", summary: "new plan" });
+  expect(await queue.flush()).toBe(false);
+  const journal = new DraftJournal(() => window.localStorage), saved = journal.read(owner, 7)[0];
+  expect(saved.patch).toEqual({ content: "offline scene", summary: "new plan" });
+  expect(journal.read(800, 7)).toEqual([]); expect(journal.read(owner, 8)).toEqual([]);
+  fetch.mockResolvedValue(new Response(JSON.stringify({ id: 799, projectId: 7, revision: 1, content: "newer server scene", summary: "plan" }), { status: 200 }));
+  const review = await inspectDraft(saved); expect(review.conflicts).toContain("content");
+  fetch.mockResolvedValue(new Response(JSON.stringify({ message: "Newer revision", code: "REVISION_CONFLICT" }), { status: 409 }));
+  expect(await queue.flush()).toBe(false); expect(queue.getStatus()).toBe("conflict");
+  expect(journal.read(owner, 7)[0].patch.content).toBe("offline scene"); queue.discard();
+});

@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { useParams, useLocation, useSearch } from "wouter";
 import SidebarNavigation from "@/components/sidebar-navigation";
 import ChapterSidebar from "@/components/chapter-sidebar";
+import SceneWorkspace from "@/components/scene-workspace";
 import RichTextEditor from "@/components/rich-text-editor";
 import ThemeToggle from "@/components/ui/theme-toggle";
 import ExportModal from "@/components/export-modal";
@@ -190,7 +191,7 @@ export default function Write() {
           />
           
           <div className={cn(
-            "flex-grow transition-all duration-300",
+            "flex-grow min-w-0 min-h-0 flex flex-col",
             isChapterSidebarVisible ? "md:ml-0" : "ml-0"
           )}>
             {isLoadingChapters || !selectedChapter ? (
@@ -209,14 +210,14 @@ export default function Write() {
                     {selectedChapter.title} {selectedChapter.isDraft ? "(Draft)" : "(Completed)"}
                   </h2>
                 </div>
-                <RichTextEditor
+                {selectedChapter.writingMode === "scenes" ? <SceneWorkspace key={selectedChapter.id} chapter={selectedChapter} /> : <RichTextEditor
                   key={selectedChapter.id}
                   projectId={selectedChapter.projectId}
                   content={selectedChapter.content}
                   chapterId={selectedChapter.id}
                   revision={selectedChapter.revision}
                   title={selectedChapter.title}
-                />
+                />}
               </div>
             )}
           </div>

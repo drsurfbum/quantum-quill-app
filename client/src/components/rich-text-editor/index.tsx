@@ -18,6 +18,7 @@ import { writingExtensions } from './formatting';
 import { cn } from '@/lib/utils';
 
 interface RichTextEditorProps {
+  resource?: "chapters" | "scenes";
   content: string | null;
   chapterId: number | string;
   revision: number;
@@ -27,6 +28,7 @@ interface RichTextEditorProps {
 }
 
 export default function RichTextEditor({ 
+  resource = "chapters",
   content = "",
   chapterId,
   revision,
@@ -36,7 +38,7 @@ export default function RichTextEditor({
 }: RichTextEditorProps) {
   const labelId = useId();
   const [wordCount, setWordCount] = useState(0);
-  const autosave = useAutosave(`/api/chapters/${chapterId}`, `/api/projects/${projectId}/chapters`);
+  const autosave = useAutosave(`/api/${resource}/${chapterId}`, `/api/projects/${projectId}/${resource}`);
   const saveStatus = autosave.status;
   const [isFullscreen, setIsFullscreen] = useState(false);
   const editorContainerRef = useRef<HTMLDivElement>(null);
@@ -48,7 +50,7 @@ export default function RichTextEditor({
         role: "textbox",
         "aria-multiline": "true",
         "aria-labelledby": labelId,
-        "data-placeholder": "Start writing your chapter here…",
+        "data-placeholder": resource === "scenes" ? "Start writing your scene here…" : "Start writing your chapter here…",
       },
     },
     extensions: [
@@ -72,7 +74,7 @@ export default function RichTextEditor({
       TableCell,
       Image,
     ],
-    content: editorContent(withPendingEdits(`/api/chapters/${chapterId}`, { content, projectId, revision, title }).content),
+    content: editorContent(withPendingEdits(`/api/${resource}/${chapterId}`, { content, projectId, revision, title }).content),
     onUpdate: ({ editor }) => {
       const html = editor.getHTML();
       calculateWordCount(editor.getText());
@@ -92,10 +94,10 @@ export default function RichTextEditor({
   const handleContentChange = (html: string) => { autosave.save({ content: html }); };
   useEffect(() => {
     if (!editor) return;
-    const initial = withPendingEdits(`/api/chapters/${chapterId}`, { content, projectId, revision, title }).content || "";
+    const initial = withPendingEdits(`/api/${resource}/${chapterId}`, { content, projectId, revision, title }).content || "";
     editor.commands.setContent(editorContent(initial), false, { preserveWhitespace: "full" });
     calculateWordCount(editor.getText());
-  }, [editor, chapterId]);
+  }, [editor, chapterId, resource]);
 
   // Handle fullscreen toggle
   const toggleFullscreen = () => {
@@ -143,7 +145,7 @@ export default function RichTextEditor({
         "flex-grow overflow-y-auto p-4 md:p-6 lg:p-8 bg-muted/40",
         isFullscreen ? "max-h-[calc(100vh-48px)]" : ""
       )}>
-        <WritingSurface editor={editor} label="Chapter text" labelId={labelId} />
+        <WritingSurface editor={editor} label={resource === "scenes" ? "Scene text" : "Chapter text"} labelId={labelId} />
       </div>
     </div>
   );

@@ -1,4 +1,6 @@
-import { pgTable, text, serial, integer, boolean, jsonb, timestamp, varchar, uniqueIndex, primaryKey } from "drizzle-orm/pg-core";
+import { projectSettingsSchema, type ProjectSettings } from "./planning";
+import { pgTable, text, serial, integer, boolean, jsonb, timestamp, varchar, uniqueIndex, primaryKey, check, index } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import type { WritingStyle } from "./writing-styles";
@@ -34,6 +36,7 @@ export type SavedWritingStyle = typeof writingStyles.$inferSelect;
 
 // Project schema
 export const projects = pgTable("projects", {
+  settings: jsonb("settings").$type<Partial<ProjectSettings>>().notNull().default({}),
   id: serial("id").primaryKey(),
   title: text("title").notNull(),
   description: text("description"),
@@ -44,7 +47,8 @@ export const projects = pgTable("projects", {
   isTrashed: boolean("is_trashed").default(false),
 });
 
-export const insertProjectSchema = createInsertSchema(projects).pick({
+export const insertProjectSchema = createInsertSchema(projects, { settings: projectSettingsSchema.partial().optional() }).pick({
+  settings: true,
   title: true,
   description: true,
   userId: true,
@@ -55,6 +59,7 @@ export type Project = typeof projects.$inferSelect;
 
 // Chapter schema
 export const chapters = pgTable("chapters", {
+  writingMode: text("writing_mode").$type<"chapter" | "scenes">().notNull().default("chapter"),
   id: serial("id").primaryKey(),
   revision: integer("revision").notNull().default(0),
   title: text("title").notNull(),
@@ -64,9 +69,10 @@ export const chapters = pgTable("chapters", {
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
   isDraft: boolean("is_draft").default(true),
-});
+}, table => [check("chapter_writing_mode", sql`${table.writingMode} IN ('chapter', 'scenes') AND (${table.writingMode} = 'chapter' OR COALESCE(${table.content}, '') = '')`)]);
 
-export const insertChapterSchema = createInsertSchema(chapters).pick({
+export const insertChapterSchema = createInsertSchema(chapters, { writingMode: z.enum(["chapter", "scenes"]).optional() }).pick({
+  writingMode: true,
   title: true,
   content: true,
   projectId: true,
@@ -249,3 +255,25 @@ export const insertPlotStructureSectionSchema = createInsertSchema(plotStructure
 
 export type InsertPlotStructureSection = z.infer<typeof insertPlotStructureSectionSchema>;
 export type PlotStructureSection = typeof plotStructureSections.$inferSelect;
+
+// Scenes are additive. Recovered chapter prose remains in chapter mode.
+export const scenes = pgTable("scenes", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").notNull().references(() => projects.id, { onDelete: "restrict" }),
+  chapterId: integer("chapter_id").notNull().references(() => chapters.id, { onDelete: "restrict" }),
+  linkedSectionId: integer("linked_section_id").references(() => plotStructureSections.id, { onDelete: "restrict" }),
+  title: text("title").notNull(), summary: text("summary").notNull().default(""),
+  content: text("content").notNull().default(""), order: integer("order").notNull(),
+  revision: integer("revision").notNull().default(0),
+  createdAt: timestamp("created_at").notNull().defaultNow(), updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, table => [index("scenes_project_chapter_order").on(table.projectId, table.chapterId, table.order)]);
+export type Scene = typeof scenes.$inferSelect;
+export type InsertScene = typeof scenes.$inferInsert;
+
+// Scope: positive project ID; negative account ID for new-project setup.
+export const creationRequests = pgTable("creation_requests", {
+  scope: integer("scope").notNull(), requestId: text("request_id").notNull(),
+  kind: text("kind").notNull(), requestHash: text("request_hash").notNull(),
+  result: jsonb("result").notNull(), createdAt: timestamp("created_at").notNull().defaultNow(),
+}, table => [primaryKey({ columns: [table.scope, table.requestId] })]);
+export type CreationRequest = typeof creationRequests.$inferSelect;
