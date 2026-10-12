@@ -1,4 +1,5 @@
-import { useParams, useLocation, Link } from "wouter";
+import SceneOutline from "@/components/outline/scene-outline";
+import { useParams, useLocation, useSearch, Link } from "wouter";
 import SidebarNavigation from "@/components/sidebar-navigation";
 import ThemeToggle from "@/components/ui/theme-toggle";
 import ExportModal from "@/components/export-modal";
@@ -21,7 +22,8 @@ import { useAppState } from "@/contexts/app-state-context";
 
 export default function Outline() {
   const { id } = useParams();
-  const [location] = useLocation();
+  const [location, navigate] = useLocation();
+  const showingNotes = new URLSearchParams(useSearch()).get("view") === "notes";
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const [isCollapsed, setIsCollapsed] = useState(isMobile);
@@ -139,17 +141,17 @@ export default function Outline() {
   };
   
   return (
-    <div className="h-screen flex flex-col overflow-hidden bg-background">
-      <div className="flex flex-row flex-1 w-full h-full overflow-hidden">
+    <div className="h-dvh flex flex-col overflow-hidden bg-background">
+      <div className="flex flex-row flex-1 min-h-0 w-full overflow-hidden">
         <SidebarNavigation onCollapsedChange={setIsCollapsed} />
         
-        <main className="flex-grow overflow-hidden flex flex-col w-full pl-0 md:pl-0" style={{marginLeft: isCollapsed ? '56px' : '0'}}>
-        <header className="h-16 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between px-4 sm:px-6">
+        <main className="flex-1 min-w-0 min-h-0 overflow-hidden flex flex-col pl-0 md:pl-0" style={{marginLeft: isMobile && isCollapsed ? '56px' : '0'}}>
+        <header className="h-16 shrink-0 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between px-4 sm:px-6">
           <div className="flex items-center">
             <Button 
               variant="ghost" 
               size="sm" 
-              className="mr-2"
+              className={cn("mr-2", !showingNotes && "hidden")}
               onClick={() => setIsOutlineSidebarVisible(!isOutlineSidebarVisible)}
               aria-label={isOutlineSidebarVisible ? "Hide outline list" : "Show outline list"}
             >
@@ -182,7 +184,7 @@ export default function Outline() {
           </div>
         </header>
 
-        <div className="border-b border-neutral-200 dark:border-neutral-800">
+        <div className="shrink-0 overflow-x-auto border-b border-neutral-200 dark:border-neutral-800">
           <Tabs defaultValue="outline">
             <TabsList className="mx-4 h-10 w-auto">
               <Link href={`/project/${id}/write`}>
@@ -224,7 +226,11 @@ export default function Outline() {
           </Tabs>
         </div>
 
-        <div className="flex-grow flex overflow-hidden">
+        <nav aria-label="Outline views" className="flex gap-2 border-b px-4 py-2 shrink-0">
+          <Button variant={showingNotes ? "ghost" : "secondary"} aria-pressed={!showingNotes} onClick={() => navigate(`/project/${id}/outline`)}>Scenes</Button>
+          <Button variant={showingNotes ? "secondary" : "ghost"} aria-pressed={showingNotes} onClick={() => navigate(`/project/${id}/outline?view=notes`)}>Outline notes</Button>
+        </nav>
+        {!showingNotes ? <SceneOutline key={id} projectId={Number(id)} /> : <div className="flex-1 min-h-0 flex overflow-hidden">
           {/* Outline Structure Sidebar */}
           <div className={cn(
             "border-r border-neutral-200 dark:border-neutral-800 flex flex-col overflow-hidden bg-neutral-50 dark:bg-neutral-900",
@@ -321,7 +327,7 @@ export default function Outline() {
               </div>
             )}
           </div>
-        </div>
+        </div>}
       </main>
       </div>
     </div>

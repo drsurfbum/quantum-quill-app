@@ -14,10 +14,12 @@ export const newProjectSchema = z.object({
 }).strict();
 export type NewProjectInput = z.infer<typeof newProjectSchema>;
 export const sceneCreateSchema = z.object({
-  requestId: z.string().uuid(), chapterId: positiveId, title,
+  requestId: z.string().uuid(), chapterId: positiveId.optional(), chapterTitle: title.optional(), title,
   summary: z.string().max(20000).default(""), linkedSectionId: positiveId.nullable().default(null),
-}).strict();
-export const scenePatchSchema = z.object({ title: title.optional(), content: z.string().max(5000000).optional(), summary: z.string().max(20000).optional() }).strict();
+}).strict().refine(value => !!value.chapterId !== !!value.chapterTitle, "Choose an existing scene chapter or name a new chapter.");
+export const sceneBeatsSchema = z.array(z.object({ id: z.string().uuid(), text: z.string().max(10000, "Keep each scene beat under 10,000 characters.") }).strict()).max(100, "Use at most 100 beats per scene.").refine(items => new Set(items.map(item => item.id)).size === items.length, "Each scene beat must have a unique ID.");
+export type SceneBeat = z.infer<typeof sceneBeatsSchema>[number];
+export const scenePatchSchema = z.object({ title: title.optional(), content: z.string().max(5000000).optional(), summary: z.string().max(20000).optional(), storyBeats: sceneBeatsSchema.optional() }).strict();
 export const blueprintSchema = z.object({
   requestId: z.string().uuid(), structureId: positiveId, snapshot: z.string().length(64),
   chapters: z.array(z.object({ title, scenes: z.array(z.object({

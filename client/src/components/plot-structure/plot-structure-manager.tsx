@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { Link, useSearch } from 'wouter';
 import BlueprintWizard from '@/components/blueprint-wizard';
 import { useAuth } from '@/hooks/use-auth';
 import { 
@@ -64,6 +65,15 @@ export default function PlotStructureManager({ projectId }: PlotStructureManager
   const [plotToDelete, setPlotToDelete] = useState<number | null>(null);
 
   const { data: plotStructures = [], isLoading: isLoadingStructures } = useProjectPlotStructures(numericProjectId);
+  const requestedStructure = Number(new URLSearchParams(useSearch()).get("structure"));
+  const openedStructure = useRef<number | null>(null);
+  useEffect(() => {
+    if (!requestedStructure) { openedStructure.current = null; return; }
+    if (openedStructure.current !== requestedStructure && plotStructures.some(plot => plot.id === requestedStructure)) {
+      openedStructure.current = requestedStructure;
+      setPlotStructureId(requestedStructure);
+    }
+  }, [requestedStructure, plotStructures, setPlotStructureId]);
   const { data: templates = [], isLoading: isLoadingTemplates } = usePlotTemplates();
   const { createFromTemplate, deletePlotStructure } = usePlotStructureActions();
 
@@ -123,15 +133,17 @@ export default function PlotStructureManager({ projectId }: PlotStructureManager
   return (
     <div className="flex flex-col h-full">
       {blueprintOpen && state.plotStructureId && <BlueprintWizard key={`${user?.id}:${numericProjectId}:${state.plotStructureId}`} projectId={numericProjectId} structureId={state.plotStructureId} onClose={() => setBlueprintOpen(false)} />}
-      <div className="border-b p-4 flex justify-between items-center">
+      <div className="border-b p-4 shrink-0 flex flex-wrap gap-3 justify-between items-center">
         <div>
           <h2 className="text-xl font-bold">Plot Structures</h2>
           <p className="text-sm text-muted-foreground">
-            Organize and plan your story with structured templates
+            Plot points → Outline scenes → Scene story beats → Write prose
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-        {plotStructures.some(p => p.id === state.plotStructureId) && <Button variant="outline" onClick={() => setBlueprintOpen(true)}>Blueprint Wizard</Button>}
+        {plotStructures.some(p => p.id === state.plotStructureId) && <Button variant="outline" onClick={() => setBlueprintOpen(true)}>Send to Outline · Blueprint Wizard</Button>}
+        <Button asChild variant="ghost"><Link href={`/project/${projectId}/outline`}>Open Outline</Link></Button>
+        <Button asChild variant="ghost"><Link href={`/project/${projectId}/write`}>Write now</Link></Button>
         <Button onClick={() => setTemplateSelectorOpen(true)}>
           <Plus className="h-4 w-4 mr-1" /> New Structure
         </Button></div>

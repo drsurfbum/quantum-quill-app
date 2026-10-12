@@ -70,7 +70,7 @@ it("batched setup fields keep both edits in their durable checkpoint", async () 
   expect(journal.read(900, "new-project")[0].value).toMatchObject({ title: "Fast title", author: "Fast author" });
 });
 it("scene planning fields and rich prose share one guarded queue without overwriting each other", async () => {
-  let scene: any = { id: 9900, projectId: 9, chapterId: 99, linkedSectionId: null, order: 0, revision: 0, title: "Original title", summary: "Original plan", content: "<p>Original prose</p>", createdAt: null, updatedAt: null };
+  let scene: any = { id: 9900, projectId: 9, chapterId: 99, linkedSectionId: null, order: 0, revision: 0, title: "Original title", storyBeats: [], summary: "Original plan", content: "<p>Original prose</p>", createdAt: null, updatedAt: null };
   const fetch = jest.spyOn(global, "fetch").mockImplementation(async (_url, options) => {
     const { _base, _revision, ...patch } = JSON.parse(options!.body as string);
     expect(_revision).toBe(scene.revision);
@@ -85,7 +85,7 @@ it("scene planning fields and rich prose share one guarded queue without overwri
     (container.querySelector(".tiptap") as HTMLElement & { editor: Editor }).editor.commands.setContent("<p>New prose</p>", true);
     await flushPendingSaves();
   });
-  expect(scene).toMatchObject({ title: "New title", summary: "New plan", content: "<p>New prose</p>" });
+  expect(scene).toMatchObject({ title: "New title", storyBeats: [], summary: "New plan", content: "<p>New prose</p>" });
   await mount(React.createElement("div")); await mount(React.createElement(SceneEditor, { scene }));
   expect((document.getElementById("scene-summary-9900") as HTMLTextAreaElement).value).toBe("New plan");
   expect(container.querySelector(".tiptap")?.textContent).toBe("New prose");

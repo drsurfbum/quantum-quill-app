@@ -1,3 +1,4 @@
+import type { SceneBeat } from "./planning";
 import { projectSettingsSchema, type ProjectSettings } from "./planning";
 import { pgTable, text, serial, integer, boolean, jsonb, timestamp, varchar, uniqueIndex, primaryKey, check, index } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
@@ -263,10 +264,11 @@ export const scenes = pgTable("scenes", {
   chapterId: integer("chapter_id").notNull().references(() => chapters.id, { onDelete: "restrict" }),
   linkedSectionId: integer("linked_section_id").references(() => plotStructureSections.id, { onDelete: "restrict" }),
   title: text("title").notNull(), summary: text("summary").notNull().default(""),
+  storyBeats: jsonb("story_beats").$type<SceneBeat[]>().notNull().default([]),
   content: text("content").notNull().default(""), order: integer("order").notNull(),
   revision: integer("revision").notNull().default(0),
   createdAt: timestamp("created_at").notNull().defaultNow(), updatedAt: timestamp("updated_at").notNull().defaultNow(),
-}, table => [index("scenes_project_chapter_order").on(table.projectId, table.chapterId, table.order)]);
+}, table => [check("scene_story_beats_array", sql`jsonb_typeof(${table.storyBeats}) = 'array'`), index("scenes_project_chapter_order").on(table.projectId, table.chapterId, table.order)]);
 export type Scene = typeof scenes.$inferSelect;
 export type InsertScene = typeof scenes.$inferInsert;
 

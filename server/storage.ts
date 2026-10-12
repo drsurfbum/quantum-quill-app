@@ -113,7 +113,7 @@ export class MemStorage implements IStorage {
   async getProjectScenes(projectId: number) { return [...this.scenesMap.values()].filter(s => s.projectId === projectId).sort((a,b) => a.order - b.order || a.id - b.id); }
   async createScene(scene: InsertScene): Promise<Scene> {
     const result: Scene = { ...scene, id: this.sceneId++, linkedSectionId: scene.linkedSectionId ?? null,
-      summary: scene.summary ?? "", content: scene.content ?? "", revision: 0, createdAt: new Date(), updatedAt: new Date() };
+      storyBeats: scene.storyBeats ?? [], summary: scene.summary ?? "", content: scene.content ?? "", revision: 0, createdAt: new Date(), updatedAt: new Date() };
     this.scenesMap.set(result.id, result); return result;
   }
   async updateScene(id: number, patch: Partial<Scene>, base?: Record<string, unknown>) {

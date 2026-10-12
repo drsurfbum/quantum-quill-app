@@ -6,6 +6,7 @@ October 11, 2026. Built on the stabilized current app; Antigravity remains refer
 
 - Dashboard → **New Project** opens a three-step setup: title, author/pen name, genre, word goal, logline, and a choice of planning or writing first.
 - Storyboard → choose a plot structure → **Blueprint Wizard**. Expand beats into scenes, add/remove/reorder planned scenes, insert chapter breaks, name the chapters, then review and build. Beat notes are read-only context; scene summaries are separate from prose.
+- Blueprint now opens **Outline → Scenes**; see [the connected workflow](SCENE_OUTLINE_WORKFLOW.md).
 - Write → chapters created by Blueprint expose a scene selector, an expandable scene plan, and the existing full formatting editor. The chapter-list **+** menu also offers **New scene chapter**. Add scenes manually within it.
 - Existing chapters stay in chapter mode. Their text is neither split nor copied into scenes. Conversion of an existing chapter requires separate previewed work.
 - Wizard drafts are saved in this browser by account and task scope. Reopen the appropriate wizard and choose **Restore draft** or **Discard draft**. Blueprint recovery is also scoped to project and plot; scene-creation recovery to project and chapter. Restore keeps a different plan already being edited as another recovery choice.
@@ -36,4 +37,4 @@ Local adoption completed on October 11, 2026, on branch `codex/wizards-and-scene
 
 ## Follow-up boundaries
 
-Project metadata is collected and persisted by setup; a settings editor is still a separate addition. Scene-to-Bible links and a dedicated scene outliner are next integrations. The existing Export dialog still simulates success and produces no file; real manuscript export must cover both chapter prose and scene prose. This restoration does not claim to fix export.
+Project metadata is collected and persisted by setup; a settings editor is still a separate addition. The dedicated scene outliner and scene story beats are now integrated; see [the connected workflow](SCENE_OUTLINE_WORKFLOW.md). Scene-to-Bible links and persisted moves/reordering of existing manuscript scenes remain follow-ups. The existing Export dialog still simulates success and produces no file; real manuscript export must cover both chapter prose and scene prose. This restoration does not claim to fix export.

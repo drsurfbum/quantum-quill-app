@@ -67,7 +67,7 @@ export default function BlueprintWizard({ projectId, structureId, onClose }: { p
       const result: BlueprintResult = await (await apiRequest("POST", `/api/projects/${projectId}/blueprint`, submission)).json();
       draft.finish();
       await Promise.all(["chapters", "scenes"].map(name => queryClient.invalidateQueries({ queryKey: [`/api/projects/${projectId}/${name}`] })));
-      onClose(); navigate(`/project/${projectId}/write?chapter=${result.chapterIds[0]}&scene=${result.sceneIds[0]}`);
+      onClose(); navigate(`/project/${projectId}/outline?scene=${result.sceneIds[0]}`);
     } catch (e) {
       setError((e as Error).message);
       if (e instanceof ApiError && ([400, 413].includes(e.status) || ["BLUEPRINT_STALE", "CHAPTER_TITLE_EXISTS"].includes(e.code || ""))) draft.update({ ...value, submission: undefined });
@@ -77,20 +77,20 @@ export default function BlueprintWizard({ projectId, structureId, onClose }: { p
   const move = (index: number, delta: number) => { const scenes = [...value.scenes]; [scenes[index], scenes[index + delta]] = [scenes[index + delta], scenes[index]]; if (!scenes[0].chapterTitle) scenes[0] = { ...scenes[0], startsChapter: true, chapterTitle: nextTitle(value.source!, scenes) }; update({ scenes }); };
   const validTargets = !!value.source && value.scenes.every(scene => value.source!.sections.some(section => section.id === scene.sectionId));
   return <Dialog open onOpenChange={open => { if (!open && !busy && !draft.error) onClose(); }}><DialogContent className="sm:max-w-3xl max-h-[92vh] overflow-y-auto">
-    <DialogHeader><DialogTitle>Blueprint Wizard</DialogTitle><DialogDescription>Turn your story beats into scene plans, then arrange them into new chapters. Your scene summaries stay separate from manuscript prose.</DialogDescription></DialogHeader>
+    <DialogHeader><DialogTitle>Blueprint Wizard</DialogTitle><DialogDescription>Turn Storyboard plot points into Outline scenes, then add scene story beats and write prose when ready.</DialogDescription></DialogHeader>
     <WizardRecovery disabled={busy || !!value.submission} drafts={draft.recoverable} restore={draft.restore} discard={draft.discard} error={draft.error} value={value} />
     <fieldset disabled={busy || !!value.submission} className="space-y-4 min-w-0">
       {!value.source ? <Button onClick={() => void loadSource()}>Start from this plot structure</Button> : <>
         <div className="flex flex-wrap gap-2 items-center justify-between"><p className="text-sm font-medium">{value.source.structure.name} · Step {value.step} of 3</p><Button variant="outline" size="sm" onClick={() => void loadSource()}>Review latest source</Button></div>
         {value.step === 1 && <>
-          <p className="text-sm text-muted-foreground">Shape each beat into one or more scenes. Add, remove, or reorder scenes; every scene keeps a link to its beat.</p>
+          <p className="text-sm text-muted-foreground">Shape each plot point into one or more scenes. Add, remove, or reorder scenes; every scene keeps a link to its source plot point.</p>
           {!validTargets && <p role="alert" className="text-sm text-destructive">A linked beat was removed. Choose a current beat for the affected scenes before continuing.</p>}
           {value.scenes.map((scene, index) => {
             const section = value.source!.sections.find(s => s.id === scene.sectionId);
             return <div key={scene.key} className="rounded-lg border p-4 space-y-3">
               <div className="flex gap-2 items-center"><span className="text-sm">Scene {index + 1}</span><Button size="sm" variant="ghost" disabled={index === 0} aria-label={`Move scene ${index + 1} up`} onClick={() => move(index, -1)}>↑</Button><Button size="sm" variant="ghost" disabled={index === value.scenes.length - 1} aria-label={`Move scene ${index + 1} down`} onClick={() => move(index, 1)}>↓</Button><Button size="sm" variant="ghost" className="ml-auto" onClick={() => update({ scenes: value.scenes.filter(s => s.key !== scene.key) })}>Remove scene</Button></div>
-              <div className="space-y-1"><Label htmlFor={`beat-${scene.key}`}>Story beat</Label><select id={`beat-${scene.key}`} className="w-full border border-input rounded-md bg-background p-2" value={scene.sectionId} onChange={e => patchScene(scene.key, { sectionId: Number(e.target.value) })}>{!section && <option value={scene.sectionId}>Missing beat — choose a replacement</option>}{value.source!.sections.map(s => <option key={s.id} value={s.id}>{s.title}</option>)}</select></div>
-              {section && <details className="text-sm text-muted-foreground"><summary className="cursor-pointer">Beat guidance & your notes</summary><p className="whitespace-pre-wrap mt-2">{section.guidance || "No template guidance."}</p><p className="whitespace-pre-wrap mt-2">{plainPreview(section.content) || "No beat notes yet."}</p></details>}
+              <div className="space-y-1"><Label htmlFor={`beat-${scene.key}`}>Source plot point</Label><select id={`beat-${scene.key}`} className="w-full border border-input rounded-md bg-background p-2" value={scene.sectionId} onChange={e => patchScene(scene.key, { sectionId: Number(e.target.value) })}>{!section && <option value={scene.sectionId}>Missing beat — choose a replacement</option>}{value.source!.sections.map(s => <option key={s.id} value={s.id}>{s.title}</option>)}</select></div>
+              {section && <details className="text-sm text-muted-foreground"><summary className="cursor-pointer">Plot point guidance & your notes</summary><p className="whitespace-pre-wrap mt-2">{section.guidance || "No template guidance."}</p><p className="whitespace-pre-wrap mt-2">{plainPreview(section.content) || "No beat notes yet."}</p></details>}
               <div className="space-y-1"><Label htmlFor={`title-${scene.key}`}>Scene title</Label><Input id={`title-${scene.key}`} maxLength={500} value={scene.title} onChange={e => patchScene(scene.key, { title: e.target.value })} /></div>
               <div className="space-y-1"><Label htmlFor={`summary-${scene.key}`}>Scene summary</Label><Textarea id={`summary-${scene.key}`} maxLength={20000} value={scene.summary} onChange={e => patchScene(scene.key, { summary: e.target.value })} placeholder="What changes in this scene? Who wants what, and what stands in their way?" /></div>
             </div>;
@@ -112,7 +112,7 @@ export default function BlueprintWizard({ projectId, structureId, onClose }: { p
     {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
     <div className="flex justify-between gap-2"><Button variant="ghost" disabled={busy || !!draft.error} onClick={onClose}>Save for later</Button><div className="flex gap-2">
       {value.source && value.step > 1 && !value.submission && <Button variant="outline" disabled={busy} onClick={() => update({ step: value.step - 1 })}>Back</Button>}
-      {value.source && (value.step < 3 ? <Button disabled={busy || !validTargets || !value.scenes.length || value.scenes.some(s => !s.title.trim())} onClick={() => { if (value.step === 2) { try { input(); } catch (e) { setError("Give each chapter a title before reviewing."); return; } } update({ step: value.step + 1 }); }}>Next</Button> : <Button disabled={busy} onClick={() => void build()}>{busy ? "Building…" : value.submission ? "Retry build" : "Create chapters & scenes"}</Button>)}
+      {value.source && (value.step < 3 ? <Button disabled={busy || !validTargets || !value.scenes.length || value.scenes.some(s => !s.title.trim())} onClick={() => { if (value.step === 2) { try { input(); } catch (e) { setError("Give each chapter a title before reviewing."); return; } } update({ step: value.step + 1 }); }}>Next</Button> : <Button disabled={busy} onClick={() => void build()}>{busy ? "Building…" : value.submission ? "Retry build" : "Create scene outline"}</Button>)}
     </div></div>
   </DialogContent></Dialog>;
 }

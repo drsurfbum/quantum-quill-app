@@ -31,7 +31,14 @@ export async function createProjectFromWizard(storage: IStorage, owner: number, 
 export async function createSceneSafely(storage: IStorage, projectId: number, body: unknown) {
   const input = sceneCreateSchema.parse(body);
   const result = await creation(storage, projectId, "scene", input, async scoped => {
-    const chapter = await scoped.getChapter(input.chapterId);
+    let chapter;
+    if (input.chapterId) chapter = await scoped.getChapter(input.chapterId);
+    else {
+      const chapters = await scoped.getProjectChapters(projectId);
+      if (chapters.some(c => c.title.trim().toLocaleLowerCase() === input.chapterTitle!.toLocaleLowerCase())) fail(409, "A chapter with that title already exists. Choose it from the list or use a different title.", "CHAPTER_TITLE_EXISTS");
+      chapter = await scoped.createChapter({ projectId, title: input.chapterTitle!, writingMode: "scenes", content: "", isDraft: true,
+        order: chapters.length ? Math.max(...chapters.map(c => c.order)) + 1 : 0 });
+    }
     if (!chapter || chapter.projectId !== projectId) fail(400, "Choose a chapter in this project.");
     if (chapter.writingMode !== "scenes") fail(409, "This chapter holds existing chapter text. Create a scene chapter to keep that writing intact.", "CHAPTER_PROSE_PROTECTED");
     if (input.linkedSectionId) {

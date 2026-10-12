@@ -33,6 +33,7 @@ try {
   await pool.query("DROP TABLE creation_requests; DROP TABLE scenes; ALTER TABLE chapters DROP CONSTRAINT chapter_writing_mode; ALTER TABLE chapters DROP COLUMN writing_mode; ALTER TABLE projects DROP COLUMN settings;");
   assert.deepEqual(stable(await snapshot()), before); // Rollback before any feature use.
   await pool.query(sql); assert.deepEqual(stable(await snapshot(true)), before);
+  await pool.query(await readFile(new URL("../migrations/0005_scene_story_beats.sql", import.meta.url), "utf8"));
   const { DatabaseStorage } = await import("../server/database-storage");
   const { createProjectFromWizard, buildBlueprint, blueprintSource, createSceneSafely } = await import("../server/planning");
   const storage = new DatabaseStorage(dbModule.db, new session.MemoryStore());

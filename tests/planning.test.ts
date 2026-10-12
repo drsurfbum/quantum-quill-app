@@ -97,3 +97,37 @@ it("a failed wizard transaction does not roll back an unrelated project created 
   spy.mockRestore();
   expect((await f.storage.getUserProjects(f.owner.id)).map(p => p.title).sort()).toEqual(["Other tab project", "Synthetic project"]);
 });
+it("manual outlining can skip Storyboard and atomically create a chapter/scene with retry protection", async () => {
+  const f = await twoWriters(), url = `/api/projects/${f.project.id}/scenes`;
+  const input = { requestId: randomUUID(), chapterTitle: "From scratch", title: "Unplanned arrival", summary: "Optional scene plan" };
+  const results = await Promise.all([f.agent.post(url).send(input), f.agent.post(url).send(input)]);
+  expect(results.map(r => r.status)).toEqual([201, 201]); expect(results[0].body.id).toBe(results[1].body.id);
+  expect(results[0].body).toMatchObject({ linkedSectionId: null, content: "", storyBeats: [] });
+  expect(await f.storage.getProjectChapters(f.project.id)).toHaveLength(1);
+  await f.agent.post(url).send({ ...input, requestId: randomUUID() }).expect(409);
+  await f.other.post(url).send(input).expect(403);
+  await f.agent.post(url).send({ ...input, chapterId: results[0].body.chapterId }).expect(400);
+  const spy = jest.spyOn(f.storage, "createScene").mockRejectedValueOnce(new Error("Synthetic write failure"));
+  const retry = { ...input, requestId: randomUUID(), chapterTitle: "Retry after failure" };
+  await f.agent.post(url).send(retry).expect(500); spy.mockRestore();
+  expect(await f.storage.getProjectChapters(f.project.id)).toHaveLength(1);
+  await f.agent.post(url).send(retry).expect(201);
+});
+it("scene story beats round-trip independently from prose, reject invalid fields and protect concurrent edits", async () => {
+  const f = await setup(), created = (await f.agent.post(f.url).send(f.plan).expect(201)).body;
+  const url = `/api/scenes/${created.sceneIds[0]}`;
+  const beats = [{ id: randomUUID(), text: "A knock at the door." }, { id: randomUUID(), text: "The visitor recognizes her." }];
+  const saved = (await f.agent.put(url).send({ storyBeats: beats, _revision: 0 }).expect(200)).body;
+  expect(saved).toMatchObject({ storyBeats: beats, summary: "Outline, not prose", content: "" });
+  await f.agent.put(url).send({ storyBeats: [], _revision: 0 }).expect(409);
+  await f.other.put(url).send({ storyBeats: [], _revision: 1 }).expect(403);
+  await f.agent.put(url).send({ storyBeats: [beats[0], beats[0]], _revision: 1 }).expect(400);
+  await f.agent.put(url).send({ storyBeats: [{ id: randomUUID(), text: "x".repeat(10001) }], _revision: 1 }).expect(400);
+  await f.agent.put(url).send({ storyBeats: "invalid", _revision: 1 }).expect(400);
+  await f.agent.put(url).send({ storyBeats: [...beats].reverse(), _revision: 1 }).expect(200);
+  await f.agent.put(url).send({ content: "<p>Manuscript stays independent.</p>", _revision: 2 }).expect(200);
+  const read = (await f.agent.get(url).expect(200)).body;
+  expect(read.storyBeats).toEqual([...beats].reverse());
+  await f.agent.put(url).send({ storyBeats: [], _revision: read.revision }).expect(200);
+  expect((await f.agent.get(url).expect(200)).body.content).toBe(read.content);
+});
