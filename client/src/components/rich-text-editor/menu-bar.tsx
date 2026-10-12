@@ -112,11 +112,11 @@ export default function EditorMenuBar({ editor, wordCount, saveStatus, onRetry, 
         </PopoverContent>
       </Popover>
       <FindReplace editor={editor} />
-      <div className="ml-auto flex items-center gap-2 pl-2 text-xs text-muted-foreground">
-        <span title={`${editor.getText().length} characters`}>{wordCount} {wordCount === 1 ? 'word' : 'words'}</span>
-        <SaveStatus status={saveStatus} retry={onRetry} />
-        <Tool label={isFullscreen ? 'Exit focus mode' : 'Focus mode'} onClick={() => onToggleFullscreen?.()}>{isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}</Tool>
       </div>
+    <div data-writing-status-bar className="flex h-12 shrink-0 items-center justify-end gap-3 border-t px-3 text-xs text-muted-foreground">
+        <span className="whitespace-nowrap tabular-nums" title={`${editor.getText().length} characters`}>{wordCount} {wordCount === 1 ? 'word' : 'words'}</span>
+        <SaveStatus status={saveStatus} retry={onRetry} stable />
+        <Tool label={isFullscreen ? 'Exit focus mode' : 'Focus mode'} onClick={() => onToggleFullscreen?.()}>{isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}</Tool>
     </div>
     {editor.isActive('table') && <div className="flex flex-wrap gap-1 border-t bg-muted/40 px-3 py-2" role="group" aria-label="Table tools">
       {([

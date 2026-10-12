@@ -230,33 +230,33 @@ export default function ChapterSidebar({ projectId, selectedChapterId, isVisible
                       className={cn(
                         "p-2 rounded-md flex items-center group relative",
                         Number(selectedChapterId) === chapter.id 
-                          ? "bg-primary/10 border border-primary/30 dark:bg-primary/20" 
+                          ? "bg-accent text-accent-foreground border border-border" 
                           : "hover:bg-neutral-100 dark:hover:bg-neutral-800"
                       )}>
                       {/* Left indicator for selected chapter */}
                       {Number(selectedChapterId) === chapter.id && (
-                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-l-md"></div>
+                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-foreground rounded-l-md"></div>
                       )}
                       
                       {chapter.isDraft ? (
                         <File className={cn(
-                          "h-4 w-4 mr-2",
+                          "h-4 w-4 mr-2 shrink-0",
                           Number(selectedChapterId) === chapter.id 
-                            ? "text-primary" 
+                            ? "text-foreground" 
                             : "text-neutral-500 dark:text-neutral-400"
                         )} />
                       ) : (
                         <FileText className={cn(
-                          "h-4 w-4 mr-2",
+                          "h-4 w-4 mr-2 shrink-0",
                           Number(selectedChapterId) === chapter.id 
-                            ? "text-primary" 
+                            ? "text-foreground" 
                             : "text-neutral-500 dark:text-neutral-400"
                         )} />
                       )}
                       <span className={cn(
-                        "text-sm font-medium",
+                        "text-sm font-medium min-w-0 break-words",
                         Number(selectedChapterId) === chapter.id 
-                          ? "text-primary" 
+                          ? "text-foreground" 
                           : "",
                         chapter.isDraft && "italic"
                       )}>
@@ -269,7 +269,7 @@ export default function ChapterSidebar({ projectId, selectedChapterId, isVisible
                           <Button 
                             variant="ghost" 
                             size="icon" 
-                            className="ml-auto opacity-0 group-hover:opacity-100 h-6 w-6"
+                            className="ml-auto shrink-0 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 h-6 w-6"
                             onClick={(e) => e.preventDefault()}
                           >
                             <MoreVertical className="h-4 w-4" />
