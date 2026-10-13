@@ -1,3 +1,5 @@
+> Current status: [October 13 stabilization closeout](docs/STABILIZATION_CLOSEOUT.md). This supersedes older status claims where listed as completed.
+
 # Quantum Quill verification
 
 Use Node 24. These checks do not require `.env` or PostgreSQL:

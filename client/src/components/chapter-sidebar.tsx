@@ -1,3 +1,6 @@
+import { prepareManuscriptAction } from "@/lib/manuscript-actions";
+import { queryClient } from "@/lib/queryClient";
+import ManuscriptOrganizer from "@/components/manuscript-organizer";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { 
@@ -61,6 +64,7 @@ export default function ChapterSidebar({ projectId, selectedChapterId, isVisible
   
   // State for delete confirmation
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteRevision,setDeleteRevision] = useState(0);
   const [chapterIdToDelete, setChapterIdToDelete] = useState<number | null>(null);
 
   const handleCreateChapter = (writingMode: "chapter" | "scenes" = "chapter") => {
@@ -154,9 +158,13 @@ export default function ChapterSidebar({ projectId, selectedChapterId, isVisible
   };
 
   // Handler for opening delete confirmation
-  const handleDeleteChapter = (chapterId: number) => {
-    setChapterIdToDelete(chapterId);
-    setDeleteDialogOpen(true);
+  const handleDeleteChapter = async (chapterId: number) => {
+    try {
+      await prepareManuscriptAction(Number(projectId));
+      const current = queryClient.getQueryData<Chapter[]>([`/api/projects/${projectId}/chapters`])?.find(c=>c.id===chapterId);
+      if (!current) throw new Error("Reload the chapter before deleting it.");
+      setChapterIdToDelete(chapterId);setDeleteRevision(current.revision);setDeleteDialogOpen(true);
+    } catch(error) { toast({title:"Chapter kept",description:(error as Error).message,variant:"destructive"}); }
   };
 
   // Handler for confirming chapter deletion
@@ -166,7 +174,7 @@ export default function ChapterSidebar({ projectId, selectedChapterId, isVisible
     deleteChapter(
       {
         id: chapterIdToDelete,
-        projectId: projectId
+        projectId: projectId, revision: deleteRevision
       },
       {
         onSuccess: () => {
@@ -181,10 +189,10 @@ export default function ChapterSidebar({ projectId, selectedChapterId, isVisible
             setLocation(`/project/${projectId}/write`);
           }
         },
-        onError: () => {
+        onError: (error) => {
           toast({
-            title: "Error deleting chapter",
-            description: "There was an error deleting your chapter. Please try again.",
+            title: "Chapter kept",
+            description: error.message,
             variant: "destructive"
           });
         }
@@ -192,6 +200,7 @@ export default function ChapterSidebar({ projectId, selectedChapterId, isVisible
     );
   };
 
+  if (!isVisible) return null;
   return (
     <>
       <div className={cn(
@@ -204,6 +213,7 @@ export default function ChapterSidebar({ projectId, selectedChapterId, isVisible
           <DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon" aria-label="Add chapter" disabled={isCreating}><PlusCircle className="h-4 w-4" /></Button></DropdownMenuTrigger><DropdownMenuContent><DropdownMenuItem onSelect={() => handleCreateChapter("chapter")}>New chapter</DropdownMenuItem><DropdownMenuItem onSelect={() => handleCreateChapter("scenes")}>New scene chapter</DropdownMenuItem></DropdownMenuContent></DropdownMenu>
         </div>
         
+        <div className="p-2">{projectId && <ManuscriptOrganizer projectId={Number(projectId)} />}</div>
         <ScrollArea className="flex-grow">
           {isLoading ? (
             <div className="p-4 text-center text-sm text-neutral-500 dark:text-neutral-400">
@@ -346,7 +356,7 @@ export default function ChapterSidebar({ projectId, selectedChapterId, isVisible
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction 
-              onClick={handleConfirmDelete}
+              onClick={e => {e.preventDefault();handleConfirmDelete();}}
               disabled={isDeleting}
               className="bg-red-500 hover:bg-red-600"
             >

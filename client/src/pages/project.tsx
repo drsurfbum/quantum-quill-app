@@ -1,3 +1,7 @@
+import { manuscriptStats } from "@/lib/manuscript-stats";
+import { useQuery } from "@tanstack/react-query";
+import type { Scene } from "@shared/schema";
+import ExportModal from "@/components/export-modal";
 import { useParams, useLocation, Link, Route, Switch } from "wouter";
 import SidebarNavigation from "@/components/sidebar-navigation";
 import { 
@@ -27,6 +31,10 @@ export default function Project() {
   const [location, setLocation] = useLocation();
   const { data: project, isLoading, error } = useProject(id || '');
   const { data: chapters, isLoading: chaptersLoading } = useProjectChapters(id || '');
+  const { data: scenes = [], error: scenesError, isLoading: scenesLoading } = useQuery<Scene[]>({queryKey:[`/api/projects/${id}/scenes`],enabled:!!id});
+  const stats=manuscriptStats(chapters || [],scenes);
+  const target=project?.settings.targetWordCount || 80000;
+  const goalProgress=Math.min(100,Math.floor(stats.words/target*100));
   const { mutate: updateProject, isPending: isUpdating } = useUpdateProject();
   const { toast } = useToast();
   const [selectedTab, setSelectedTab] = useState("overview");
@@ -120,35 +128,9 @@ export default function Project() {
                 )}
               </div>
               <div className="flex items-center space-x-2 sm:space-x-4">
-                <Button 
-                  variant="ghost" 
-                  className="flex items-center gap-1 px-2 sm:px-4"
-                  size="sm"
-                  onClick={() => {
-                    toast({
-                      title: "Coming Soon",
-                      description: "Share functionality will be available in a future update.",
-                    });
-                  }}
-                >
-                  <Share2 className="h-4 w-4" />
-                  <span className="hidden sm:inline">Share</span>
-                </Button>
-                
-                <Button 
-                  variant="outline"
-                  className="flex items-center gap-1 px-2 sm:px-4"
-                  size="sm"
-                  onClick={() => {
-                    toast({
-                      title: "Coming Soon",
-                      description: "Export functionality will be available in a future update.",
-                    });
-                  }}
-                >
-                  <ExternalLink className="h-4 w-4" />
-                  <span className="hidden sm:inline">Export</span>
-                </Button>
+                <Button variant="ghost" disabled>Share · planned</Button>
+                {project && <ExportModal projectId={project.id} projectTitle={project.title} />}
+                {project && <ExportModal projectId={project.id} projectTitle={project.title} preview />}
               </div>
             </header>
 
@@ -174,37 +156,7 @@ export default function Project() {
                       Edit Project
                     </Button>
                     
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="icon">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => {
-                          toast({
-                            title: "Coming Soon",
-                            description: "Share functionality will be available in a future update.",
-                          });
-                        }}>
-                          <Share2 className="h-4 w-4 mr-2" />
-                          Share
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => {
-                          toast({
-                            title: "Coming Soon", 
-                            description: "Export functionality will be available in a future update.",
-                          });
-                        }}>
-                          <ExternalLink className="h-4 w-4 mr-2" />
-                          Export
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem className="text-destructive">
-                          Delete Project
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+
                   </div>
                 </div>
 
@@ -218,7 +170,7 @@ export default function Project() {
                         </div>
                         <div>
                           <p className="text-sm text-muted-foreground">Word Count</p>
-                          <p className="text-xl font-semibold">{chapters?.reduce((acc, ch) => acc + (ch.content?.length || 0), 0) || 0}</p>
+                          <p className="text-xl font-semibold">{chaptersLoading || scenesLoading ? '…' : scenesError ? 'Unavailable' : stats.words.toLocaleString()}</p>
                         </div>
                       </div>
                     </Card>
@@ -251,10 +203,10 @@ export default function Project() {
                   {/* Progress Bar */}
                   <div className="mb-6">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium">Project Progress</span>
-                      <span className="text-sm text-muted-foreground">{Math.min(100, Math.floor((chapters?.length || 0) * 8.33))}% complete</span>
+                      <span className="text-sm font-medium">Word goal · {target.toLocaleString()} words</span>
+                      <span className="text-sm text-muted-foreground">{goalProgress}% of word goal</span>
                     </div>
-                    <Progress value={Math.min(100, Math.floor((chapters?.length || 0) * 8.33))} className="h-2" />
+                    <Progress value={goalProgress} className="h-2" />
                   </div>
                 </div>
 
@@ -384,7 +336,7 @@ export default function Project() {
                                       )}
                                     </div>
                                     <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                                      <span>{chapter.content ? `${chapter.content.replace(/<[^>]*>/g, '').length} characters` : '0 characters'}</span>
+                                      <span>{stats.byChapter.get(chapter.id)?.words || 0} words</span>
                                       <span>Updated {chapter.updatedAt ? format(new Date(chapter.updatedAt), 'MMM d, yyyy') : 'Unknown'}</span>
                                     </div>
                                   </div>
@@ -454,7 +406,7 @@ export default function Project() {
                               </div>
                               <h4 className="text-sm font-medium text-muted-foreground mb-1">Total Characters</h4>
                               <p className="text-2xl font-bold">
-                                {chapters?.reduce((acc, ch) => acc + (ch.content?.replace(/<[^>]*>/g, '').length || 0), 0).toLocaleString() || 0}
+                                {stats.characters.toLocaleString()}
                               </p>
                             </div>
                             
@@ -480,7 +432,7 @@ export default function Project() {
                               <p className="text-sm font-bold">
                                 {chapters && chapters.length > 0 
                                   ? (() => {
-                                      const validDates = chapters
+                                      const validDates = [...chapters, ...scenes]
                                         .map(ch => ch.updatedAt ? new Date(ch.updatedAt).getTime() : 0)
                                         .filter(time => time > 0);
                                       return validDates.length > 0 
@@ -504,11 +456,11 @@ export default function Project() {
                           </CardHeader>
                           <CardContent className="pt-6">
                             <div className="space-y-3">
-                              {chapters
+                              {[...chapters]
                                 .sort((a, b) => a.order - b.order)
                                 .map((chapter, index) => {
-                                  const characterCount = chapter.content?.replace(/<[^>]*>/g, '').length || 0;
-                                  const maxChars = Math.max(...chapters.map(ch => ch.content?.replace(/<[^>]*>/g, '').length || 0));
+                                  const characterCount = stats.byChapter.get(chapter.id)?.characters || 0;
+                                  const maxChars = Math.max(...[...stats.byChapter.values()].map(ch => ch.characters));
                                   const percentage = maxChars > 0 ? (characterCount / maxChars) * 100 : 0;
                                   
                                   return (

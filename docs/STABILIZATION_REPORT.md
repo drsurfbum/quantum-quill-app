@@ -1,3 +1,5 @@
+> Current status: [October 13 stabilization closeout](STABILIZATION_CLOSEOUT.md). This supersedes older status claims where listed as completed.
+
 # Quantum Quill local stabilization
 
 > Follow-up: [durable draft recovery and schema/relationship integrity](DRAFT_RECOVERY_AND_DATA_INTEGRITY.md) is implemented and verified locally. That report supersedes the memory-only/conflict and unchecked-relationship limitations below; migration and unfinished feature work remain.

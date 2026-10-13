@@ -1,3 +1,4 @@
+import type { ManuscriptOrder } from "@shared/manuscript";
 import { scenes, creationRequests, type Scene, type InsertScene, type CreationRequest } from "@shared/schema";
 import { bibleRelationships, type BibleRelationshipRow } from "@shared/schema";
 import type { SaveWritingStyle } from "@shared/writing-styles";
@@ -47,6 +48,18 @@ export class DatabaseStorage implements IStorage {
       pruneSessionInterval: 60 // Prune every minute for development
     });
     console.log("DatabaseStorage: Using PostgreSQL session store");
+  }
+
+  // Called only within the project transaction. Structural writes deliberately do
+  // not advance prose revisions or touch content, beats, titles, or their baselines.
+  async applyManuscriptOrder(projectId: number, order: ManuscriptOrder): Promise<void> {
+    for (const [index, chapter] of order.entries()) {
+      await this.database.update(chapters).set({ order:index }).where(and(eq(chapters.projectId,projectId),eq(chapters.id,chapter.id)));
+      for (const [position,id] of chapter.sceneIds.entries()) await this.database.update(scenes).set({ chapterId:chapter.id,order:position }).where(and(eq(scenes.projectId,projectId),eq(scenes.id,id)));
+    }
+  }
+  async withReadSnapshot<T>(work: (storage: IStorage) => Promise<T>): Promise<T> {
+    return this.database.transaction(tx => work(new DatabaseStorage(tx, this.sessionStore)), { isolationLevel: "repeatable read", accessMode: "read only" });
   }
 
   async withProjectLock<T>(projectId: number, work: (storage: IStorage) => Promise<T>): Promise<T> {

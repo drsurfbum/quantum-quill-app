@@ -9,7 +9,7 @@ export async function startServer() {
     import("./database-storage"), import("./init-plot-templates"), import("./vite"),
   ]);
   const storage = new DatabaseStorage();
-  const app = createApp({ storage, secret: process.env.SESSION_SECRET, production: process.env.NODE_ENV === "production" });
+  const app = createApp({ storage, uploadDir: process.env.UPLOAD_DIR, secret: process.env.SESSION_SECRET, production: process.env.NODE_ENV === "production" });
   await initPlotTemplates();
   const server = createServer(app);
   if (app.get("env") === "development") await setupVite(app, server);

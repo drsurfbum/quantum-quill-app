@@ -109,6 +109,7 @@ beforeEach(() => {
   jest.spyOn(global, 'fetch').mockImplementation(async (path, init) => {
     const method = (init?.method || 'GET').toLowerCase();
     let request = (context.agent as any)[method](String(path));
+    for (const [key,value] of Object.entries(init?.headers || {})) request = request.set(key,String(value));
     if (init?.body instanceof FormData) {
       const file = init.body.get('image') as File;
       request = request.attach('image', Buffer.from(await file.arrayBuffer()), { filename: file.name, contentType: file.type });
@@ -426,7 +427,7 @@ it.each(['characters','groups_races','locations','events','details','research'])
   try {
     await context.agent.get(imageUrl).expect(200);
     expect(container.querySelector('img')!.getAttribute('src')).toBe(imageUrl);
-  } finally { unlinkSync('/tmp/qq-test-uploads-unused/' + imageUrl.split('/').pop()); }
+  } finally { unlinkSync('/tmp/qq-test-uploads-unused/' + imageUrl.split('/').pop()); unlinkSync('/tmp/qq-test-uploads-unused/.access/' + imageUrl.split('/').pop() + '.json'); }
 });
 it('dashboard searches metadata, honors type/archive filters and opens category results', async () => {
   await create('characters', { beliefs: 'Unique hidden constellation' });

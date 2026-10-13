@@ -1,3 +1,4 @@
+import { useUpdateChapter } from "../client/src/hooks/use-project";
 import "./editor-dom";
 import React, { act, StrictMode } from "react";
 import { createRoot, Root } from "react-dom/client";
@@ -165,4 +166,20 @@ it("toolbar controls and the saved-style form capture and restore formatting", a
   expect(editor().getText()).toBe('Style this sentence.');
   await act(async () => { await flushPendingSaves(); });
   expect(records[url].content).toContain('18pt');
+});
+
+
+it("chapter rename and completion join the same in-flight prose queue without stale revisions",async()=>{
+  const url=`/api/chapters/${id}`;
+  records[url]={id,revision:0,title:"Before",content:"<p>Original</p>",projectId:1,isDraft:true};
+  queryClient.setQueryData(["/api/projects/1/chapters"],[records[url]]);
+  const initial={...records[url]};
+  function Rename(){const update=useUpdateChapter();return React.createElement("button",{onClick:()=>update.mutate({id,revision:0,title:"After",isDraft:false})},"Rename and complete");}
+  await act(async()=>render(React.createElement(React.Fragment,null,React.createElement(RichTextEditor,{chapterId:id,projectId:1,revision:0,title:"Before",content:initial.content}),React.createElement(Rename))));
+  block=new Promise<void>(resolve=>{unblock=resolve;});
+  await act(async()=>{editor().commands.setContent("<p>New prose</p>",true);void getSaveQueue(url).flush();});
+  await act(async()=>{[...container.querySelectorAll("button")].find(b=>b.textContent==="Rename and complete")!.click();});
+  await act(async()=>{unblock();await flushPendingSaves();});
+  expect(records[url]).toMatchObject({content:"<p>New prose</p>",title:"After",isDraft:false,revision:2});
+  expect((global.fetch as jest.Mock).mock.calls.map(([,init])=>JSON.parse(init.body)._revision)).toEqual([0,1]);
 });

@@ -585,7 +585,7 @@ export function CharacterEditor({ entry, projectId, onClose }: CharacterEditorPr
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <FileUpload
+              <FileUpload projectId={Number(projectId)}
                 imageUrl={imageUrl}
                 imageDescription={imageDescription}
                 onImageChange={(url, description) => {

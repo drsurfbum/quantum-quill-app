@@ -1,3 +1,4 @@
+import type { ManuscriptOrder } from "@shared/manuscript";
 import type { Scene, InsertScene, CreationRequest } from "@shared/schema";
 import type { BibleRelationshipRow } from "@shared/schema";
 import type { SaveWritingStyle } from "@shared/writing-styles";
@@ -20,6 +21,8 @@ import session from "express-session";
 import createMemoryStore from "memorystore";
 
 export interface IStorage {
+  applyManuscriptOrder(projectId: number, order: ManuscriptOrder): Promise<void>;
+  withReadSnapshot<T>(work: (storage: IStorage) => Promise<T>): Promise<T>;
   withCreationTransaction<T>(scope: number, work: (storage: IStorage) => Promise<T>): Promise<T>;
   getCreationRequest(scope: number, requestId: string): Promise<CreationRequest | undefined>;
   putCreationRequest(request: CreationRequest): Promise<void>;
@@ -104,6 +107,15 @@ export interface IStorage {
 }
 
 export class MemStorage implements IStorage {
+  async withReadSnapshot<T>(work: (storage: IStorage) => Promise<T>): Promise<T> { return work(this); }
+  async applyManuscriptOrder(projectId: number, order: ManuscriptOrder): Promise<void> {
+    // Validate every row before mutating any. This mirrors the database transaction.
+    if (order.some(c => this.chaptersMap.get(c.id)?.projectId !== projectId || c.sceneIds.some(id => this.scenesMap.get(id)?.projectId !== projectId))) throw new Error("Invalid organization target");
+    order.forEach((chapter,index) => {
+      this.chaptersMap.set(chapter.id, { ...this.chaptersMap.get(chapter.id)!, order:index });
+      chapter.sceneIds.forEach((id,position) => this.scenesMap.set(id, { ...this.scenesMap.get(id)!, chapterId:chapter.id, order:position }));
+    });
+  }
   private scenesMap = new Map<number, Scene>();
   private sceneId = 1;
   private creationRequestsMap = new Map<string, CreationRequest>();

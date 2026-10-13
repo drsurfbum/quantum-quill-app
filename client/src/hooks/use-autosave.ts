@@ -24,8 +24,12 @@ export function getSaveQueue(url: string, listUrl?: string) {
     let previous: DurableDraft | undefined;
     let dirty = false;
     const id = `${pageId}:${key}`;
-    const cached = () => snapshots.get(key) || queryClient.getQueryData<Record<string, unknown>>([url]) ||
-      queryClient.getQueryData<Record<string, unknown>[]>([listUrl || ""])?.find(item => String(item.id) === url.split("/").pop()) || {};
+    const cached = () => ({
+      ...(queryClient.getQueryData<Record<string, unknown>>([url]) || queryClient.getQueryData<Record<string, unknown>[]>([listUrl || ""])?.find(item => String(item.id) === url.split("/").pop()) || {}),
+      // Keep every already-loaded field's baseline. Fill other fields from the
+      // same cached record so prose + rename/status share one complete baseline.
+      ...snapshots.get(key),
+    });
     queue = new SaveQueue(async (patch) => {
       if (!owner || ownerId() !== owner) throw new Error("Sign back in to save your changes");
       const expected = Object.fromEntries(Object.keys(patch).filter(field => field in base).map(field => [field, base[field]]));

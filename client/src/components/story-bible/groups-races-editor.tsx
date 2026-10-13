@@ -731,7 +731,7 @@ export function GroupsRacesEditor({ entry, projectId, onClose }: GroupsRacesEdit
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <FileUpload
+              <FileUpload projectId={Number(projectId)}
                 imageUrl={imageUrl}
                 imageDescription={imageDescription}
                 onImageChange={(url, description) => {

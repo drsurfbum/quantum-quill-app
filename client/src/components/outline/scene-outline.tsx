@@ -1,3 +1,4 @@
+import ManuscriptOrganizer from "@/components/manuscript-organizer";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useLocation, useSearch } from "wouter";
@@ -25,7 +26,7 @@ export default function SceneOutline({ projectId }: { projectId: number }) {
     <div className="border-b p-4 shrink-0 space-y-3">
       <p className="text-sm text-muted-foreground">Storyboard plot points → Outline scenes → Scene story beats → Write prose</p>
       <div className="flex flex-wrap items-center gap-2">
-        <Button onClick={() => setAdding(true)}>Add scene</Button>
+        <Button onClick={() => setAdding(true)}>Add scene</Button><ManuscriptOrganizer projectId={projectId} />
         {plots.length > 0 ? <><Label className="sr-only" htmlFor="outline-source-plot">Source plot structure</Label><select id="outline-source-plot" className="max-w-full rounded-md border border-input bg-background p-2 text-sm" value={sourceId} onChange={e => setPlotId(e.target.value)}>{plots.map(plot => <option key={plot.id} value={plot.id}>{plot.name}</option>)}</select><Button variant="outline" onClick={() => setWizard(true)}>Bring plot points into Outline</Button></> : <Button asChild variant="outline"><Link href={`/project/${projectId}/storyboard`}>Start in Storyboard</Link></Button>}
         <Button asChild variant="ghost"><Link href={`/project/${projectId}/write`}>Skip planning · Write now</Link></Button>
       </div>

@@ -703,7 +703,7 @@ export function LocationsEditor({ entry, projectId, onClose }: LocationsEditorPr
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <FileUpload
+              <FileUpload projectId={Number(projectId)}
                 imageUrl={imageUrl}
                 imageDescription={imageDescription}
                 onImageChange={(url: string, description?: string) => {

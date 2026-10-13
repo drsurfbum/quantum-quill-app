@@ -164,23 +164,17 @@ export default function Outline() {
             {isLoadingProject ? (
               <Skeleton className="h-6 w-48" />
             ) : (
-              <h1 className="text-xl font-semibold">{project?.title}</h1>
+              <h1 className="text-xl font-semibold truncate max-w-[min(45vw,24rem)]">{project?.title}</h1>
             )}
           </div>
-          <div className="flex items-center space-x-2 sm:space-x-4">
+          <div className="flex flex-wrap items-center gap-2 ml-auto">
             <ThemeToggle />
             
-            <Button variant="ghost" className="flex items-center gap-1">
-              <Share2 className="h-4 w-4" />
-              <span className="hidden sm:inline">Share</span>
-            </Button>
+            <Button variant="ghost" className="hidden md:inline-flex" disabled title="Sharing is not available yet">Share · planned</Button>
             
             {project && <ExportModal projectId={project.id} projectTitle={project.title} />}
             
-            <Button className="flex items-center gap-1">
-              <ExternalLink className="h-4 w-4" />
-              <span className="hidden sm:inline">Preview</span>
-            </Button>
+            {project && <ExportModal projectId={project.id} projectTitle={project.title} preview />}
           </div>
         </header>
 

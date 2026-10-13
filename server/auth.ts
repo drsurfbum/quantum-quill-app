@@ -1,3 +1,4 @@
+import { authLimiter } from "./auth-limit";
 import { Passport } from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
 import type { Express, RequestHandler } from "express";
@@ -59,7 +60,7 @@ export function setupAuth(app: Express, storage: IStorage, options: AuthOptions)
   app.use(passport.initialize());
   app.use(passport.session());
 
-  app.post("/api/register", async (req, res, next) => {
+  app.post("/api/register", authLimiter(10,60*60*1000), async (req, res, next) => {
     try {
       const data = registrationSchema.parse(req.body);
       if (await storage.getUserByUsername(data.username)) { res.status(409).json({ message: "Username already exists" }); return; }
@@ -70,7 +71,7 @@ export function setupAuth(app: Express, storage: IStorage, options: AuthOptions)
       });
     } catch (error) { next(error); }
   });
-  app.post("/api/login", (req, res, next) => {
+  app.post("/api/login", authLimiter(100,15*60*1000), authLimiter(10,15*60*1000,Date.now,true), (req, res, next) => {
     const result = credentialsSchema.safeParse(req.body);
     if (!result.success) { res.status(400).json({ message: "Username and password are required" }); return; }
     passport.authenticate("local", (error: unknown, user: UserType | false) => {

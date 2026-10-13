@@ -561,7 +561,7 @@ const EventsEditor = memo(({ entry, projectId, onClose }: EventsEditorProps) => 
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <FileUpload
+              <FileUpload projectId={Number(projectId)}
                 imageUrl={eventDataState.imageUrl}
                 imageDescription={eventDataState.imageDescription}
                 onImageChange={(url, description) => {

@@ -613,7 +613,7 @@ const ResearchEditor = memo(({ entry, projectId, onClose }: ResearchEditorProps)
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <FileUpload
+              <FileUpload projectId={Number(projectId)}
                 imageUrl={researchDataState.imageUrl}
                 imageDescription={researchDataState.imageDescription}
                 onImageChange={(url, description) => {

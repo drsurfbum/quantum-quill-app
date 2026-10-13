@@ -35,6 +35,10 @@ export function createApp(options: AppOptions) {
     }
     next();
   });
+  app.get("/healthz", async (_req,res) => {
+    try { await options.storage.getProject(0); res.json({status:"ok"}); }
+    catch { res.status(503).json({status:"unavailable"}); }
+  });
   setupAuth(app, options.storage, options);
   registerRoutes(app, options.storage, options.uploadDir);
   app.use("/api", (_req, res) => res.status(404).json({ message: "Not found" }));

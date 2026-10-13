@@ -1,175 +1,44 @@
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { useRef, useState } from "react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Download } from "lucide-react";
-import { useState } from "react";
-import { useToast } from "@/hooks/use-toast";
+import { Download, ExternalLink } from "lucide-react";
+import { apiRequest, currentAccount } from "@/lib/queryClient";
+import { prepareManuscriptAction } from "@/lib/manuscript-actions";
 
-interface ExportModalProps {
-  projectId: string | number;
-  projectTitle: string;
-}
-
-export default function ExportModal({ projectId, projectTitle }: ExportModalProps) {
-  const { toast } = useToast();
-  const [exportFormat, setExportFormat] = useState("pdf");
-  const [includeChapters, setIncludeChapters] = useState(true);
-  const [includeOutline, setIncludeOutline] = useState(true);
-  const [includeStoryboard, setIncludeStoryboard] = useState(false);
-  const [includeStoryBible, setIncludeStoryBible] = useState(false);
-  const [includePageNumbers, setIncludePageNumbers] = useState(true);
-  const [includeTableOfContents, setIncludeTableOfContents] = useState(true);
-  const [open, setOpen] = useState(false);
-
-  const handleExport = () => {
-    // Trigger export API call
-    toast({
-      title: "Export Started",
-      description: `Exporting ${projectTitle} as ${exportFormat.toUpperCase()}. This may take a moment.`,
-    });
-    
-    // Simulate API call delay
-    setTimeout(() => {
-      toast({
-        title: "Export Complete",
-        description: "Your export is ready for download.",
-      });
-      
-      // Close the modal
-      setOpen(false);
-    }, 2000);
+export default function ExportModal({ projectId, projectTitle, preview = false }: { projectId: string | number; projectTitle: string; preview?: boolean }) {
+  const [open, setOpen] = useState(false), [busy, setBusy] = useState(false), [error,setError] = useState("");
+  const [format,setFormat] = useState("docx"), [html,setHTML] = useState(""), [ready,setReady] = useState(false), [downloaded,setDownloaded] = useState(false);
+  const [options,setOptions] = useState({ manuscript: true, outline: false, storyboard: false, bible: false, contents: true, pageNumbers: true });
+  const frame = useRef<HTMLIFrameElement>(null);
+  const run = async (show: boolean) => {
+    setBusy(true); setError(""); setDownloaded(false);
+    try {
+      const account = await prepareManuscriptAction(Number(projectId));
+      const response = await apiRequest("POST", `/api/projects/${projectId}/export`, { ...options, format: show ? "html" : format });
+      const blob = await response.blob();
+      if (currentAccount() !== account) throw new Error("Your account changed. Reopen this project to export it.");
+      if (show) { const text = await blob.text(); if (currentAccount() !== account) throw new Error("Your account changed."); setReady(false); setHTML(text); }
+      else {
+        const url = URL.createObjectURL(blob), link = document.createElement("a");
+        link.href = url; link.download = `${projectTitle.replace(/[\\/:*?"<>|]/g,"_") || "Quantum Quill"}.${format}`;
+        document.body.appendChild(link); link.click(); link.remove(); setTimeout(() => URL.revokeObjectURL(url), 60000); setDownloaded(true);
+      }
+    } catch (cause) { setError(cause instanceof Error ? cause.message : "Export failed. Your writing is unchanged."); }
+    finally { setBusy(false); }
   };
-
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="ghost" className="flex items-center gap-1">
-          <Download className="h-4 w-4" />
-          <span className="hidden sm:inline">Export</span>
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Export Project</DialogTitle>
-          <DialogDescription>
-            Choose what content to include in your export.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="space-y-4 py-4">
-          <div>
-            <Label htmlFor="export-format" className="text-sm font-medium mb-1 block">
-              Export Format
-            </Label>
-            <Select value={exportFormat} onValueChange={setExportFormat}>
-              <SelectTrigger id="export-format" className="w-full">
-                <SelectValue placeholder="Select a format" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="pdf">PDF Document (.pdf)</SelectItem>
-                <SelectItem value="docx">Word Document (.docx)</SelectItem>
-                <SelectItem value="txt">Plain Text (.txt)</SelectItem>
-                <SelectItem value="html">HTML Document (.html)</SelectItem>
-                <SelectItem value="epub">ePub Ebook (.epub)</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <div>
-            <Label className="text-sm font-medium mb-1 block">
-              Export Content
-            </Label>
-            <div className="space-y-2">
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="chapters"
-                  checked={includeChapters}
-                  onCheckedChange={(checked) => setIncludeChapters(!!checked)}
-                />
-                <Label htmlFor="chapters">Chapters</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="outline"
-                  checked={includeOutline}
-                  onCheckedChange={(checked) => setIncludeOutline(!!checked)}
-                />
-                <Label htmlFor="outline">Outline</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="storyboard"
-                  checked={includeStoryboard}
-                  onCheckedChange={(checked) => setIncludeStoryboard(!!checked)}
-                />
-                <Label htmlFor="storyboard">Storyboard notes</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="bible"
-                  checked={includeStoryBible}
-                  onCheckedChange={(checked) => setIncludeStoryBible(!!checked)}
-                />
-                <Label htmlFor="bible">Story Bible</Label>
-              </div>
-            </div>
-          </div>
-          
-          <div>
-            <Label className="text-sm font-medium mb-1 block">
-              Options
-            </Label>
-            <div className="space-y-2">
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="page-numbers"
-                  checked={includePageNumbers}
-                  onCheckedChange={(checked) => setIncludePageNumbers(!!checked)}
-                />
-                <Label htmlFor="page-numbers">Include page numbers</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="toc"
-                  checked={includeTableOfContents}
-                  onCheckedChange={(checked) => setIncludeTableOfContents(!!checked)}
-                />
-                <Label htmlFor="toc">Include table of contents</Label>
-              </div>
-            </div>
-          </div>
-        </div>
-        <DialogFooter className="sm:justify-end">
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={() => setOpen(false)}
-          >
-            Cancel
-          </Button>
-          <Button
-            type="button"
-            onClick={handleExport}
-          >
-            Export
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
+  return <Dialog open={open} onOpenChange={value => { if (!busy) { setOpen(value); setHTML(""); setError(""); setDownloaded(false); } }}>
+    <DialogTrigger asChild><Button variant={preview ? "default" : "ghost"} className="gap-1">{preview ? <ExternalLink className="h-4 w-4"/> : <Download className="h-4 w-4"/>}<span className="hidden sm:inline">{preview ? "Preview" : "Export"}</span></Button></DialogTrigger>
+    <DialogContent className={html ? "max-w-5xl max-h-[95dvh]" : "max-w-lg max-h-[95dvh] overflow-y-auto"}>
+      <DialogHeader><DialogTitle>{preview ? "Manuscript preview" : "Export project"}</DialogTitle><DialogDescription>Saved writing in manuscript order. Pending edits are saved first; unresolved drafts must be reviewed.</DialogDescription></DialogHeader>
+      {html ? <><iframe ref={frame} title="Manuscript print preview" sandbox="allow-same-origin allow-modals" srcDoc={html.replace("<head>", '<head><base href="about:srcdoc">')} referrerPolicy="no-referrer" onLoad={() => setReady(true)} className="w-full h-[60dvh] border rounded bg-white"/><p className="text-sm text-muted-foreground">Choose Save as PDF in the print dialog. Page numbers and paper size use your browser’s print settings.</p></> : <div className="space-y-4">
+        {!preview && <label className="block space-y-1"><span>File format</span><select aria-label="File format" className="w-full border rounded p-2 bg-background" value={format} onChange={e => setFormat(e.target.value)} disabled={busy}><option value="docx">Word document (.docx)</option><option value="html">Formatted HTML (.html)</option><option value="txt">Plain text (.txt)</option><option value="epub">EPUB ebook (.epub)</option><option value="json">Original project records (.json)</option></select></label>}
+        <fieldset disabled={busy} className="space-y-2"><legend className="font-medium mb-2">Include</legend>{([['manuscript','Chapters & scene prose'],['outline','Outline notes, scene summaries & beats'],['storyboard','Storyboard plot points'],['bible','Story Bible, metadata & relationships']] as const).map(([key,label]) => <label key={key} className="flex items-center gap-2"><input type="checkbox" checked={options[key]} onChange={e => { setOptions({...options,[key]:e.target.checked}); setDownloaded(false); }}/>{label}</label>)}</fieldset>
+        <label className="flex items-center gap-2"><input type="checkbox" checked={options.contents} onChange={e => setOptions({...options,contents:e.target.checked})}/>Include contents in formatted documents</label>
+        {!preview && format === "docx" && <label className="flex items-center gap-2"><input type="checkbox" checked={options.pageNumbers} onChange={e => setOptions({...options,pageNumbers:e.target.checked})}/>Word page numbers</label>}
+        <p className="text-xs text-muted-foreground">Use preview to print or save a PDF. HTML best preserves editor styling. Word supports text formatting and tables; font availability varies by reader. JSON retains original fields; it is not a database-and-uploads backup.</p>
+      </div>}
+      {error && <p role="alert" className="text-destructive text-sm">{error}</p>}{downloaded && <p role="status" className="text-sm">Your download has started.</p>}
+      <DialogFooter>{html ? <><Button variant="outline" onClick={() => setHTML("")}>Back</Button><Button disabled={!ready} onClick={() => frame.current?.contentWindow?.print()}>Print / Save PDF</Button></> : <><Button variant="outline" disabled={busy || !Object.entries(options).some(([key,value]) => ['manuscript','outline','storyboard','bible'].includes(key) && value)} onClick={() => void run(true)}>{busy ? "Preparing…" : "Preview / PDF"}</Button>{!preview && <Button disabled={busy || ![options.manuscript,options.outline,options.storyboard,options.bible].some(Boolean)} onClick={() => void run(false)}>{busy ? "Preparing…" : "Download"}</Button>}</>}</DialogFooter>
+    </DialogContent>
+  </Dialog>;
 }

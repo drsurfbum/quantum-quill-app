@@ -1,3 +1,4 @@
+import { currentAccount } from "@/lib/queryClient";
 import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,6 +7,7 @@ import { ImageIcon, Upload, X, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface FileUploadProps {
+  projectId?: number;
   imageUrl?: string;
   imageDescription?: string;
   onImageChange: (url: string, description?: string) => void;
@@ -14,7 +16,7 @@ interface FileUploadProps {
   placeholder?: string;
 }
 
-export function FileUpload({ 
+export function FileUpload({ projectId,
   imageUrl, 
   imageDescription, 
   onImageChange, 
@@ -61,11 +63,14 @@ export function FileUpload({
     setIsUploading(true);
 
     try {
+      const account = currentAccount();
+      const uploadProject = projectId || window.location.pathname.match(/\/project\/(\d+)/)?.[1];
       const formData = new FormData();
       formData.append('image', file);
 
       const response = await fetch('/api/upload', {
         method: 'POST',
+        headers: { ...(account ? { 'X-QQ-Account': String(account) } : {}), ...(uploadProject ? { 'X-QQ-Project': String(uploadProject) } : {}) },
         body: formData,
         credentials: 'include',
         signal: controller.signal,
@@ -75,9 +80,9 @@ export function FileUpload({
 
 
       if (!response.ok || !data.success) {
-        throw new Error(data.error || data.details || 'Upload failed');
+        throw new Error(data.message || data.error || data.details || 'Upload failed');
       }
-      if (controller.signal.aborted) return;
+      if (controller.signal.aborted || currentAccount() !== account) return;
       latest.current.onImageChange(data.url, latest.current.description);
       
       toast({

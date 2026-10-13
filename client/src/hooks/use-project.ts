@@ -1,3 +1,4 @@
+import { getSaveQueue } from "@/hooks/use-autosave";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { type Project, type Chapter } from "@shared/schema";
@@ -62,8 +63,12 @@ export const useCreateChapter = () => {
 export const useUpdateChapter = () => {
   return useMutation({
     mutationFn: async ({ id, revision, ...data }: { id: number | string; revision: number } & Partial<Chapter>) => {
-      const res = await apiRequest('PUT', `/api/chapters/${id}`, { ...data, _revision: revision });
-      return res.json();
+      const cached = queryClient.getQueryData<Chapter>([`/api/chapters/${id}`]);
+      const projectId = cached?.projectId || queryClient.getQueriesData<Chapter[]>({predicate:q=>/^\/api\/projects\/\d+\/chapters$/.test(String(q.queryKey[0]))}).flatMap(([,rows])=>rows || []).find(ch=>String(ch.id)===String(id))?.projectId;
+      const queue = getSaveQueue(`/api/chapters/${id}`,projectId ? `/api/projects/${projectId}/chapters` : undefined);
+      queue.enqueue(data);
+      if (!await queue.flush()) throw queue.error || new Error("Chapter changes are kept in draft recovery.");
+      return queryClient.getQueryData<Chapter>([`/api/chapters/${id}`])!;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: [`/api/chapters/${data.id}`] });
@@ -75,8 +80,8 @@ export const useUpdateChapter = () => {
 // Delete chapter
 export const useDeleteChapter = () => {
   return useMutation({
-    mutationFn: async ({ id, projectId }: { id: number | string, projectId: number | string }) => {
-      const res = await apiRequest('DELETE', `/api/chapters/${id}`, {});
+    mutationFn: async ({ id, projectId, revision }: { id: number | string, projectId: number | string, revision: number }) => {
+      const res = await apiRequest('DELETE', `/api/chapters/${id}`, {_revision: revision});
       return { success: res.ok, projectId };
     },
     onSuccess: (result) => {

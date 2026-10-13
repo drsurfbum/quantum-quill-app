@@ -1,3 +1,6 @@
+import { imageType, safeImageName, readProjectImage, userCanReadImage } from "./upload-access";
+import { manuscriptStructure, organizeManuscript } from "./manuscript";
+import { collectExport, exportOptions, renderExport } from "./export";
 import { createProjectFromWizard, createSceneSafely, blueprintSource, buildBlueprint } from "./planning";
 import { scenePatchSchema } from "@shared/planning";
 import { relationshipInput } from "@shared/relationships";
@@ -75,6 +78,29 @@ export function registerRoutes(app: Express, storage: IStorage, directory = path
     return structure;
   };
 
+  app.get("/api/projects/:projectId/manuscript", handler(async (req,res) => {
+    const project = await projectFor(req,routeId(req.params.projectId));
+    res.json(await storage.withReadSnapshot(scoped => manuscriptStructure(scoped,project.id)));
+  }));
+  app.put("/api/projects/:projectId/manuscript", handler(async (req,res) => {
+    const project = await projectFor(req,routeId(req.params.projectId));
+    res.json(await organizeManuscript(storage,project.id,req.body));
+  }));
+  app.post("/api/projects/:projectId/export", handler(async (req, res) => {
+    const project = await projectFor(req, routeId(req.params.projectId));
+    const options = exportOptions.parse(req.body);
+    const data = await storage.withReadSnapshot(scoped => collectExport(scoped, project, options, async url => {
+      const match = /^\/uploads\/([^/?#]+)$/.exec(url);
+      if (!match) return undefined;
+      const image = await readProjectImage(directory, match[1], project.id);
+      return image ? `data:${image.mime};base64,${image.bytes.toString("base64")}` : undefined;
+    }));
+    const output = await renderExport(data, options);
+    const name = project.title.replace(/[^a-zA-Z0-9 _-]/g, "").trim().slice(0,100) || "Quantum Quill";
+    res.setHeader("Content-Disposition", `attachment; filename="${name}.${options.format}"`);
+    res.type(output.type).send(output.body);
+  }));
+
   app.get("/api/writing-styles", handler(async (req, res) => res.json(await storage.getWritingStyles(req.user!.id))));
   app.post("/api/writing-styles", handler(async (req, res) => {
     res.json(await storage.saveWritingStyle(req.user!.id, saveWritingStyleSchema.parse(req.body)));
@@ -117,7 +143,16 @@ export function registerRoutes(app: Express, storage: IStorage, directory = path
     }));
     app.delete(`/api/${config.route}/:id`, handler(async (req, res) => {
       const item = await owned(req);
-      const remove = async (scoped = storage) => { const config = using(scoped); await config.beforeDelete?.(item); await config.remove(item.id); };
+      const remove = async (scoped = storage) => {
+        const config = using(scoped); await config.beforeDelete?.(item);
+        if (config.route === "chapters") {
+          const {_revision} = z.object({_revision:z.number().int().nonnegative().optional()}).strict().parse(req.body || {});
+          if (_revision === undefined) fail(428,"Review the current chapter before deleting it.","REVISION_REQUIRED");
+          const current = await config.get(item.id) as (T & {revision:number}) | undefined;
+          if (!current || current.revision !== _revision) fail(409,"This chapter changed after you opened the deletion dialog. Review it again; nothing was deleted.","REVISION_CONFLICT");
+        }
+        await config.remove(item.id);
+      };
       if (config.lockWrites) await storage.withProjectLock(item.projectId, remove); else await remove();
       res.status(204).end();
     }));
@@ -199,7 +234,7 @@ export function registerRoutes(app: Express, storage: IStorage, directory = path
 
   const chapter = insertChapterSchema.extend({ projectId: idSchema, title, writingMode: z.enum(["chapter", "scenes"]).optional() }).strict();
   resource<Chapter, z.infer<typeof chapter>>(storage => ({ lockWrites: true, route: "chapters", listRoute: "chapters", schema: chapter,
-    updateSchema: chapter.omit({ projectId: true, writingMode: true }).partial().strict(),
+    updateSchema: chapter.omit({ projectId: true, writingMode: true, order: true }).partial().strict(),
     get: storage.getChapter.bind(storage), list: storage.getProjectChapters.bind(storage),
     create: storage.createChapter.bind(storage), update: storage.updateChapter.bind(storage), remove: storage.deleteChapter.bind(storage),
     validate: async (data, projectId, id) => {
@@ -324,22 +359,33 @@ export function registerRoutes(app: Express, storage: IStorage, directory = path
     res.status(204).end();
   }));
 
-  const upload = multer({
-    storage: multer.diskStorage({
-      destination: (_req, _file, done) => fs.mkdir(directory, { recursive: true }, error => done(error, directory)),
-      filename: (_req, file, done) => done(null, `${randomUUID()}${path.extname(file.originalname).toLowerCase()}`),
-    }),
-    limits: { fileSize: 5 * 1024 * 1024, files: 1 },
-    fileFilter: (_req, file, done) => {
-      if (!/^\.(jpe?g|png|gif|webp)$/i.test(path.extname(file.originalname)) || !/^image\/(jpeg|png|gif|webp)$/.test(file.mimetype)) {
-        done(Object.assign(new Error("Only image files are allowed"), { status: 400 }));
-      } else done(null, true);
-    },
+  const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024, files: 1, fields: 0, parts: 1 } });
+  app.post("/api/upload", (req,res,next) => {
+    Promise.resolve().then(() => projectFor(req, routeId(req.get("X-QQ-Project") || ""))).then(() => next(),next);
   });
-  app.post("/api/upload", upload.single("image"), (req, res) => {
-    if (!req.file) { res.status(400).json({ message: "No image uploaded" }); return; }
-    res.json({ success: true, url: `/uploads/${req.file.filename}`, filename: req.file.filename, originalName: req.file.originalname });
-  });
-  // Historical files have no ownership metadata; require login pending a storage migration.
-  app.use("/uploads", requireUser, express.static(directory, { dotfiles: "deny" }));
+  // Validate access before buffering any file. This middleware must call next.
+  app.post("/api/upload", upload.single("image"), handler(async (req,res) => {
+    const projectId = routeId(req.get("X-QQ-Project") || "");
+    await projectFor(req,projectId);
+    if (!req.file) fail(400,"Choose an image to upload.");
+    const type = imageType(req.file.buffer);
+    if (!type || type.mime !== req.file.mimetype) fail(400,"The file contents must be a PNG, JPEG, GIF, or WebP image matching its type.");
+    const filename = `${randomUUID()}.${type.ext}`;
+    await fs.promises.mkdir(path.join(directory,".access"),{recursive:true,mode:0o700});
+    const metadata = path.join(directory,".access",`${filename}.json`);
+    await fs.promises.writeFile(metadata,JSON.stringify({version:1,projectIds:[projectId]}),{flag:"wx",mode:0o600});
+    try { await fs.promises.writeFile(path.join(directory,filename),req.file.buffer,{flag:"wx",mode:0o600}); }
+    catch(error) { await fs.promises.unlink(metadata); throw error; }
+    res.json({success:true,url:`/uploads/${filename}`,filename,originalName:req.file.originalname});
+  }));
+  app.get("/uploads/:filename", requireUser, handler(async (req,res) => {
+    const name = req.params.filename;
+    if (!safeImageName(name) || !await userCanReadImage(storage,directory,name,req.user!.id)) fail(404,"Image not found");
+    const file=await fs.promises.readFile(path.join(directory,name)).catch(()=>undefined);
+    const type=file && imageType(file);
+    if (!file || !type) fail(404,"Image not found");
+    res.setHeader("Cache-Control","private, no-store");
+    res.setHeader("Cross-Origin-Resource-Policy","same-origin");
+    res.type(type.mime).send(file);
+  }));
 }

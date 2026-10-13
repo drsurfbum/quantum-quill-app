@@ -27,7 +27,7 @@ describe("Project ownership and writable fields", () => {
     const persisted = await agent.get(url).expect(200);
     expect(persisted.body).toMatchObject(update);
     expect(persisted.body.projectId).toBe(project.id);
-    await agent.delete(url).expect(204);
+    await agent.delete(url).send(route === "chapters" ? {_revision:persisted.body.revision} : {}).expect(204);
     await agent.get(url).expect(404);
     expect(storage).toBeDefined();
   });
@@ -83,4 +83,10 @@ describe("Project ownership and writable fields", () => {
     await agent.get("/api/projects").expect(200);
     spy.mockRestore();
   });
+});
+it('health checks confirm database availability without revealing errors or user data',async()=>{
+ const {app,storage}=await twoWriters();
+ expect((await request(app).get('/healthz').expect(200)).body).toEqual({status:'ok'});
+ jest.spyOn(storage,'getProject').mockRejectedValueOnce(new Error('private connection data'));
+ expect((await request(app).get('/healthz').expect(503)).body).toEqual({status:'unavailable'});
 });

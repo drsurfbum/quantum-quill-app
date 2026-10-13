@@ -461,7 +461,7 @@ const DetailsEditor = memo(({ entry, projectId, onClose }: DetailsEditorProps) =
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <FileUpload
+              <FileUpload projectId={Number(projectId)}
                 imageUrl={detailDataState.imageUrl}
                 imageDescription={detailDataState.imageDescription}
                 onImageChange={(url, description) => {

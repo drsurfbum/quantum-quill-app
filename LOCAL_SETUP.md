@@ -1,3 +1,5 @@
+> Current status: [October 13 stabilization closeout](docs/STABILIZATION_CLOSEOUT.md). This supersedes older status claims where listed as completed.
+
 # Quantum Quill local setup
 
 The recovered app runs at **http://127.0.0.1:5055** on this Mac. Open `Start Quantum Quill.command`, or run `npm run dev:local` from the project folder. Keep its terminal open while using the app. Control-C stops the app; PostgreSQL can remain running locally.

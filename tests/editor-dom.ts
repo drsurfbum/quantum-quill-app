@@ -1,3 +1,7 @@
+// These editor tests exercise DOM and persistence, not native canvas rendering.
+// Keep jsdom independent of optional platform-specific canvas binaries so a clean
+// install with lifecycle scripts disabled behaves the same on macOS and Linux.
+jest.mock("canvas", () => ({}), { virtual: true });
 // Minimal DOM for mounted React regression tests; no browser or real server.
 const { JSDOM } = require("jsdom");
 const dom = new JSDOM("<!doctype html><html><body></body></html>", { url: "http://localhost/" });
