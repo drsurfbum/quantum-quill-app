@@ -1,5 +1,5 @@
 import "./editor-dom";
-jest.mock("wouter", () => ({ useLocation: () => ["/", jest.fn()] }));
+jest.mock("wouter", () => ({ useLocation: () => ["/", jest.fn()], Link: ({ children, href }: any) => require("react").createElement("a", { href }, children) }));
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { Simulate } from "react-dom/test-utils";
@@ -71,14 +71,20 @@ it("batched setup fields keep both edits in their durable checkpoint", async () 
 });
 it("scene planning fields and rich prose share one guarded queue without overwriting each other", async () => {
   let scene: any = { id: 9900, projectId: 9, chapterId: 99, linkedSectionId: null, order: 0, revision: 0, title: "Original title", storyBeats: [], summary: "Original plan", content: "<p>Original prose</p>", createdAt: null, updatedAt: null };
-  const fetch = jest.spyOn(global, "fetch").mockImplementation(async (_url, options) => {
+  const fetch = jest.spyOn(global, "fetch").mockImplementation(async (url, options) => {
+    if (!options?.method || options.method === "GET") {
+      if (String(url).endsWith("/context")) return new Response(JSON.stringify({ id: "scene-context:9900", sceneId: 9900, projectId: 9, title: "Scene references", revision: 0, links: [] }));
+      if (String(url).endsWith("/story-bible")) return new Response("[]");
+      throw new Error(`Unexpected read: ${url}`);
+    }
     const { _base, _revision, ...patch } = JSON.parse(options!.body as string);
     expect(_revision).toBe(scene.revision);
     for (const key of Object.keys(patch)) expect(_base[key]).toEqual(scene[key]);
     scene = { ...scene, ...patch, revision: scene.revision + 1 };
     return new Response(JSON.stringify(scene), { status: 200 });
   });
-  await mount(React.createElement(SceneEditor, { scene })); expect(fetch).not.toHaveBeenCalled();
+  await mount(React.createElement(SceneEditor, { scene }));
+  expect(fetch.mock.calls.filter(([, options]) => options?.method === "PUT")).toHaveLength(0);
   await act(async () => {
     const title = document.getElementById("scene-title-9900") as HTMLInputElement, summary = document.getElementById("scene-summary-9900") as HTMLTextAreaElement;
     title.value = "New title"; Simulate.change(title); summary.value = "New plan"; Simulate.change(summary);
@@ -86,6 +92,13 @@ it("scene planning fields and rich prose share one guarded queue without overwri
     await flushPendingSaves();
   });
   expect(scene).toMatchObject({ title: "New title", storyBeats: [], summary: "New plan", content: "<p>New prose</p>" });
+  const prose = (container.querySelector(".tiptap") as HTMLElement & { editor: Editor }).editor;
+  await mount(React.createElement(SceneEditor, { scene, sidebarOpen: false }));
+  expect((container.querySelector(".tiptap") as HTMLElement & { editor: Editor }).editor).toBe(prose);
+  expect(prose.getText()).toBe("New prose"); expect(prose.can().undo()).toBe(true);
+  await mount(React.createElement(SceneEditor, { scene, sidebarOpen: true }));
+  expect((container.querySelector(".tiptap") as HTMLElement & { editor: Editor }).editor).toBe(prose);
+  expect((document.getElementById("scene-summary-9900") as HTMLTextAreaElement).value).toBe("New plan");
   await mount(React.createElement("div")); await mount(React.createElement(SceneEditor, { scene }));
   expect((document.getElementById("scene-summary-9900") as HTMLTextAreaElement).value).toBe("New plan");
   expect(container.querySelector(".tiptap")?.textContent).toBe("New prose");

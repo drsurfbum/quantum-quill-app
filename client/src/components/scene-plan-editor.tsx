@@ -22,7 +22,7 @@ function PlotPointLink({ sectionId, projectId }: { sectionId: number; projectId:
   </div>;
 }
 /** Outline and Write edit the same scene record and share its durable save queue. */
-export default function ScenePlanEditor({ scene }: { scene: Scene }) {
+export default function ScenePlanEditor({ scene, compact = false }: { scene: Scene; compact?: boolean }) {
   const url = `/api/scenes/${scene.id}`;
   const [value, update] = useEditorDraft(withPendingEdits(url, scene));
   const autosave = useAutosave(url, `/api/projects/${scene.projectId}/scenes`);
@@ -39,13 +39,16 @@ export default function ScenePlanEditor({ scene }: { scene: Scene }) {
       return items;
     });
   }
-  return <div className="space-y-5">
-    <div className="flex items-center justify-between gap-2"><h3 className="font-semibold">Scene plan</h3><SaveStatus status={autosave.status} retry={autosave.flush} stable /></div>
+  const details = <>
     <div className="space-y-2"><Label htmlFor={`scene-title-${scene.id}`}>Scene title</Label><Input id={`scene-title-${scene.id}`} value={value.title} maxLength={500} onChange={e => field({ title: e.target.value })} /></div>
     {value.linkedSectionId && <PlotPointLink sectionId={value.linkedSectionId} projectId={scene.projectId} />}
-    <div className="space-y-2"><Label htmlFor={`scene-summary-${scene.id}`}>Scene summary</Label><Textarea id={`scene-summary-${scene.id}`} value={value.summary} maxLength={20000} onChange={e => field({ summary: e.target.value })} placeholder="What changes in this scene?" /></div>
+  </>;
+  return <div className={compact ? "space-y-3" : "space-y-5"}>
+    <div className="flex items-center justify-between gap-2"><h3 className="font-semibold">Scene plan</h3><SaveStatus status={autosave.status} retry={autosave.flush} stable /></div>
+    {compact ? <details><summary className="cursor-pointer text-xs text-muted-foreground">Scene details & outline</summary><div className="space-y-3 pt-3">{details}<Link className="text-xs underline" href={`/project/${scene.projectId}/outline?scene=${scene.id}`}>Open scene in Outline →</Link></div></details> : details}
+    <div className="space-y-2"><Label htmlFor={`scene-summary-${scene.id}`}>{compact ? "Scene summary / notes" : "Scene summary"}</Label><Textarea id={`scene-summary-${scene.id}`} value={value.summary} maxLength={20000} onChange={e => field({ summary: e.target.value })} placeholder="What changes in this scene?" /></div>
     <section aria-label="Scene story beats" className="space-y-3">
-      <div><h3 className="font-semibold">Scene story beats <span className="text-muted-foreground text-sm font-normal">(optional)</span></h3><p className="text-sm text-muted-foreground">The moments within this scene, in order. These notes stay separate from your prose.</p></div>
+      <div><h3 className="font-semibold text-sm">Scene story beats</h3>{!compact && <p className="text-sm text-muted-foreground">The moments within this scene, in order. These notes stay separate from your prose.</p>}</div>
       {!(value.storyBeats || []).length && <p className="text-sm text-muted-foreground">Add the first action, discovery, or turning point—or go straight to writing.</p>}
       <ol className="space-y-3">{(value.storyBeats || []).map((beat, i) => <li key={beat.id} className="border rounded-lg p-3 space-y-2">
         <div className="flex flex-wrap items-center gap-1"><Label className="mr-auto" htmlFor={`scene-beat-${beat.id}`}>Beat {i + 1}</Label>

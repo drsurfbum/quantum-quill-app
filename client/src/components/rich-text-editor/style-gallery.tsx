@@ -11,7 +11,7 @@ import type { SavedWritingStyle } from '@shared/schema';
 import { QUILL_STYLES, WRITING_FONTS, type SaveWritingStyle } from '@shared/writing-styles';
 import { applyWritingStyle, currentWritingStyle } from './formatting';
 
-export function StyleGallery({ editor }: { editor: Editor }) {
+export function StyleGallery({ editor, compact = false }: { editor: Editor; compact?: boolean }) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState('');
   const [notice, setNotice] = useState('');
@@ -32,7 +32,7 @@ export function StyleGallery({ editor }: { editor: Editor }) {
   });
   const apply = (definition: SavedWritingStyle['definition']) => { applyWritingStyle(editor, definition); setOpen(false); };
   return <Dialog open={open} onOpenChange={value => { setOpen(value); setNotice(''); setError(''); }}>
-    <DialogTrigger asChild><Button variant="outline" size="sm" className="quill-styles-trigger gap-2"><Feather className="h-4 w-4" />Quill styles</Button></DialogTrigger>
+    <DialogTrigger asChild><Button variant="outline" size="sm" className={`quill-styles-trigger shrink-0 gap-2 ${compact ? "h-8 w-8 p-0" : ""}`} title="Quill styles"><Feather className="h-4 w-4" /><span className={compact ? "sr-only" : ""}>Quill styles</span></Button></DialogTrigger>
     <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto" onCloseAutoFocus={event => { event.preventDefault(); editor.commands.focus(); }}>
       <DialogHeader>
         <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">The Quantum Quill collection</p>

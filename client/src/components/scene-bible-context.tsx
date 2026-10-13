@@ -30,13 +30,13 @@ export function bibleCardSummary(entry: StoryBibleEntry) {
   return text.length > 340 ? `${text.slice(0,340)}…` : text;
 }
 const roleList = Object.keys(SCENE_ROLES) as SceneRole[];
-export default function SceneBibleContext({scene}: {scene:Scene}) {
+export default function SceneBibleContext({scene, compact = false}: {scene:Scene; compact?:boolean}) {
   const url = `/api/scenes/${scene.id}/context`;
   const context = useQuery<SceneContext>({queryKey:[url],staleTime:0,refetchOnWindowFocus:true});
   if (!context.data) return <div className="p-4">{context.error ? <><p role="alert" className="text-sm text-destructive">Scene references could not load. {context.error.message}</p><Button size="sm" variant="outline" onClick={()=>void context.refetch()}>Retry references</Button></> : <p className="text-sm text-muted-foreground">Loading scene references…</p>}</div>;
-  return <ContextEditor key={scene.id} scene={scene} initial={context.data} />;
+  return <ContextEditor key={scene.id} scene={scene} initial={context.data} compact={compact} />;
 }
-export function ContextEditor({scene, initial}: {scene:Scene;initial:SceneContext}) {
+export function ContextEditor({scene, initial, compact = false}: {scene:Scene;initial:SceneContext;compact?:boolean}) {
   const url = `/api/scenes/${scene.id}/context`;
   const [value, update] = useEditorDraft(withPendingEdits(url,initial));
   const autosave = useAutosave(url);
@@ -60,9 +60,9 @@ export function ContextEditor({scene, initial}: {scene:Scene;initial:SceneContex
     try { await prepareManuscriptAction(scene.projectId); navigate(`/project/${scene.projectId}/story-bible?entry=${entry.id}&fromScene=${scene.id}`); }
     catch(cause) { setError(cause instanceof Error ? cause.message : "Resolve pending writing before opening the entry."); }
   }
-  return <section aria-label="Scene Story Bible" className="space-y-4 p-4">
+  return <section aria-label="Scene Story Bible" className={compact ? "space-y-3 p-3" : "space-y-4 p-4"}>
     <div className="flex items-center justify-between gap-2"><h3 className="font-semibold text-sm">Story Bible</h3><SaveStatus status={autosave.status} retry={autosave.flush} stable /></div>
-    <p className="text-xs text-muted-foreground">Choose who is here, where it happens, and what to keep in mind. These references stay separate from prose.</p>
+    {!compact && <p className="text-xs text-muted-foreground">Choose who is here, where it happens, and what to keep in mind. These references stay separate from prose.</p>}
     {recovery && <div role="alert" className="rounded border p-3 text-sm">A scene-reference draft needs review. <button className="underline" onClick={()=>window.dispatchEvent(new Event("qq:review-drafts"))}>Review saved draft</button></div>}
     {entriesQuery.isError && <p role="alert" className="text-sm text-destructive">Bible entries could not refresh. Saved connections are retained. <button className="underline" onClick={()=>void entriesQuery.refetch()}>Retry</button></p>}
     <fieldset disabled={recovery} className="space-y-5 min-w-0">

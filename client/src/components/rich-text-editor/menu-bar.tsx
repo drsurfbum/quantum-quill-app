@@ -1,7 +1,6 @@
 import { useState, type ReactNode } from 'react';
-import { SaveStatus } from '@/components/save-status';
 import { type Editor } from '@tiptap/react';
-import { Bold, Italic, Underline, Strikethrough, AlignLeft, AlignCenter, AlignRight, AlignJustify, List, ListOrdered, Quote, Link, Image as ImageIcon, Table, Maximize, Minimize, Undo2, Redo2, Superscript, Subscript, Eraser, IndentIncrease, IndentDecrease, Palette, Highlighter, ChevronDown, Minus, Plus } from 'lucide-react';
+import { Bold, Italic, Underline, Strikethrough, AlignLeft, AlignCenter, AlignRight, AlignJustify, List, ListOrdered, Quote, Link, Image as ImageIcon, Table, Undo2, Redo2, Superscript, Subscript, Eraser, IndentIncrease, IndentDecrease, Palette, Highlighter, ChevronDown, Minus, Plus, SlidersHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,11 +13,6 @@ import { FindReplace } from './search';
 
 interface EditorMenuBarProps {
   editor: Editor;
-  wordCount: number;
-  saveStatus: import('@/lib/save-queue').SaveStatus;
-  onRetry: () => Promise<boolean>;
-  isFullscreen?: boolean;
-  onToggleFullscreen?: () => void;
 }
 function Tool({ label, children, active, disabled, onClick }: { label: string; children: ReactNode; active?: boolean; disabled?: boolean; onClick: () => void }) {
   return <Button type="button" variant="ghost" size="icon" className={`h-8 w-8 shrink-0 ${active ? 'bg-muted' : ''}`} title={label} aria-label={label} aria-pressed={active} disabled={disabled} onMouseDown={event => event.preventDefault()} onClick={onClick}>{children}</Button>;
@@ -38,7 +32,7 @@ function Colors({ editor, highlight = false }: { editor: Editor; highlight?: boo
       <Button variant="outline" size="sm" onClick={() => set(null)}>{highlight ? 'Remove highlight' : 'Automatic text color'}</Button>
     </PopoverContent></Popover>;
 }
-export default function EditorMenuBar({ editor, wordCount, saveStatus, onRetry, isFullscreen = false, onToggleFullscreen }: EditorMenuBarProps) {
+export default function EditorMenuBar({ editor }: EditorMenuBarProps) {
   const style = currentWritingStyle(editor);
   const [insertOpen, setInsertOpen] = useState(false);
   const [dialog, setDialog] = useState<'link' | 'image' | null>(null);
@@ -58,30 +52,36 @@ export default function EditorMenuBar({ editor, wordCount, saveStatus, onRetry, 
       setDialog(null);
     } catch { setUrlError(dialog === 'image' ? 'Enter an HTTP or HTTPS image URL.' : 'Enter a web address or a mailto: email link.'); }
   };
-  return <div className="shrink-0 border-b bg-background" aria-label="Write formatting tools">
-    <div className="flex flex-wrap items-center gap-2 border-b px-3 py-2">
-      <StyleGallery editor={editor} />
+  return <div className="shrink-0 border-b bg-background min-w-0" aria-label="Write formatting tools">
+    <div className="flex h-12 items-center gap-1 px-2">
+    <div className="flex flex-1 min-w-0 items-center gap-1 overflow-x-auto [scrollbar-width:thin]">
+      <StyleGallery editor={editor} compact />
       <span className="h-5 w-px bg-border mx-1" aria-hidden="true" />
-      <select aria-label="Paragraph style" title="Paragraph style" className={`${selectClass} w-32`} value={heading} onChange={event => { const level = Number(event.target.value); if (level) editor.chain().focus().setHeading({ level: level as 1 | 2 | 3 }).run(); else editor.chain().focus().setParagraph().run(); }}>
+      <select aria-label="Paragraph style" title="Paragraph style" className={`${selectClass} w-28 shrink-0`} value={heading} onChange={event => { const level = Number(event.target.value); if (level) editor.chain().focus().setHeading({ level: level as 1 | 2 | 3 }).run(); else editor.chain().focus().setParagraph().run(); }}>
         <option value="0">Paragraph</option>{[1, 2, 3].map(level => <option key={level} value={level}>Heading {level}</option>)}
       </select>
-      <select aria-label="Font family" title="Font family" className={`${selectClass} w-36`} value={style.font} onChange={event => editor.chain().focus().setMark('textAppearance', { fontFamily: WRITING_FONTS.find(font => font.id === event.target.value)!.family }).run()}>
+      <select aria-label="Font family" title="Font family" className={`${selectClass} w-28 shrink-0`} value={style.font} onChange={event => editor.chain().focus().setMark('textAppearance', { fontFamily: WRITING_FONTS.find(font => font.id === event.target.value)!.family }).run()}>
         {WRITING_FONTS.map(font => <option key={font.id} value={font.id}>{font.name}</option>)}
       </select>
-      <select aria-label="Font size" title="Font size (points)" className={`${selectClass} w-[72px]`} value={style.size} onChange={event => editor.chain().focus().setMark('textAppearance', { fontSize: `${event.target.value}pt` }).run()}>
+      <select aria-label="Font size" title="Font size (points)" className={`${selectClass} w-16 shrink-0`} value={style.size} onChange={event => editor.chain().focus().setMark('textAppearance', { fontSize: `${event.target.value}pt` }).run()}>
         {[...new Set([8, 9, 10, 11, 12, 13, 14, 16, 18, 20, 24, 28, 32, 36, 48, 60, 72, style.size])].sort((a, b) => a - b).map(size => <option key={size} value={size}>{size} pt</option>)}
       </select>
+      <div className="flex items-center shrink-0" role="group" aria-label="Text emphasis">
+        <Tool label="Bold" active={style.bold} onClick={() => editor.chain().focus().toggleBold().run()}><Bold className="h-4 w-4" /></Tool>
+        <Tool label="Italic" active={style.italic} onClick={() => editor.chain().focus().toggleItalic().run()}><Italic className="h-4 w-4" /></Tool>
+        <Tool label="Underline" active={style.underline} onClick={() => editor.chain().focus().toggleUnderline().run()}><Underline className="h-4 w-4" /></Tool>
+      </div>
     </div>
-    <div className="flex flex-wrap items-center gap-x-1 gap-y-2 px-2 py-2">
+    <Popover><PopoverTrigger asChild><Button type="button" variant="ghost" size="icon" className="h-8 w-8 shrink-0" aria-label="More formatting" title="More formatting"><SlidersHorizontal className="h-4 w-4" /></Button></PopoverTrigger>
+      <PopoverContent align="end" className="w-[min(26rem,calc(100vw-2rem))] max-h-[70dvh] overflow-y-auto p-3" onOpenAutoFocus={event=>event.preventDefault()} onCloseAutoFocus={event=>event.preventDefault()} onFocusOutside={event=>event.preventDefault()}>
+      <p className="mb-2 text-sm font-semibold">Formatting & tools</p>
+      <div className="flex flex-wrap items-center gap-x-1 gap-y-2">
       <div className="flex items-center" role="group" aria-label="History">
         <Tool label="Undo" disabled={!editor.can().undo()} onClick={() => editor.chain().focus().undo().run()}><Undo2 className="h-4 w-4" /></Tool>
         <Tool label="Redo" disabled={!editor.can().redo()} onClick={() => editor.chain().focus().redo().run()}><Redo2 className="h-4 w-4" /></Tool>
       </div>
       <span className="h-5 w-px bg-border mx-1" aria-hidden="true" />
-      <div className="flex items-center" role="group" aria-label="Text emphasis">
-        <Tool label="Bold" active={style.bold} onClick={() => editor.chain().focus().toggleBold().run()}><Bold className="h-4 w-4" /></Tool>
-        <Tool label="Italic" active={style.italic} onClick={() => editor.chain().focus().toggleItalic().run()}><Italic className="h-4 w-4" /></Tool>
-        <Tool label="Underline" active={style.underline} onClick={() => editor.chain().focus().toggleUnderline().run()}><Underline className="h-4 w-4" /></Tool>
+      <div className="flex items-center" role="group" aria-label="Additional text emphasis">
         <Tool label="Strikethrough" active={style.strike} onClick={() => editor.chain().focus().toggleStrike().run()}><Strikethrough className="h-4 w-4" /></Tool>
         <Tool label="Superscript" active={editor.isActive('scriptPosition', { kind: 'sup' })} onClick={() => editor.chain().focus().toggleMark('scriptPosition', { kind: 'sup' }).run()}><Superscript className="h-4 w-4" /></Tool>
         <Tool label="Subscript" active={editor.isActive('scriptPosition', { kind: 'sub' })} onClick={() => editor.chain().focus().toggleMark('scriptPosition', { kind: 'sub' }).run()}><Subscript className="h-4 w-4" /></Tool>
@@ -113,11 +113,6 @@ export default function EditorMenuBar({ editor, wordCount, saveStatus, onRetry, 
       </Popover>
       <FindReplace editor={editor} />
       </div>
-    <div data-writing-status-bar className="flex h-12 shrink-0 items-center justify-end gap-3 border-t px-3 text-xs text-muted-foreground">
-        <span className="whitespace-nowrap tabular-nums" title={`${editor.getText().length} characters`}>{wordCount} {wordCount === 1 ? 'word' : 'words'}</span>
-        <SaveStatus status={saveStatus} retry={onRetry} stable />
-        <Tool label={isFullscreen ? 'Exit focus mode' : 'Focus mode'} onClick={() => onToggleFullscreen?.()}>{isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}</Tool>
-    </div>
     {editor.isActive('table') && <div className="flex flex-wrap gap-1 border-t bg-muted/40 px-3 py-2" role="group" aria-label="Table tools">
       {([
         ['Add row above', () => editor.chain().focus().addRowBefore().run()], ['Add row below', () => editor.chain().focus().addRowAfter().run()],
@@ -127,6 +122,9 @@ export default function EditorMenuBar({ editor, wordCount, saveStatus, onRetry, 
         ['Split cell', () => editor.chain().focus().splitCell().run()], ['Remove table', () => editor.chain().focus().deleteTable().run()],
       ] as const).map(([label, action]) => <Button key={label} size="sm" variant="outline" className="h-7 text-xs" onMouseDown={event => event.preventDefault()} onClick={action}>{label}</Button>)}
     </div>}
+      </PopoverContent>
+    </Popover>
+    </div>
     <Dialog open={dialog !== null} onOpenChange={open => { if (!open) setDialog(null); }}>
       <DialogContent onCloseAutoFocus={event => { event.preventDefault(); editor.commands.focus(); }}>
         <DialogHeader><DialogTitle>{dialog === 'image' ? 'Insert image' : 'Add or edit link'}</DialogTitle><DialogDescription>{dialog === 'image' ? 'Use a direct image URL and a short description.' : 'The link applies to your selected text or the text you type next.'}</DialogDescription></DialogHeader>

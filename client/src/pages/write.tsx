@@ -95,11 +95,11 @@ export default function Write() {
   const selectedChapter = chapters.find(c => c.id === Number(selectedChapterId || '0'));
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden bg-background">
+    <div className="h-screen flex flex-col overflow-hidden bg-background [color-scheme:light] dark:[color-scheme:dark]">
       <div className="flex flex-row flex-1 w-full h-full overflow-hidden">
         <SidebarNavigation onCollapsedChange={setIsSidebarCollapsed} />
         
-        <main className="flex-grow overflow-hidden flex flex-col w-full pl-0 md:pl-0" style={{marginLeft: isSidebarCollapsed ? '56px' : '0'}}>
+        <main className="flex-1 min-w-0 min-h-0 overflow-hidden flex flex-col" style={{marginLeft: isSidebarCollapsed ? '56px' : '0'}}>
         <header className="min-h-16 shrink-0 border-b border-neutral-200 dark:border-neutral-800 flex flex-wrap items-center justify-between gap-2 px-3 sm:px-6 py-2">
           <div className="flex items-center">
             <Button 
@@ -134,7 +134,7 @@ export default function Write() {
           </div>
         </header>
 
-        <div className="border-b border-neutral-200 dark:border-neutral-800">
+        <div className="shrink-0 overflow-x-auto border-b border-neutral-200 dark:border-neutral-800">
           <Tabs defaultValue="write">
             <TabsList className="mx-4 h-10 w-auto">
               <Link href={`/project/${id}/write`}>
@@ -176,7 +176,7 @@ export default function Write() {
           </Tabs>
         </div>
 
-        <div className="flex-grow flex overflow-hidden">
+        <div className="flex-1 min-h-0 flex overflow-hidden">
           <ChapterSidebar 
             projectId={id || ''} 
             selectedChapterId={selectedChapterId ? Number(selectedChapterId) : undefined} 
@@ -185,7 +185,7 @@ export default function Write() {
           />
           
           <div className={cn(
-            "flex-grow min-w-0 min-h-0 flex flex-col",
+            "flex-1 min-w-0 min-h-0 flex flex-col",
             isChapterSidebarVisible ? "md:ml-0" : "ml-0"
           )}>
             {isLoadingChapters || !selectedChapter ? (
@@ -197,13 +197,13 @@ export default function Write() {
                 </div>
               </div>
             ) : (
-              <div className="flex flex-col h-full w-full">
+              <div className="flex flex-col flex-1 min-h-0 min-w-0">
                 {/* Chapter header */}
-                <div className="bg-muted/30 border-b py-2 px-4">
+                {selectedChapter.writingMode !== "scenes" && <div className="bg-muted/30 border-b py-2 px-4 shrink-0">
                   <h2 className="text-lg font-medium">
                     {selectedChapter.title} {selectedChapter.isDraft ? "(Draft)" : "(Completed)"}
                   </h2>
-                </div>
+                </div>}
                 {selectedChapter.writingMode === "scenes" ? <SceneWorkspace key={selectedChapter.id} chapter={selectedChapter} /> : <RichTextEditor
                   key={selectedChapter.id}
                   projectId={selectedChapter.projectId}

@@ -1,3 +1,6 @@
+import { SaveStatus } from "@/components/save-status";
+import { Button } from "@/components/ui/button";
+import { Maximize, Minimize } from "lucide-react";
 import { editorContent } from "@/lib/editor-content";
 import { useAutosave, withPendingEdits } from "@/hooks/use-autosave";
 import { useEditor } from '@tiptap/react';
@@ -129,23 +132,18 @@ export default function RichTextEditor({
     <div 
       ref={editorContainerRef}
       className={cn(
-        "flex-grow flex flex-col overflow-hidden",
+        "flex-1 min-h-0 min-w-0 flex flex-col overflow-hidden bg-muted/20",
         isFullscreen ? "fixed inset-0 z-50 bg-white dark:bg-neutral-900" : ""
       )}
     >
-      <EditorMenuBar 
-        editor={editor} 
-        wordCount={wordCount} 
-        saveStatus={saveStatus}
-        onRetry={autosave.flush}
-        isFullscreen={isFullscreen}
-        onToggleFullscreen={toggleFullscreen}
-      />
-      <div className={cn(
-        "flex-grow overflow-y-auto p-4 md:p-6 lg:p-8 bg-muted/40",
-        isFullscreen ? "max-h-[calc(100vh-48px)]" : ""
-      )}>
+      <EditorMenuBar editor={editor} />
+      <div data-writing-scroll className="flex-1 min-h-0 min-w-0 overflow-y-auto [scrollbar-gutter:stable] p-3 md:p-4">
         <WritingSurface editor={editor} label={resource === "scenes" ? "Scene text" : "Chapter text"} labelId={labelId} />
+      </div>
+      <div data-writing-status-bar className="flex h-10 shrink-0 items-center justify-end gap-2 border-t bg-background px-2 text-xs text-muted-foreground">
+        <span className="mr-auto whitespace-nowrap tabular-nums" title={`${editor.getText().length} characters`}>{wordCount} {wordCount === 1 ? "word" : "words"}</span>
+        <SaveStatus status={saveStatus} retry={autosave.flush} stable />
+        <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" aria-label={isFullscreen ? "Exit focus mode" : "Focus mode"} title={isFullscreen ? "Exit focus mode" : "Focus mode"} onClick={toggleFullscreen}>{isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}</Button>
       </div>
     </div>
   );
