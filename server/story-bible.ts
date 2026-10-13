@@ -67,6 +67,8 @@ export async function updateBibleEntry(storage: IStorage, id: number, patch: Par
 export async function deleteBibleEntry(storage: IStorage, id: number) {
   const entry = await storage.getStoryBibleEntry(id); if (!entry) return false;
   return storage.withProjectLock(entry.projectId, async scoped => {
+    const sceneLinks = (await scoped.getProjectSceneContexts(entry.projectId)).filter(row=>row.links.some(link=>link.entryId===id));
+    if (sceneLinks.length) throw Object.assign(new Error(`This entry is used in ${sceneLinks.length} scene(s). Remove those scene references first, or archive the entry to preserve them.`), {status:409,code:"ENTRY_LINKED"});
     const connected = (await projectRelationships(scoped, entry.projectId)).filter(link => link.sourceId === id || link.targetId === id);
     if (connected.length) throw Object.assign(new Error(`Remove incoming relationships and outgoing links first (${connected.length} relationships). Archive this entry to preserve its connections instead.`), { status: 409, code: "ENTRY_LINKED" });
     return scoped.deleteStoryBibleEntry(id);

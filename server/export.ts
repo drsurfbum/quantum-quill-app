@@ -1,3 +1,4 @@
+import { SCENE_ROLES } from "@shared/scene-context";
 import { imageDimensions } from "./upload-access";
 import sanitize from "sanitize-html";
 import { parseDocument } from "htmlparser2";
@@ -41,6 +42,8 @@ export function htmlText(html: string) {
 }
 export async function collectExport(storage: IStorage, project: Project, options: ExportOptions, resolveImage?: (url: string) => Promise<string | undefined>) {
   const chapters = await storage.getProjectChapters(project.id), scenes = await storage.getProjectScenes(project.id);
+  const sceneContexts = options.manuscript || options.outline || options.bible ? await storage.getProjectSceneContexts(project.id) : [];
+  const contextEntries = options.outline || options.bible ? await storage.getProjectStoryBible(project.id) : [];
   const parts: { title: string; html: string }[] = [];
   const images = new Map<string,string>(); let imageBytes = 0;
   const prose = async (value: string | null | undefined) => {
@@ -71,7 +74,10 @@ export async function collectExport(storage: IStorage, project: Project, options
     }).join("");
     let html = branch(null,0);
     for (const item of outline) if (!seen.has(item.id)) html += `<h2>${escape(item.title)}</h2>${cleanProse(item.content,images)}`;
-    for (const chapter of chapters) for (const scene of scenes.filter(s => s.chapterId === chapter.id)) html += `<h2>${escape(chapter.title)} / ${escape(scene.title)}</h2>${plainHTML(scene.summary || "")}<ol>${(scene.storyBeats || []).map(b => `<li>${escape(b.text)}</li>`).join("")}</ol>`;
+    for (const chapter of chapters) for (const scene of scenes.filter(s => s.chapterId === chapter.id)) { html += `<h2>${escape(chapter.title)} / ${escape(scene.title)}</h2>${plainHTML(scene.summary || "")}<ol>${(scene.storyBeats || []).map(b => `<li>${escape(b.text)}</li>`).join("")}</ol>`;
+      const links = sceneContexts.find(context=>context.sceneId===scene.id)?.links || [];
+      if (links.length) html += `<h3>Story Bible references</h3><ul>${links.map(link=>`<li>${escape(SCENE_ROLES[link.role].label)}: ${escape(contextEntries.find(entry=>entry.id===link.entryId)?.title || `Unavailable entry #${link.entryId}`)}${link.note ? plainHTML(link.note) : ""}</li>`).join("")}</ul>`;
+    }
     parts.push({ title: "Outline & scene plans", html });
   }
   const plots = options.storyboard ? await storage.getProjectPlotStructures(project.id) : [];
@@ -80,12 +86,12 @@ export async function collectExport(storage: IStorage, project: Project, options
     const sections = await storage.getPlotStructureSections(plot.id); plotSections.push(...sections); for (const section of sections) await prose(section.content);
     parts.push({ title: `Storyboard: ${plot.name}`, html: `${plainHTML(plot.description || "")}${sections.map(s => `<h2>${escape(s.title)}</h2>${cleanProse(s.content,images)}`).join("")}` });
   }
-  const bible = options.bible ? await storage.getProjectStoryBible(project.id) : [];
+  const bible = options.bible ? contextEntries : [];
   const relationships = options.bible ? await storage.getBibleRelationships(project.id) : [];
   for (const entry of bible) await prose(entry.content);
   for (const entry of bible) parts.push({ title: `Story Bible: ${entry.title}`, html: `<p>${escape(entry.entryType)}${entry.isArchived ? " · Archived" : ""}</p>${cleanProse(entry.content,images)}<h2>Structured fields & original metadata</h2><pre>${escape(JSON.stringify({ category: entry.category, subcategory: entry.subcategory, tags: entry.tags, metadata: entry.metadata, relatedEntryIds: entry.relatedEntryIds }, null, 2))}</pre>` });
   if (relationships.length) parts.push({ title: "Story Bible relationships", html: `<pre>${escape(JSON.stringify(relationships, null, 2))}</pre>` });
-  return { project, parts, original: { schemaVersion: 1, exportedAt: new Date().toISOString(), project, ...(options.manuscript || options.outline ? { chapters, scenes } : {}), outline, plots, plotSections, bible, relationships } };
+  return { project, parts, original: { schemaVersion: 1, exportedAt: new Date().toISOString(), project, ...(options.manuscript || options.outline ? { chapters, scenes } : {}), outline, plots, plotSections, bible, relationships, sceneContexts } };
 }
 export type ExportData = Awaited<ReturnType<typeof collectExport>>;
 export const exportCSS = `@page{margin:22mm}*{box-sizing:border-box}body{font:12pt Georgia,serif;line-height:1.6;color:#171717;background:#fff;margin:0 auto;padding:2rem;max-width:850px}p{min-height:1em;white-space:pre-wrap}h1,h2,h3{line-height:1.25;break-after:avoid}h1{font-size:24pt}h2{font-size:17pt}section{break-before:page}section:first-of-type{break-before:auto}img{max-width:100%;height:auto}table{border-collapse:collapse;width:100%;table-layout:fixed}td,th{border:1px solid #aaa;padding:.4em;overflow-wrap:anywhere}blockquote{border-left:3px solid #888;margin-left:0;padding-left:1em}pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:10pt}a{color:inherit}nav{margin-bottom:3rem}@media print{body{max-width:none;padding:0}a{text-decoration:none}}`;

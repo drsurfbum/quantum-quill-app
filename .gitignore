@@ -81,3 +81,7 @@ recovery/
 !migrations/0002_writing_revisions.sql
 
 !migrations/0003_bible_relationships.sql
+
+!migrations/0004_wizards_and_scenes.sql
+!migrations/0005_scene_story_beats.sql
+!migrations/0006_scene_bible_context.sql

@@ -1,3 +1,6 @@
+import { useQuery } from "@tanstack/react-query";
+import { SCENE_ROLES, sceneLinksSchema } from "@shared/scene-context";
+import type { StoryBibleEntry } from "@shared/schema";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { discardDraft, inspectDraft, restoreDraft, useRecoverableDrafts } from "@/hooks/use-autosave";
 import type { DurableDraft } from "@/lib/draft-journal";
@@ -8,6 +11,13 @@ function download(draft: DurableDraft) {
   const url = URL.createObjectURL(new Blob([JSON.stringify(draft, null, 2)], { type: "application/json" }));
   const anchor = document.createElement("a"); anchor.href = url; anchor.download = `quantum-quill-draft-${draft.url.split("/").pop()}.json`;
   anchor.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+function DraftFields({draft,fields}:{draft:DurableDraft;fields:Record<string,unknown>}) {
+  const sceneContext = /^\/api\/scenes\/\d+\/context$/.test(draft.url);
+  const entries = useQuery<StoryBibleEntry[]>({queryKey:[`/api/projects/${draft.projectId}/story-bible`],enabled:sceneContext && !!draft.projectId});
+  const links = sceneContext && sceneLinksSchema.safeParse(fields.links);
+  if(links && links.success) return <div className="max-h-64 overflow-auto rounded bg-muted p-3 text-sm">{links.data.length ? <ul className="space-y-3">{links.data.map(link=><li key={`${link.role}:${link.entryId}`}><strong>{SCENE_ROLES[link.role].label}: {entries.data?.find(entry=>entry.id===link.entryId)?.title || `Entry #${link.entryId}`}</strong>{link.note && <p className="whitespace-pre-wrap break-words">{link.note}</p>}</li>)}</ul> : <p>No scene references.</p>}</div>;
+  return <pre className="whitespace-pre-wrap break-words max-h-64 overflow-auto bg-muted p-2 text-xs">{JSON.stringify(fields,null,2)}</pre>;
 }
 export function DraftRecovery() {
   const drafts = useRecoverableDrafts();
@@ -59,8 +69,8 @@ export function DraftRecovery() {
           <h3 className="font-semibold">{selected.title}</h3>
           {review?.conflicts.length ? <p role="alert">The server has different changes in: {review.conflicts.join(", ")}. Compare both versions before choosing.</p> : review && <p>No conflicting changes found. Restoring preserves other server fields.</p>}
           <div className="grid gap-3 sm:grid-cols-2">
-            <div><h4>Your draft</h4><pre className="whitespace-pre-wrap break-words max-h-64 overflow-auto bg-muted p-2 text-xs">{JSON.stringify(selected.patch, null, 2)}</pre></div>
-            {review && <div><h4>Current server fields</h4><pre className="whitespace-pre-wrap break-words max-h-64 overflow-auto bg-muted p-2 text-xs">{JSON.stringify(Object.fromEntries(Object.keys(selected.patch).map(key => [key, review.server[key]])), null, 2)}</pre></div>}
+            <div><h4>Your draft</h4><DraftFields draft={selected} fields={selected.patch}/></div>
+            {review && <div><h4>Current server fields</h4><DraftFields draft={selected} fields={Object.fromEntries(Object.keys(selected.patch).map(key => [key, review.server[key]]))}/></div>}
           </div>
           <div className="flex flex-wrap gap-4">
             <button className="underline" disabled={busy || !review} onClick={() => void finish(true)}>{review?.conflicts.length ? "Replace these fields with my draft" : "Restore draft"}</button>

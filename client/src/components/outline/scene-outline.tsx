@@ -1,3 +1,4 @@
+import SceneBibleContext from "@/components/scene-bible-context";
 import ManuscriptOrganizer from "@/components/manuscript-organizer";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -42,7 +43,7 @@ export default function SceneOutline({ projectId }: { projectId: number }) {
         </section>)}
       </aside>
       <section aria-label="Scene outline editor" className="flex-1 min-w-0 min-h-0 overflow-y-auto [scrollbar-gutter:stable] p-4 sm:p-6" key={selected?.id || "empty"}>
-        {selected ? <div className="max-w-3xl mx-auto space-y-4"><div className="flex flex-wrap items-center justify-between gap-2"><h2 className="text-xl font-semibold">Plan this scene</h2><Button asChild><Link href={`/project/${projectId}/write?chapter=${selected.chapterId}&scene=${selected.id}`}>Write this scene →</Link></Button></div><ScenePlanEditor key={selected.id} scene={selected} /></div> : <div className="max-w-xl mx-auto py-8 space-y-4"><h2 className="text-xl font-semibold">{selectedId ? "Scene unavailable" : "Build your scene outline"}</h2><p className="text-muted-foreground">{selectedId ? "Choose another scene from this project's outline." : "Bring Storyboard plot points through the Blueprint Wizard, or add scenes from scratch. Flesh out each scene with a summary and optional story beats, then open it in Write."}</p><p className="text-sm text-muted-foreground">You can begin writing at any point. Planning is optional.</p></div>}
+        {selected ? <div className="max-w-3xl mx-auto space-y-4"><div className="flex flex-wrap items-center justify-between gap-2"><h2 className="text-xl font-semibold">Plan this scene</h2><Button asChild><Link href={`/project/${projectId}/write?chapter=${selected.chapterId}&scene=${selected.id}`}>Write this scene →</Link></Button></div><ScenePlanEditor key={selected.id} scene={selected} /><div className="rounded-lg border"><SceneBibleContext scene={selected}/></div></div> : <div className="max-w-xl mx-auto py-8 space-y-4"><h2 className="text-xl font-semibold">{selectedId ? "Scene unavailable" : "Build your scene outline"}</h2><p className="text-muted-foreground">{selectedId ? "Choose another scene from this project's outline." : "Bring Storyboard plot points through the Blueprint Wizard, or add scenes from scratch. Flesh out each scene with a summary and optional story beats, then open it in Write."}</p><p className="text-sm text-muted-foreground">You can begin writing at any point. Planning is optional.</p></div>}
       </section>
     </div>}
   </div>;

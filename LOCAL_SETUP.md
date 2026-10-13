@@ -59,3 +59,7 @@ No Render services were created or changed. This remains one React/Express appli
 ### Saved writing styles
 
 The expanded Write editor adds an account-level style library. For an existing database, run `npm run db:migrate:writing-styles` with the intended `DATABASE_URL` before starting the updated server. The additive migration has already been applied to this Mac's `quantum_quill` database. See [Write formatting](docs/WRITE_FORMATTING.md) for controls, persistence, and remaining publishing limitations.
+
+### Scene Story Bible connections
+
+Scene context cards and backlinks are now available in Write and Outline. See [the workflow and validation report](docs/SCENE_STORY_BIBLE.md). The additive `npm run db:migrate:scene-context` migration is already applied locally; run it with the intended `DATABASE_URL` when setting up another restored database, after the earlier migrations. It does not rewrite existing writing or Bible records.

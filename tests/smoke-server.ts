@@ -24,6 +24,11 @@ for (let i = 1; i <= 2; i++) await storage.createChapter({ projectId: project.id
 for (const entryType of ["characters", "groups_races", "locations", "events", "world_elements", "details", "research"]) {
   await storage.createStoryBibleEntry({ projectId: project.id, title: `Smoke ${entryType}`, entryType, content: "", metadata: {} });
 }
+const sceneChapter = await storage.createChapter({projectId:project.id,title:"Scene context walkthrough",writingMode:"scenes",order:3});
+const scene = await storage.createScene({projectId:project.id,chapterId:sceneChapter.id,title:"An unexpected visitor",content:"<p>The visitor waited beside the old harbor.</p>",summary:"A quiet arrival becomes a difficult choice.",order:0});
+const cast = await storage.createStoryBibleEntry({projectId:project.id,title:"Mara Vale",entryType:"characters",content:"A navigator who trusts charts more than people.",metadata:{}});
+await storage.createStoryBibleEntry({projectId:project.id,title:"Old Harbor",entryType:"locations",content:"A fogbound trading port with a ruined lighthouse.",metadata:{}});
+await storage.putSceneContext({sceneId:scene.id,projectId:project.id,revision:1,links:[{entryId:cast.id,role:"viewpoint",note:"She recognizes the visitor before anyone else."}]});
 for (let i = 1; i <= 2; i++) await storage.createOutlineItem({ projectId: project.id, title: `Outline ${i}`, content: `<p>Synthetic outline ${i}.</p>`, order: i, parentId: null });
 for (const template of plotTemplates) await storage.createPlotStructureTemplate(template);
 const template = (await storage.getAllPlotStructureTemplates())[0];
@@ -51,6 +56,12 @@ for (const name of ["updateScene", "updateChapter", "updateOutlineItem", "update
     return original(id, patch, base);
   }) as typeof storage[typeof name];
 }
+const putSceneContext = storage.putSceneContext.bind(storage);
+storage.putSceneContext = async row => {
+  if(writesOffline) throw Object.assign(new Error("Synthetic write outage. Your draft is kept."),{status:503});
+  if(saveDelay) await new Promise(resolve=>setTimeout(resolve,saveDelay));
+  return putSceneContext(row);
+};
 const app = createApp({ storage, secret: randomBytes(32).toString("hex"), uploadDir: mkdtempSync(path.join(tmpdir(), "qq-smoke-uploads-")) });
 // Fixture-only controls on the loopback synthetic server. Never mounted in the app.
 app.get("/__fixture", async (_req, res) => {

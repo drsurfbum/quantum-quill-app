@@ -279,3 +279,13 @@ export const creationRequests = pgTable("creation_requests", {
   result: jsonb("result").notNull(), createdAt: timestamp("created_at").notNull().defaultNow(),
 }, table => [primaryKey({ columns: [table.scope, table.requestId] })]);
 export type CreationRequest = typeof creationRequests.$inferSelect;
+
+// Scene -> Bible endpoints are explicit; IDs are never confused with Bible -> Bible links.
+// One independently revisioned document lets reference edits use the durable draft queue.
+export const sceneBibleContexts = pgTable("scene_bible_contexts", {
+  sceneId: integer("scene_id").primaryKey().references(() => scenes.id, {onDelete:"restrict"}),
+  projectId: integer("project_id").notNull().references(() => projects.id, {onDelete:"restrict"}),
+  revision: integer("revision").notNull().default(0),
+  links: jsonb("links").$type<import("./scene-context").SceneBibleLink[]>().notNull().default([]),
+}, table => [index("scene_bible_contexts_project").on(table.projectId), check("scene_bible_contexts_revision_check", sql`${table.revision} >= 0`), check("scene_bible_contexts_links_check", sql`jsonb_typeof(${table.links}) = 'array'`)]);
+export type SceneContextRow = typeof sceneBibleContexts.$inferSelect;

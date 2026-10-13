@@ -1,3 +1,4 @@
+import { sceneBibleContexts, type SceneContextRow } from "@shared/schema";
 import type { ManuscriptOrder } from "@shared/manuscript";
 import { scenes, creationRequests, type Scene, type InsertScene, type CreationRequest } from "@shared/schema";
 import { bibleRelationships, type BibleRelationshipRow } from "@shared/schema";
@@ -35,6 +36,10 @@ function baseCondition(table: any, base?: Record<string, unknown>) {
 }
 
 export class DatabaseStorage implements IStorage {
+  async getSceneContext(sceneId: number) { const [row] = await this.database.select().from(sceneBibleContexts).where(eq(sceneBibleContexts.sceneId,sceneId)); return row; }
+  async getProjectSceneContexts(projectId: number) { return this.database.select().from(sceneBibleContexts).where(eq(sceneBibleContexts.projectId,projectId)); }
+  // Only called under the same project lock used by Bible updates/deletion.
+  async putSceneContext(row: SceneContextRow) { const [result] = await this.database.insert(sceneBibleContexts).values(row).onConflictDoUpdate({target:sceneBibleContexts.sceneId,set:row}).returning(); return result; }
   sessionStore: session.Store;
 
   constructor(private database: Pick<typeof db, "select" | "insert" | "update" | "delete" | "transaction" | "execute"> = db, store?: session.Store) {

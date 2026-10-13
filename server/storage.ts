@@ -1,3 +1,4 @@
+import type { SceneContextRow } from "@shared/schema";
 import type { ManuscriptOrder } from "@shared/manuscript";
 import type { Scene, InsertScene, CreationRequest } from "@shared/schema";
 import type { BibleRelationshipRow } from "@shared/schema";
@@ -21,6 +22,9 @@ import session from "express-session";
 import createMemoryStore from "memorystore";
 
 export interface IStorage {
+  getSceneContext(sceneId: number): Promise<SceneContextRow | undefined>;
+  getProjectSceneContexts(projectId: number): Promise<SceneContextRow[]>;
+  putSceneContext(row: SceneContextRow): Promise<SceneContextRow>;
   applyManuscriptOrder(projectId: number, order: ManuscriptOrder): Promise<void>;
   withReadSnapshot<T>(work: (storage: IStorage) => Promise<T>): Promise<T>;
   withCreationTransaction<T>(scope: number, work: (storage: IStorage) => Promise<T>): Promise<T>;
@@ -107,6 +111,10 @@ export interface IStorage {
 }
 
 export class MemStorage implements IStorage {
+  private sceneContexts = new Map<number, SceneContextRow>();
+  async getSceneContext(sceneId: number) { return this.sceneContexts.get(sceneId); }
+  async getProjectSceneContexts(projectId: number) { return [...this.sceneContexts.values()].filter(row=>row.projectId===projectId); }
+  async putSceneContext(row: SceneContextRow) { this.sceneContexts.set(row.sceneId,row); return row; }
   async withReadSnapshot<T>(work: (storage: IStorage) => Promise<T>): Promise<T> { return work(this); }
   async applyManuscriptOrder(projectId: number, order: ManuscriptOrder): Promise<void> {
     // Validate every row before mutating any. This mirrors the database transaction.

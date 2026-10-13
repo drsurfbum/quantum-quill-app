@@ -41,6 +41,8 @@ A safe first UI change is a shared collapsible field-group component, followed b
 
 ## 4. Bring Bible context into Write
 
+**Implemented October 13:** scene cast/viewpoint/location/reference links, read-only cards in Write, the shared picker in Outline, scene-specific notes, durable recovery and Bible backlinks. See [implementation and verification](SCENE_STORY_BIBLE.md). The following source analysis explains the approach. Automatic scanning and inline mentions remain future work.
+
 Antigravity's strongest architectural idea is the connection between a scene, its plot beat and its cast/location context. The restored scene IDs now provide a clean attachment point. Next, add a scene reference table or extend the relationship service with explicitly typed scene endpoints; do not pretend a scene ID is a Bible-entry ID.
 
 Use the existing searchable picker and ownership checks. A writer could choose a scene's cast, viewpoint and location, then open concise Bible cards beside the manuscript. Names should resolve live from IDs, with backlinks from the Bible to the relevant scenes. Inline mentions can follow after that foundation. This should be manual and predictable before automatic entity scanning; name matching alone cannot safely distinguish aliases or two characters with the same name.

@@ -3,7 +3,7 @@ import { canonical } from "@shared/draft";
 
 const recordSchema = z.object({
   version: z.literal(1), id: z.string(), owner: z.number().int().positive(),
-  projectId: z.number().int().positive().optional(), url: z.string().regex(/^\/api\/(chapters|scenes|outline|story-bible|plot-structure-sections)\/\d+$/),
+  projectId: z.number().int().positive().optional(), url: z.string().regex(/^\/api\/(?:(?:chapters|scenes|outline|story-bible|plot-structure-sections)\/\d+|scenes\/\d+\/context)$/),
   listUrl: z.string().optional(), title: z.string(), updatedAt: z.string(),
   baseRevision: z.number().int().nonnegative().optional(),
   base: z.record(z.unknown()), patch: z.record(z.unknown()),

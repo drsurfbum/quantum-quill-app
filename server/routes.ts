@@ -1,3 +1,4 @@
+import { readSceneContext, saveSceneContext, sceneUses } from "./scene-context";
 import { imageType, safeImageName, readProjectImage, userCanReadImage } from "./upload-access";
 import { manuscriptStructure, organizeManuscript } from "./manuscript";
 import { collectExport, exportOptions, renderExport } from "./export";
@@ -186,6 +187,17 @@ export function registerRoutes(app: Express, storage: IStorage, directory = path
     const scene = await storage.getScene(routeId(req.params.id));
     if (!scene) fail(404, "Scene not found"); await projectFor(req, scene.projectId); return scene;
   };
+  app.get("/api/scenes/:id/context", handler(async (req,res) => res.json(await readSceneContext(storage,await sceneFor(req)))));
+  app.put("/api/scenes/:id/context", handler(async (req,res) => {
+    const scene = await sceneFor(req), {patch,base,revision} = draftBody(req.body);
+    res.json(await saveSceneContext(storage,scene,patch,checkedBase(base,revision)));
+  }));
+  app.get("/api/story-bible/:id/scene-uses", handler(async (req,res) => {
+    const entry = await storage.getStoryBibleEntry(routeId(req.params.id));
+    if (!entry) fail(404,"Entry not found");
+    await projectFor(req,entry.projectId);
+    res.json(await storage.withReadSnapshot(scoped=>sceneUses(scoped,entry.projectId,entry.id)));
+  }));
   app.get("/api/scenes/:id", handler(async (req, res) => res.json(await sceneFor(req))));
   app.post("/api/projects/:projectId/scenes", handler(async (req, res) => {
     const projectId = routeId(req.params.projectId); await projectFor(req, projectId);

@@ -33,7 +33,7 @@ export function RelationshipTarget({ entry }: { entry?: StoryBibleEntry }) {
 }
 
 /** The same searchable target picker is used for every relationship kind. */
-export function EntryPicker({ entries, sourceId, types, value, onChange, onStub }: { entries: StoryBibleEntry[]; sourceId: number; types: readonly string[]; value: number; onChange: (id: number) => void; onStub: (title: string) => void }) {
+export function EntryPicker({ entries, sourceId, types, value, onChange, onStub }: { entries: StoryBibleEntry[]; sourceId?: number; types: readonly string[]; value: number; onChange: (id: number) => void; onStub?: (title: string) => void }) {
   const [search, setSearch] = useState("");
   const choices = entries.filter(entry => entry.id !== sourceId && types.includes(entry.entryType) && !bibleEntryArchived(entry) && entry.title.toLocaleLowerCase().includes(search.toLocaleLowerCase()));
   const selected = entries.find(entry => entry.id === value);
@@ -44,7 +44,7 @@ export function EntryPicker({ entries, sourceId, types, value, onChange, onStub 
       {choices.map(entry => <button key={entry.id} type="button" aria-pressed={entry.id === value} className={`block w-full rounded px-2 py-2 text-left text-sm hover:bg-accent ${entry.id === value ? "bg-accent text-accent-foreground" : ""}`} onClick={() => onChange(entry.id)}>{entry.title}<span className="ml-2 text-xs text-muted-foreground">{nameOfType(entry.entryType)}</span></button>)}
       {!choices.length && <p className="text-sm text-muted-foreground">No active entries match this search.</p>}
     </div>
-    <Button type="button" size="sm" variant="outline" onClick={() => onStub(search.trim())}>Create a new stub…</Button>
+    {onStub && <Button type="button" size="sm" variant="outline" onClick={() => onStub(search.trim())}>Create a new stub…</Button>}
     <p className="text-xs text-muted-foreground">Archived entries stay linked, but cannot be added as new targets.</p>
   </div>;
 }
