@@ -44,3 +44,15 @@ node --import tsx tests/postgres-scene-context.ts <backup.dump>
 ```
 
 For application rollback, use the previous code and retain the additive table so newly written references remain recoverable. Never drop a working context table or restore an old backup over new writing. Restore backups into a separate database for inspection. This feature does not apply the gated Bible contract conversion and does not deploy to Render.
+
+## Find missing connections — October 14, 2026
+
+In **Write → Context → Story Bible**, choose **Find missing connections** to scan the current scene's live editor text, including unsaved writing. This review opens over the workspace; it does not remount or move the prose editor. Scanning and skipping are read-only. Nothing is sent to an external service, and the scan does not create new Bible entries.
+
+Suggestions match this project's active Bible entries by title, quoted nicknames, explicit alias fields, and conservative name variations (for example, a character's surname or a ship name without its prefix). Matches respect Unicode word boundaries and can span formatting marks. Full names take precedence over contained fragments; shared names are flagged for review. Existing scene references and inline links are excluded. Up to three passages explain each suggestion. This is name matching, not a semantic assessment: pronouns, unnamed participants, implied settings, and names absent from the Bible are not detected.
+
+Every suggestion defaults to **Reference · mentioned**. The writer can choose **Cast · participates** for a character or **Location · scene setting** for a location before adding it. Viewpoint remains an explicit decision in the existing scene editor. Adding preserves existing roles and notes, does not duplicate an already connected ID, and uses the existing revisioned, account/project-scoped draft queue. The manual context editor and scanner are never mounted simultaneously, so an older local form cannot replace a newly added connection. Offline additions remain recoverable; concurrent reference changes require review. A changed editor document requires a fresh scan before adding more suggestions.
+
+The first version scans one scene at a time. It never inserts inline marks, changes prose or formatting, scans plan/beat text, or automatically applies suggestions. There is no database migration. Focused tests cover matching and ambiguity, scope/archive filtering, duplicate/role limits, pending manual notes, editor identity and HTML preservation, offline recovery, stale scans, account switches, and concurrent-tab conflicts.
+
+Validation for this addition: **380 tests across 36 suites passed**, plus TypeScript and the production build. The existing bundle-size advisory is unchanged.

@@ -1,4 +1,6 @@
 import { useState } from "react";
+import type { Editor } from "@tiptap/core";
+import SceneConnectionScan from "./scene-connection-scan";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import type { Scene, StoryBibleEntry } from "@shared/schema";
@@ -30,14 +32,14 @@ export function bibleCardSummary(entry: StoryBibleEntry) {
   return text.length > 340 ? `${text.slice(0,340)}…` : text;
 }
 const roleList = Object.keys(SCENE_ROLES) as SceneRole[];
-type CardOptions = {onOpenEntry?:(id:number)=>void;selectedEntryId?:number};
-export default function SceneBibleContext({scene, compact = false, onOpenEntry, selectedEntryId}: {scene:Scene; compact?:boolean} & CardOptions) {
+type CardOptions = {scanEditor?:Editor;onOpenEntry?:(id:number)=>void;selectedEntryId?:number};
+export default function SceneBibleContext({scene, compact = false, onOpenEntry, selectedEntryId, scanEditor}: {scene:Scene; compact?:boolean} & CardOptions) {
   const url = `/api/scenes/${scene.id}/context`;
   const context = useQuery<SceneContext>({queryKey:[url],staleTime:0,refetchOnWindowFocus:true});
   if (!context.data) return <div className="p-4">{context.error ? <><p role="alert" className="text-sm text-destructive">Scene references could not load. {context.error.message}</p><Button size="sm" variant="outline" onClick={()=>void context.refetch()}>Retry references</Button></> : <p className="text-sm text-muted-foreground">Loading scene references…</p>}</div>;
-  return <ContextEditor key={scene.id} scene={scene} initial={context.data} compact={compact} onOpenEntry={onOpenEntry} selectedEntryId={selectedEntryId} />;
+  return <ContextEditor key={scene.id} scene={scene} initial={context.data} compact={compact} onOpenEntry={onOpenEntry} selectedEntryId={selectedEntryId} scanEditor={scanEditor} />;
 }
-export function ContextEditor({scene, initial, compact = false, onOpenEntry, selectedEntryId}: {scene:Scene;initial:SceneContext;compact?:boolean} & CardOptions) {
+export function ContextEditor({scene, initial, compact = false, onOpenEntry, selectedEntryId, scanEditor}: {scene:Scene;initial:SceneContext;compact?:boolean} & CardOptions) {
   const url = `/api/scenes/${scene.id}/context`;
   const [value, update] = useEditorDraft(withPendingEdits(url,initial));
   const autosave = useAutosave(url);
@@ -62,6 +64,7 @@ export function ContextEditor({scene, initial, compact = false, onOpenEntry, sel
     try { await prepareManuscriptAction(scene.projectId); navigate(`/project/${scene.projectId}/story-bible?entry=${entry.id}&fromScene=${scene.id}`); }
     catch(cause) { setError(cause instanceof Error ? cause.message : "Resolve pending writing before opening the entry."); }
   }
+  if (scanEditor) return <SceneConnectionScan scene={scene} editor={scanEditor} entries={entries} links={value.links} onChange={change} autosave={autosave} recovery={recovery} entriesError={entriesQuery.isError || entriesQuery.isLoading} />;
   if (selectedEntryId) {
     const target=entries.find(entry=>entry.id===selectedEntryId);
     const links=value.links.filter(link=>link.entryId===selectedEntryId);
