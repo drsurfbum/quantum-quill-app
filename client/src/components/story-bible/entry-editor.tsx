@@ -1,4 +1,5 @@
 import type { StoryBibleEntry } from "@shared/schema";
+import { ImportedSource } from "./imported-source";
 import { EnhancedBibleEditor } from "@/components/story-bible/enhanced-bible-editor";
 import { CharacterEditor } from "@/components/story-bible/character-editor";
 import { GroupsRacesEditor } from "@/components/story-bible/groups-races-editor";
@@ -8,7 +9,11 @@ import { WorldElementsEditor } from "@/components/story-bible/world-elements-edi
 import { DetailsEditor } from "@/components/story-bible/details-editor";
 import { ResearchEditor } from "@/components/story-bible/research-editor";
 
-export function EntryEditor({entry,projectId,onClose}:{entry:StoryBibleEntry;projectId:number;onClose:()=>void}) {
+type Props = {entry:StoryBibleEntry;projectId:number;onClose:()=>void};
+export function EntryEditor(props:Props) {
+  return <><TypedEntryEditor {...props}/><ImportedSource entry={props.entry}/></>;
+}
+function TypedEntryEditor({entry,projectId,onClose}:Props) {
     switch (entry.entryType) {
       case "characters":
         return <CharacterEditor entry={entry} projectId={projectId} onClose={onClose} />;

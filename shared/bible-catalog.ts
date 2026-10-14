@@ -517,12 +517,12 @@ const valued: Record<string, Record<string, Array<{ value: string; label: string
   },
   groups_races: {
     status: [{"value": "active", "label": "Active"}, {"value": "defunct", "label": "Defunct"}, {"value": "secret", "label": "Secret/Hidden"}],
-    groupCategory: [{"value": "species", "label": "Species/Race"}, {"value": "faction", "label": "Faction/Organization"}, {"value": "clan", "label": "Tribe/Clan"}, {"value": "government", "label": "Government/Political Body"}, {"value": "guild", "label": "Company/Guild"}],
+    groupCategory: [{"value": "species", "label": "Species/Race"}, {"value": "faction", "label": "Faction/Organization"}, {"value": "clan", "label": "Tribe/Clan"}, {"value": "government", "label": "Government/Political Body"}, {"value": "guild", "label": "Company/Guild"}, {"value":"cult","label":"Cult"}, {"value":"culture","label":"Culture"}, {"value":"gang","label":"Gang"}, {"value":"institution","label":"Institution"}],
   },
   locations: {
     environment: [{"value": "desert", "label": "Desert"}, {"value": "forest", "label": "Forest"}, {"value": "ice", "label": "Ice/Arctic"}, {"value": "ocean", "label": "Ocean/Aquatic"}, {"value": "volcanic", "label": "Volcanic"}, {"value": "urban", "label": "Urban"}, {"value": "industrial", "label": "Industrial"}, {"value": "space", "label": "Space/Void"}, {"value": "underground", "label": "Underground"}, {"value": "mountain", "label": "Mountain/Highland"}, {"value": "tropical", "label": "Tropical"}, {"value": "artificial", "label": "Artificial"}],
     status: [{"value": "inhabited", "label": "Inhabited"}, {"value": "abandoned", "label": "Abandoned"}, {"value": "destroyed", "label": "Destroyed"}, {"value": "hidden", "label": "Hidden/Secret"}, {"value": "construction", "label": "Under Construction"}],
-    locationType: [{"value": "planet", "label": "Planet"}, {"value": "moon", "label": "Moon"}, {"value": "asteroid", "label": "Asteroid"}, {"value": "city", "label": "City"}, {"value": "station", "label": "Station"}, {"value": "structure", "label": "Structure/Building"}, {"value": "region", "label": "Region/Territory"}, {"value": "dimension", "label": "Dimension/Realm"}],
+    locationType: [{"value": "planet", "label": "Planet"}, {"value": "moon", "label": "Moon"}, {"value": "asteroid", "label": "Asteroid"}, {"value": "city", "label": "City"}, {"value": "station", "label": "Station"}, {"value": "structure", "label": "Structure/Building"}, {"value": "region", "label": "Region/Territory"}, {"value": "dimension", "label": "Dimension/Realm"}, {"value":"spacecraft","label":"Spaceship"}],
   },
 };
 // Aliases have the same meaning. Ambiguous labels remain separate choices.

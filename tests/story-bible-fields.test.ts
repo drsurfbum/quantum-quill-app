@@ -546,3 +546,11 @@ it('shared archive action retains links and supports restoring every entry type'
  await until(()=>!!button(container,'Restore entry')); await click(button(container,'Restore entry')); await until(()=>onOpen.mock.calls.length===2);
  expect(onOpen.mock.calls[1][0].isArchived).toBe(false);
 });
+
+it('keeps imported template scaffolding out of search while preserving current facts',()=>{
+ const imported={title:'Navigator',entryType:'characters',content:'Raised on a moon',metadata:{age:'33',_notionImport:{originalMarkdown:'Walter White example scaffold',notes:[{text:'Old source'}]}},tags:[]} as any;
+ expect(bibleEntrySearchText(imported)).toContain('raised on a moon');
+ expect(bibleEntrySearchText(imported)).toContain('33');
+ expect(bibleEntrySearchText(imported)).not.toContain('walter white');
+ expect(bibleEntrySearchText(imported)).not.toContain('old source');
+});

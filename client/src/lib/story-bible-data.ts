@@ -7,7 +7,9 @@ export function bibleEntryArchived(entry: StoryBibleEntry) {
 }
 function textValues(value: unknown): string {
   if (Array.isArray(value)) return value.map(textValues).join(' ');
-  if (value && typeof value === 'object') return Object.values(value).map(textValues).join(' ');
+  // Source snapshots contain template instructions and unrelated examples. Search
+  // the writer's current fields, not private import/compatibility envelopes.
+  if (value && typeof value === 'object') return Object.entries(value).filter(([key])=>!key.startsWith('_')).map(([,item])=>textValues(item)).join(' ');
   return typeof value === 'string' ? value : '';
 }
 export function bibleEntrySearchText(entry: StoryBibleEntry) {
