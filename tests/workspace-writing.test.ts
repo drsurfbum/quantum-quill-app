@@ -71,3 +71,19 @@ it('failed linked writing stays in account/project-scoped recovery without repla
   expect(container.textContent).toContain('Changes need review');await click('Hide context');expect(editor()).toBe(original);expect(editor().getHTML()).toBe(draft.patch.content);
   getSaveQueue(`/api/scenes/${id}`).discard();journal.remove(draft);
 });
+it('opens the missing-connection review without remounting prose and refreshes cards after adding',async()=>{
+  scene.content='<p>The <strong>Mara Vale</strong> waits.</p>';
+  records[`/api/scenes/${id}/context`].links=[];
+  queryClient.setQueryData([`/api/scenes/${id}/context`],records[`/api/scenes/${id}/context`]);
+  await mount();const original=editor(),html=original.getHTML();
+  await click('Find missing connections');
+  await act(async()=>{await jest.advanceTimersByTimeAsync(20);});
+  expect(document.querySelector('[role="dialog"]')?.textContent).toContain('Mara Vale');
+  expect(editor()).toBe(original);
+  await click('Add connection to Mara Vale');await act(async()=>{await flushPendingSaves();});
+  const close=[...document.querySelectorAll('[role="dialog"] button')].find(b=>b.textContent==='Close') as HTMLButtonElement;
+  await act(async()=>close.click());
+  expect(editor()).toBe(original);expect(editor().getHTML()).toBe(html);
+  expect(records[`/api/scenes/${id}/context`].links).toEqual([{entryId:id,role:'reference',note:''}]);
+  expect(container.textContent).toContain('Mara ValeScene reference');
+});
