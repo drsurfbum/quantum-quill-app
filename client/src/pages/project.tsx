@@ -1,11 +1,12 @@
+import WorkspaceHeader from "@/components/workspace-header";
 import { manuscriptStats } from "@/lib/manuscript-stats";
 import { useQuery } from "@tanstack/react-query";
 import type { Scene } from "@shared/schema";
 import ExportModal from "@/components/export-modal";
 import { useParams, useLocation, Link, Route, Switch } from "wouter";
 import SidebarNavigation from "@/components/sidebar-navigation";
-import { 
-  Edit3, Grid, ListTree, BookOpen, 
+import {
+  Edit3, Grid, ListTree, BookOpen,
   ExternalLink, Share2, Loader2, Pencil, MoreHorizontal,
   TrendingUp, FileText, Clock, Layers, PenTool
 } from "lucide-react";
@@ -40,7 +41,7 @@ export default function Project() {
   const [selectedTab, setSelectedTab] = useState("overview");
   const [isCollapsed, setIsCollapsed] = useState(false);
   const isMobile = useIsMobile();
-  
+
   // State for edit project dialog
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editTitle, setEditTitle] = useState("");
@@ -70,10 +71,10 @@ export default function Project() {
     );
   }
 
-  const formattedDate = project?.createdAt ? 
-    format(new Date(project.createdAt), 'MMM d, yyyy') : 
+  const formattedDate = project?.createdAt ?
+    format(new Date(project.createdAt), 'MMM d, yyyy') :
     'Unknown date';
-    
+
   // Handler for opening edit dialog
   const handleOpenEditDialog = () => {
     if (project) {
@@ -82,11 +83,11 @@ export default function Project() {
       setEditDialogOpen(true);
     }
   };
-  
+
   // Handler for saving project edits
   const handleSaveProject = () => {
     if (!id) return;
-    
+
     updateProject(
       {
         id: Number(id),
@@ -116,23 +117,10 @@ export default function Project() {
     <>
       <div className="h-screen flex flex-col overflow-hidden bg-background">
         <div className="flex flex-row flex-1 w-full h-full overflow-hidden">
-          <SidebarNavigation onCollapsedChange={setIsCollapsed} />
-          
-          <main className="flex-grow overflow-auto flex flex-col w-full" style={{ marginLeft: isMobile && isCollapsed ? '56px' : '0' }}>
-            <header className="min-h-16 border-b border-neutral-200 dark:border-neutral-800 flex flex-wrap items-center justify-between px-4 sm:px-6 py-3 sticky top-0 bg-background z-10">
-              <div className="flex items-center mr-4">
-                {isLoading ? (
-                  <Skeleton className="h-6 w-48" />
-                ) : (
-                  <h1 className="text-lg sm:text-xl font-semibold truncate max-w-[200px] sm:max-w-xs">{project?.title}</h1>
-                )}
-              </div>
-              <div className="flex items-center space-x-2 sm:space-x-4">
-                <Button variant="ghost" disabled>Share · planned</Button>
-                {project && <ExportModal projectId={project.id} projectTitle={project.title} />}
-                {project && <ExportModal projectId={project.id} projectTitle={project.title} preview />}
-              </div>
-            </header>
+
+
+          <main className="flex-grow overflow-auto flex flex-col w-full">
+            {project && <WorkspaceHeader project={project} />}
 
             {/* Show project overview on base route */}
             {location === `/project/${id}` ? (
@@ -145,17 +133,17 @@ export default function Project() {
                       Created on {formattedDate}
                     </p>
                   </div>
-                  
+
                   {/* Streamlined toolbar */}
                   <div className="flex items-center gap-2">
-                    <Button 
+                    <Button
                       onClick={handleOpenEditDialog}
                       className="bg-primary hover:bg-primary/90 text-primary-foreground"
                     >
                       <Pencil className="h-4 w-4 mr-2" />
                       Edit Project
                     </Button>
-                    
+
 
                   </div>
                 </div>
@@ -174,7 +162,7 @@ export default function Project() {
                         </div>
                       </div>
                     </Card>
-                    
+
                     <Card className="p-4">
                       <div className="flex items-center gap-3">
                         <div className="p-2 bg-green-100 dark:bg-green-900/20 rounded-lg">
@@ -186,7 +174,7 @@ export default function Project() {
                         </div>
                       </div>
                     </Card>
-                    
+
                     <Card className="p-4">
                       <div className="flex items-center gap-3">
                         <div className="p-2 bg-purple-100 dark:bg-purple-900/20 rounded-lg">
@@ -199,7 +187,7 @@ export default function Project() {
                       </div>
                     </Card>
                   </div>
-                  
+
                   {/* Progress Bar */}
                   <div className="mb-6">
                     <div className="flex items-center justify-between mb-2">
@@ -224,7 +212,7 @@ export default function Project() {
                       Statistics
                     </TabsTrigger>
                   </TabsList>
-                  
+
                   <TabsContent value="overview" className="mt-6">
                     {/* Project Description Section */}
                     <div className="mb-8 space-y-6">
@@ -244,7 +232,7 @@ export default function Project() {
                       <div className="space-y-4">
                         <h3 className="text-lg font-semibold text-foreground">Writing Tools</h3>
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                          <Button 
+                          <Button
                             onClick={() => setLocation(`/project/${id}/write`)}
                             className="h-auto flex flex-col items-center gap-3 py-6 bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm hover:shadow-md transition-all"
                           >
@@ -254,9 +242,9 @@ export default function Project() {
                               <span className="text-xs opacity-90">Create and edit chapters</span>
                             </div>
                           </Button>
-                          
-                          <Button 
-                            variant="outline" 
+
+                          <Button
+                            variant="outline"
                             onClick={() => setLocation(`/project/${id}/storyboard`)}
                             className="h-auto flex flex-col items-center gap-3 py-6 hover:bg-muted/50 hover:border-muted-foreground/50 transition-all"
                           >
@@ -266,9 +254,9 @@ export default function Project() {
                               <span className="text-xs text-muted-foreground">Visual story planning</span>
                             </div>
                           </Button>
-                          
-                          <Button 
-                            variant="outline" 
+
+                          <Button
+                            variant="outline"
                             onClick={() => setLocation(`/project/${id}/outline`)}
                             className="h-auto flex flex-col items-center gap-3 py-6 hover:bg-muted/50 hover:border-muted-foreground/50 transition-all"
                           >
@@ -278,9 +266,9 @@ export default function Project() {
                               <span className="text-xs text-muted-foreground">Structure your story</span>
                             </div>
                           </Button>
-                          
-                          <Button 
-                            variant="outline" 
+
+                          <Button
+                            variant="outline"
                             onClick={() => setLocation(`/project/${id}/story-bible`)}
                             className="h-auto flex flex-col items-center gap-3 py-6 hover:bg-muted/50 hover:border-muted-foreground/50 transition-all"
                           >
@@ -294,7 +282,7 @@ export default function Project() {
                       </div>
                     </div>
                   </TabsContent>
-                  
+
                   <TabsContent value="chapters" className="mt-6">
                     <Card className="shadow-sm border border-border/50">
                       <CardHeader className="border-b border-border/50 bg-muted/20">
@@ -303,7 +291,7 @@ export default function Project() {
                             <CardTitle className="text-lg">Chapters</CardTitle>
                             <CardDescription>Manage your project chapters</CardDescription>
                           </div>
-                          <Button 
+                          <Button
                             onClick={() => setLocation(`/project/${id}/write`)}
                             size="sm"
                             className="bg-primary hover:bg-primary/90"
@@ -340,8 +328,8 @@ export default function Project() {
                                       <span>Updated {chapter.updatedAt ? format(new Date(chapter.updatedAt), 'MMM d, yyyy') : 'Unknown'}</span>
                                     </div>
                                   </div>
-                                  <Button 
-                                    variant="outline" 
+                                  <Button
+                                    variant="outline"
                                     size="sm"
                                     onClick={() => setLocation(`/project/${id}/write?chapter=${chapter.id}`)}
                                     className="hover:bg-primary hover:text-primary-foreground"
@@ -362,7 +350,7 @@ export default function Project() {
                                 Start writing your story by creating your first chapter.
                               </p>
                             </div>
-                            <Button 
+                            <Button
                               onClick={() => setLocation(`/project/${id}/write`)}
                               className="bg-primary hover:bg-primary/90"
                             >
@@ -374,7 +362,7 @@ export default function Project() {
                       </CardContent>
                     </Card>
                   </TabsContent>
-                  
+
                   <TabsContent value="statistics" className="mt-6">
                     <div className="space-y-6">
                       {/* Writing Progress Card */}
@@ -397,7 +385,7 @@ export default function Project() {
                               <h4 className="text-sm font-medium text-muted-foreground mb-1">Total Chapters</h4>
                               <p className="text-2xl font-bold">{chapters?.length || 0}</p>
                             </div>
-                            
+
                             <div className="border rounded-lg p-4 text-center">
                               <div className="flex items-center justify-center mb-2">
                                 <div className="p-2 bg-green-100 dark:bg-green-900/20 rounded-lg">
@@ -409,7 +397,7 @@ export default function Project() {
                                 {stats.characters.toLocaleString()}
                               </p>
                             </div>
-                            
+
                             <div className="border rounded-lg p-4 text-center">
                               <div className="flex items-center justify-center mb-2">
                                 <div className="p-2 bg-purple-100 dark:bg-purple-900/20 rounded-lg">
@@ -421,7 +409,7 @@ export default function Project() {
                                 {chapters?.filter(ch => ch.isDraft).length || 0}
                               </p>
                             </div>
-                            
+
                             <div className="border rounded-lg p-4 text-center">
                               <div className="flex items-center justify-center mb-2">
                                 <div className="p-2 bg-orange-100 dark:bg-orange-900/20 rounded-lg">
@@ -430,12 +418,12 @@ export default function Project() {
                               </div>
                               <h4 className="text-sm font-medium text-muted-foreground mb-1">Last Updated</h4>
                               <p className="text-sm font-bold">
-                                {chapters && chapters.length > 0 
+                                {chapters && chapters.length > 0
                                   ? (() => {
                                       const validDates = [...chapters, ...scenes]
                                         .map(ch => ch.updatedAt ? new Date(ch.updatedAt).getTime() : 0)
                                         .filter(time => time > 0);
-                                      return validDates.length > 0 
+                                      return validDates.length > 0
                                         ? format(new Date(Math.max(...validDates)), 'MMM d')
                                         : 'Never';
                                     })()
@@ -462,7 +450,7 @@ export default function Project() {
                                   const characterCount = stats.byChapter.get(chapter.id)?.characters || 0;
                                   const maxChars = Math.max(...[...stats.byChapter.values()].map(ch => ch.characters));
                                   const percentage = maxChars > 0 ? (characterCount / maxChars) * 100 : 0;
-                                  
+
                                   return (
                                     <div key={chapter.id} className="flex items-center gap-4 p-3 border rounded-lg hover:bg-muted/30 transition-colors">
                                       <span className="text-xs font-mono bg-muted text-muted-foreground px-2 py-1 rounded min-w-[2rem] text-center">
@@ -507,7 +495,7 @@ export default function Project() {
                       <Edit3 className="h-4 w-4 sm:mr-1" /> <span className="hidden xs:inline">Write</span>
                     </div>
                   </Link>
-                  
+
                   <Link href={`/project/${id}/storyboard`}>
                     <div className={cn(
                       "flex items-center gap-1 px-2 sm:px-3 py-2 rounded-none cursor-pointer whitespace-nowrap",
@@ -516,7 +504,7 @@ export default function Project() {
                       <Grid className="h-4 w-4 sm:mr-1" /> <span className="hidden xs:inline">Storyboard</span>
                     </div>
                   </Link>
-                  
+
                   <Link href={`/project/${id}/outline`}>
                     <div className={cn(
                       "flex items-center gap-1 px-2 sm:px-3 py-2 rounded-none cursor-pointer whitespace-nowrap",
@@ -525,7 +513,7 @@ export default function Project() {
                       <ListTree className="h-4 w-4 sm:mr-1" /> <span className="hidden xs:inline">Outline</span>
                     </div>
                   </Link>
-                  
+
                   <Link href={`/project/${id}/story-bible`}>
                     <div className={cn(
                       "flex items-center gap-1 px-2 sm:px-3 py-2 rounded-none cursor-pointer whitespace-nowrap",
@@ -540,7 +528,7 @@ export default function Project() {
           </main>
         </div>
       </div>
-      
+
       {/* Edit Project Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
         <DialogContent>
@@ -572,14 +560,14 @@ export default function Project() {
             </div>
           </div>
           <DialogFooter>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => setEditDialogOpen(false)}
             >
               Cancel
             </Button>
-            <Button 
-              onClick={handleSaveProject} 
+            <Button
+              onClick={handleSaveProject}
               disabled={!editTitle.trim() || isUpdating}
             >
               Save Changes

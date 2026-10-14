@@ -33,15 +33,20 @@ export function RelationshipTarget({ entry }: { entry?: StoryBibleEntry }) {
 }
 
 /** The same searchable target picker is used for every relationship kind. */
-export function EntryPicker({ entries, sourceId, types, value, onChange, onStub }: { entries: StoryBibleEntry[]; sourceId?: number; types: readonly string[]; value: number; onChange: (id: number) => void; onStub?: (title: string) => void }) {
-  const [search, setSearch] = useState("");
+export function EntryPicker({ entries, sourceId, types, value, onChange, onStub, initialSearch = "", onChoose }: { entries: StoryBibleEntry[]; sourceId?: number; types: readonly string[]; value: number; onChange: (id: number) => void; onStub?: (title: string) => void; initialSearch?: string; onChoose?: (id:number) => void }) {
+  const [search, setSearch] = useState(initialSearch);
+  const [active, setActive] = useState(0);
+  const listId = useId();
   const choices = entries.filter(entry => entry.id !== sourceId && types.includes(entry.entryType) && !bibleEntryArchived(entry) && entry.title.toLocaleLowerCase().includes(search.toLocaleLowerCase()));
   const selected = entries.find(entry => entry.id === value);
   return <div className="space-y-2 rounded-md border p-3">
-    <Input aria-label="Search entries" placeholder="Search by entry name…" value={search} onChange={event => setSearch(event.target.value)} />
+    <Input aria-label="Search entries" placeholder="Search by entry name…" role="combobox" aria-expanded="true" aria-controls={listId} aria-activedescendant={choices[active] ? `${listId}-${choices[active].id}` : undefined} value={search} onChange={event => {setSearch(event.target.value);setActive(0);}} onKeyDown={event=>{
+      if (event.key === "ArrowDown" || event.key === "ArrowUp") { event.preventDefault(); const next = Math.max(0,Math.min(choices.length-1,active+(event.key === "ArrowDown" ? 1 : -1)));setActive(next);document.getElementById(`${listId}-${choices[next]?.id}`)?.scrollIntoView?.({block:"nearest"}); }
+      if (event.key === "Enter" && choices[active]) {event.preventDefault(); (onChoose || onChange)(choices[active].id);}
+    }} />
     {selected && <p className="text-sm">Selected: <strong>{selected.title}</strong></p>}
-    <div role="group" aria-label="Matching entries" className="max-h-40 overflow-y-auto space-y-1">
-      {choices.map(entry => <button key={entry.id} type="button" aria-pressed={entry.id === value} className={`block w-full rounded px-2 py-2 text-left text-sm hover:bg-accent ${entry.id === value ? "bg-accent text-accent-foreground" : ""}`} onClick={() => onChange(entry.id)}>{entry.title}<span className="ml-2 text-xs text-muted-foreground">{nameOfType(entry.entryType)}</span></button>)}
+    <div id={listId} role="listbox" aria-label="Matching entries" className="max-h-40 overflow-y-auto space-y-1">
+      {choices.map((entry,index) => <button id={`${listId}-${entry.id}`} role="option" aria-selected={index === active} key={entry.id} type="button" aria-pressed={entry.id === value} className={`block w-full rounded px-2 py-2 text-left text-sm hover:bg-accent ${entry.id === value || index === active ? "bg-accent text-accent-foreground" : ""}`} onMouseEnter={()=>setActive(index)} onClick={() => (onChoose || onChange)(entry.id)}>{entry.title}<span className="ml-2 text-xs text-muted-foreground">{nameOfType(entry.entryType)}</span></button>)}
       {!choices.length && <p className="text-sm text-muted-foreground">No active entries match this search.</p>}
     </div>
     {onStub && <Button type="button" size="sm" variant="outline" onClick={() => onStub(search.trim())}>Create a new stub…</Button>}

@@ -29,6 +29,7 @@ beforeEach(()=>{
   jest.spyOn(global,"fetch").mockImplementation(async(url,init)=>{
     if(String(url)===listUrl)return new Response(JSON.stringify(entries));
     if(String(url)===`/api/scenes/${scene.id}`)return new Response(JSON.stringify({...scene,chapterId:55}));
+    if(String(url).endsWith('/writing-uses'))return new Response(JSON.stringify([]));
     if(String(url).endsWith('/scene-uses'))return new Response(JSON.stringify([{sceneId:scene.id,chapterId:1,sceneTitle:scene.title,chapterTitle:"Opening",links:stored.links}]));
     if(!init?.body)return new Response(JSON.stringify(stored));
     if(offline)throw new Error("Synthetic offline");

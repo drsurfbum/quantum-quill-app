@@ -1,29 +1,34 @@
+import { useQuery } from "@tanstack/react-query";
+import { useSearch } from "wouter";
+import type { Scene } from "@shared/schema";
+import { ChevronDown, ChevronRight, Plus, X } from "lucide-react";
+import AddScene from "./add-scene";
 import { prepareManuscriptAction } from "@/lib/manuscript-actions";
 import { queryClient } from "@/lib/queryClient";
 import ManuscriptOrganizer from "@/components/manuscript-organizer";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
-import { 
-  useProjectChapters, 
-  useCreateChapter, 
-  useUpdateChapter, 
-  useDeleteChapter 
+import {
+  useProjectChapters,
+  useCreateChapter,
+  useUpdateChapter,
+  useDeleteChapter
 } from "@/hooks/use-project";
 import { PlusCircle, FileText, MoreVertical, File } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
-import { 
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
   DialogFooter,
   DialogDescription
 } from "@/components/ui/dialog";
@@ -46,22 +51,28 @@ interface ChapterSidebarProps {
   projectId: string | number | undefined;
   selectedChapterId?: number;
   isVisible?: boolean;
+  onClose?:()=>void;
   onChapterSelect?: (chapterId: string) => void;
 }
 
-export default function ChapterSidebar({ projectId, selectedChapterId, isVisible = true, onChapterSelect }: ChapterSidebarProps) {
+export default function ChapterSidebar({ projectId, selectedChapterId, isVisible = true, onChapterSelect, onClose }: ChapterSidebarProps) {
   const [location, setLocation] = useLocation();
   const { toast } = useToast();
+  const {data:scenes=[],error:scenesError} = useQuery<Scene[]>({queryKey:[`/api/projects/${projectId}/scenes`],enabled:!!projectId});
+  const selectedSceneId=Number(new URLSearchParams(useSearch()).get("scene"));
+  const [collapsed,setCollapsed]=useState<Set<number>>(new Set());
+  const [adding,setAdding]=useState(false);
+  const toggle=(id:number)=>setCollapsed(previous=>{const next=new Set(previous);if(next.has(id))next.delete(id);else next.add(id);return next;});
   const { data: chapters = [], isLoading } = useProjectChapters(projectId);
   const { mutate: createChapter, isPending: isCreating } = useCreateChapter();
   const { mutate: updateChapter, isPending: isUpdating } = useUpdateChapter();
   const { mutate: deleteChapter, isPending: isDeleting } = useDeleteChapter();
-  
+
   // State for rename dialog
   const [renameDialogOpen, setRenameDialogOpen] = useState(false);
   const [chapterToRename, setChapterToRename] = useState<Chapter | null>(null);
   const [newChapterTitle, setNewChapterTitle] = useState("");
-  
+
   // State for delete confirmation
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteRevision,setDeleteRevision] = useState(0);
@@ -69,7 +80,7 @@ export default function ChapterSidebar({ projectId, selectedChapterId, isVisible
 
   const handleCreateChapter = (writingMode: "chapter" | "scenes" = "chapter") => {
     const nextOrder = chapters.length ? Math.max(...chapters.map(c => c.order)) + 1 : 0;
-    
+
     createChapter(
       {
         title: `Chapter ${chapters.length + 1}`,
@@ -107,7 +118,7 @@ export default function ChapterSidebar({ projectId, selectedChapterId, isVisible
   // Handler for saving renamed chapter
   const handleSaveRename = () => {
     if (!chapterToRename) return;
-    
+
     updateChapter(
       {
         id: chapterToRename.id, revision: chapterToRename.revision,
@@ -170,7 +181,7 @@ export default function ChapterSidebar({ projectId, selectedChapterId, isVisible
   // Handler for confirming chapter deletion
   const handleConfirmDelete = () => {
     if (!chapterIdToDelete || !projectId) return;
-    
+
     deleteChapter(
       {
         id: chapterIdToDelete,
@@ -183,7 +194,7 @@ export default function ChapterSidebar({ projectId, selectedChapterId, isVisible
             description: "Your chapter has been deleted successfully."
           });
           setDeleteDialogOpen(false);
-          
+
           // If the deleted chapter was selected, redirect to the project page
           if (chapterIdToDelete === selectedChapterId) {
             setLocation(`/project/${projectId}/write`);
@@ -203,109 +214,27 @@ export default function ChapterSidebar({ projectId, selectedChapterId, isVisible
   if (!isVisible) return null;
   return (
     <>
-      <div className={cn(
-        "border-r border-neutral-200 dark:border-neutral-800 flex flex-col overflow-hidden bg-neutral-50 dark:bg-neutral-900",
-        "absolute md:static transition-all duration-300 z-10",
-        isVisible ? "w-64 translate-x-0" : "w-0 -translate-x-full md:hidden"
-      )}>
-        <div className="p-3 border-b border-neutral-200 dark:border-neutral-800 flex justify-between items-center">
-          <h3 className="font-medium">Chapters</h3>
-          <DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon" aria-label="Add chapter" disabled={isCreating}><PlusCircle className="h-4 w-4" /></Button></DropdownMenuTrigger><DropdownMenuContent><DropdownMenuItem onSelect={() => handleCreateChapter("chapter")}>New chapter</DropdownMenuItem><DropdownMenuItem onSelect={() => handleCreateChapter("scenes")}>New scene chapter</DropdownMenuItem></DropdownMenuContent></DropdownMenu>
+      <aside aria-label="Manuscript" className="manuscript-binder shrink-0 flex flex-col min-h-0 border-r bg-muted/20">
+        <div className="h-16 px-3 flex items-center gap-1 shrink-0 border-b"><h3 className="font-semibold text-sm mr-auto">Manuscript</h3>
+          <DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Add chapter" disabled={isCreating}><Plus className="h-4 w-4" /></Button></DropdownMenuTrigger><DropdownMenuContent><DropdownMenuItem onSelect={()=>handleCreateChapter("chapter")}>New chapter · write directly</DropdownMenuItem><DropdownMenuItem onSelect={()=>handleCreateChapter("scenes")}>New scene chapter</DropdownMenuItem></DropdownMenuContent></DropdownMenu>
+          <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Close manuscript" onClick={onClose}><X className="h-4 w-4"/></Button>
         </div>
-        
-        <div className="p-2">{projectId && <ManuscriptOrganizer projectId={Number(projectId)} />}</div>
-        <ScrollArea className="flex-grow">
-          {isLoading ? (
-            <div className="p-4 text-center text-sm text-neutral-500 dark:text-neutral-400">
-              Loading chapters...
+        <div className="p-2 border-b">{projectId && <ManuscriptOrganizer projectId={Number(projectId)} />}</div>
+        <div className="flex-1 min-h-0 overflow-y-auto px-2 py-3 space-y-1">
+          {isLoading && <p className="p-2 text-sm">Loading chapters…</p>}
+          {scenesError && <p role="alert" className="p-2 text-sm text-destructive">Scenes could not load. Reload to retry.</p>}
+          {chapters.map((chapter,index)=>{const children=scenes.filter(scene=>scene.chapterId===chapter.id).sort((a,b)=>a.order-b.order || a.id-b.id);const selected=chapter.id===selectedChapterId;return <section key={chapter.id} className="pb-2">
+            <div className={`flex items-center gap-1 rounded-md group ${selected && chapter.writingMode!=="scenes" ? "bg-accent text-accent-foreground" : ""}`}>
+              {chapter.writingMode === "scenes" ? <button className="p-1 shrink-0" aria-label={`${collapsed.has(chapter.id) ? "Expand" : "Collapse"} ${chapter.title}`} aria-expanded={!collapsed.has(chapter.id)} onClick={()=>toggle(chapter.id)}>{collapsed.has(chapter.id) ? <ChevronRight className="h-3 w-3"/> : <ChevronDown className="h-3 w-3"/>}</button> : <span className="w-5 shrink-0"/>}
+              <button title={`${chapter.title} · ${chapter.isDraft ? "Draft" : "Completed"}`} className="flex-1 min-w-0 text-left py-2 text-xs font-semibold leading-5" onClick={()=>onChapterSelect?.(String(chapter.id))}><span className="text-muted-foreground mr-1 tabular-nums">{String(index+1).padStart(2,"0")}</span>{chapter.title}</button>
+              <DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-7 w-6 shrink-0" aria-label={`Options for ${chapter.title}`}><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger><DropdownMenuContent align="end"><DropdownMenuItem onSelect={()=>handleRenameChapter(chapter)}>Rename</DropdownMenuItem><DropdownMenuItem onSelect={()=>handleToggleChapterStatus(chapter)}>Mark as {chapter.isDraft ? "Complete" : "Draft"}</DropdownMenuItem><DropdownMenuItem onSelect={()=>handleDeleteChapter(chapter.id)}>Delete</DropdownMenuItem></DropdownMenuContent></DropdownMenu>
             </div>
-          ) : chapters.length === 0 ? (
-            <div className="p-4 text-center text-sm text-neutral-500 dark:text-neutral-400">
-              No chapters yet. Create one to get started.
-            </div>
-          ) : (
-            <ul className="p-2">
-              {chapters.map((chapter) => (
-                <li key={chapter.id} className="mb-1">
-                  <div className="flex flex-col">
-                    <Link 
-                      href={`/project/${projectId}/write?chapter=${chapter.id}`} 
-                      onClick={(e) => {
-                        // If onChapterSelect is provided, call it with the chapter id
-                        if (onChapterSelect) {
-                          e.preventDefault();
-                          onChapterSelect(String(chapter.id));
-                        }
-                      }}
-                      className={cn(
-                        "p-2 rounded-md flex items-center group relative",
-                        Number(selectedChapterId) === chapter.id 
-                          ? "bg-accent text-accent-foreground border border-border" 
-                          : "hover:bg-neutral-100 dark:hover:bg-neutral-800"
-                      )}>
-                      {/* Left indicator for selected chapter */}
-                      {Number(selectedChapterId) === chapter.id && (
-                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-foreground rounded-l-md"></div>
-                      )}
-                      
-                      {chapter.isDraft ? (
-                        <File className={cn(
-                          "h-4 w-4 mr-2 shrink-0",
-                          Number(selectedChapterId) === chapter.id 
-                            ? "text-foreground" 
-                            : "text-neutral-500 dark:text-neutral-400"
-                        )} />
-                      ) : (
-                        <FileText className={cn(
-                          "h-4 w-4 mr-2 shrink-0",
-                          Number(selectedChapterId) === chapter.id 
-                            ? "text-foreground" 
-                            : "text-neutral-500 dark:text-neutral-400"
-                        )} />
-                      )}
-                      <span className={cn(
-                        "text-sm font-medium min-w-0 break-words",
-                        Number(selectedChapterId) === chapter.id 
-                          ? "text-foreground" 
-                          : "",
-                        chapter.isDraft && "italic"
-                      )}>
-                        {chapter.title}
-                        {chapter.isDraft && " (Draft)"}
-                      </span>
-                      
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="ml-auto shrink-0 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 h-6 w-6"
-                            onClick={(e) => e.preventDefault()}
-                          >
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onSelect={() => handleRenameChapter(chapter)}>Rename</DropdownMenuItem>
-                          <DropdownMenuItem onSelect={() => handleToggleChapterStatus(chapter)}>
-                            Mark as {chapter.isDraft ? 'Complete' : 'Draft'}
-                          </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            className="text-red-500" 
-                            onSelect={() => handleDeleteChapter(chapter.id)}
-                          >
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </Link>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </ScrollArea>
-      </div>
+            {chapter.writingMode === "scenes" && !collapsed.has(chapter.id) && <ul className="ml-3 border-l pl-2 space-y-1">{children.map((scene,i)=>{const active=selected && (selectedSceneId===scene.id || (!selectedSceneId && i===0));const hasProse=!!scene.content?.replace(/<[^>]*>/g,"").trim();return <li key={scene.id}><Link aria-current={active ? "page" : undefined} title={`${scene.title} · ${hasProse ? "Draft" : "Planned"}`} href={`/project/${projectId}/write?chapter=${chapter.id}&scene=${scene.id}`} className={`flex items-start gap-2 rounded-md px-2 py-2 text-sm leading-5 ${active ? "bg-accent text-accent-foreground" : "hover:bg-muted"}`} onClick={()=>{if(window.innerWidth<850)onClose?.();}}><span className={`mt-1.5 w-1.5 h-1.5 rounded-full border shrink-0 ${hasProse ? "bg-current" : ""}`} aria-label={hasProse ? "Draft" : "Planned"}/><span className="line-clamp-2 break-words">{scene.title}</span></Link></li>;})}{!children.length && <li className="px-2 py-1 text-xs text-muted-foreground">No scenes yet</li>}</ul>}
+          </section>;})}
+        </div>
+        <div className="p-2 border-t shrink-0"><Button variant="ghost" size="sm" className="w-full justify-start gap-2" onClick={()=>setAdding(true)}><Plus className="h-4 w-4 shrink-0"/>Add scene</Button></div>
+      </aside>
+      <Dialog open={adding} onOpenChange={setAdding}><DialogContent><DialogHeader><DialogTitle>Add a scene</DialogTitle><DialogDescription>Choose a scene chapter or create a new one. Chapter prose stays intact.</DialogDescription></DialogHeader><AddScene projectId={Number(projectId)} onClose={()=>setAdding(false)} onCreated={scene=>{setAdding(false);setLocation(`/project/${projectId}/write?chapter=${scene.chapterId}&scene=${scene.id}`);if(window.innerWidth<850)onClose?.();}}/></DialogContent></Dialog>
 
       {/* Rename Chapter Dialog */}
       <Dialog open={renameDialogOpen} onOpenChange={setRenameDialogOpen}>
@@ -328,14 +257,14 @@ export default function ChapterSidebar({ projectId, selectedChapterId, isVisible
             </div>
           </div>
           <DialogFooter>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => setRenameDialogOpen(false)}
             >
               Cancel
             </Button>
-            <Button 
-              onClick={handleSaveRename} 
+            <Button
+              onClick={handleSaveRename}
               disabled={!newChapterTitle.trim() || isUpdating}
             >
               Save
@@ -355,7 +284,7 @@ export default function ChapterSidebar({ projectId, selectedChapterId, isVisible
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction 
+            <AlertDialogAction
               onClick={e => {e.preventDefault();handleConfirmDelete();}}
               disabled={isDeleting}
               className="bg-red-500 hover:bg-red-600"

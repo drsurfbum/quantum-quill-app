@@ -8,7 +8,7 @@ import { z } from "zod";
 import { queryClient } from "../client/src/lib/queryClient";
 import { WizardJournal, WIZARD_PREFIX } from "../client/src/lib/wizard-journal";
 import { useWizardDraft } from "../client/src/hooks/use-wizard-draft";
-import { SceneEditor } from "../client/src/components/scene-workspace";
+import WritingDocument from "../client/src/components/writing-document";
 import { flushPendingSaves } from "../client/src/hooks/use-autosave";
 import type { Editor } from "@tiptap/core";
 import NewProjectWizard from "../client/src/components/new-project-wizard";
@@ -17,7 +17,7 @@ let root: Root, container: HTMLDivElement;
 beforeEach(() => { window.localStorage.clear(); queryClient.clear(); queryClient.setQueryData(["/api/user"], { id: 900 }); container = document.createElement("div"); document.body.append(container); root = createRoot(container); });
 afterEach(async () => { await act(async () => root.unmount()); container.remove(); queryClient.clear(); jest.restoreAllMocks(); });
 async function mount(element: React.ReactElement) { await act(async () => root.render(React.createElement(QueryClientProvider, { client: queryClient }, element))); }
-async function click(text: string) { const button = [...document.querySelectorAll("button")].find(b => b.textContent === text); if (!button) throw new Error(`Missing ${text}`); await act(async () => button.click()); }
+async function click(text: string) { const button = [...document.querySelectorAll("button")].find(b => b.textContent === text || b.getAttribute("aria-label") === text); if (!button) throw new Error(`Missing ${text}`); await act(async () => button.click()); }
 async function type(id: string, value: string) { const input = document.getElementById(id) as HTMLInputElement; await act(async () => { input.value = value; Simulate.change(input); }); }
 it("wizard progress requires explicit restore after reload and never leaks across accounts", async () => {
   const fetch = jest.spyOn(global, "fetch");
@@ -74,6 +74,7 @@ it("scene planning fields and rich prose share one guarded queue without overwri
   const fetch = jest.spyOn(global, "fetch").mockImplementation(async (url, options) => {
     if (!options?.method || options.method === "GET") {
       if (String(url).endsWith("/context")) return new Response(JSON.stringify({ id: "scene-context:9900", sceneId: 9900, projectId: 9, title: "Scene references", revision: 0, links: [] }));
+      if (String(url).endsWith("/relationships")) return new Response("[]");
       if (String(url).endsWith("/story-bible")) return new Response("[]");
       throw new Error(`Unexpected read: ${url}`);
     }
@@ -83,7 +84,10 @@ it("scene planning fields and rich prose share one guarded queue without overwri
     scene = { ...scene, ...patch, revision: scene.revision + 1 };
     return new Response(JSON.stringify(scene), { status: 200 });
   });
-  await mount(React.createElement(SceneEditor, { scene }));
+  const chapter: any = {id:99,projectId:9,title:"Chapter",isDraft:true,writingMode:"scenes"};
+  Object.defineProperty(window,"matchMedia",{configurable:true,value:()=>({matches:true})});
+  await mount(React.createElement(WritingDocument, { scene, chapter }));
+  await click("Edit scene plan");
   expect(fetch.mock.calls.filter(([, options]) => options?.method === "PUT")).toHaveLength(0);
   await act(async () => {
     const title = document.getElementById("scene-title-9900") as HTMLInputElement, summary = document.getElementById("scene-summary-9900") as HTMLTextAreaElement;
@@ -93,13 +97,17 @@ it("scene planning fields and rich prose share one guarded queue without overwri
   });
   expect(scene).toMatchObject({ title: "New title", storyBeats: [], summary: "New plan", content: "<p>New prose</p>" });
   const prose = (container.querySelector(".tiptap") as HTMLElement & { editor: Editor }).editor;
-  await mount(React.createElement(SceneEditor, { scene, sidebarOpen: false }));
+  await click("Close");
+  await mount(React.createElement(WritingDocument, { scene, chapter }));
+  await click("Hide context");
   expect((container.querySelector(".tiptap") as HTMLElement & { editor: Editor }).editor).toBe(prose);
   expect(prose.getText()).toBe("New prose"); expect(prose.can().undo()).toBe(true);
-  await mount(React.createElement(SceneEditor, { scene, sidebarOpen: true }));
+  await click("Show context");
+  await click("Edit scene plan");
   expect((container.querySelector(".tiptap") as HTMLElement & { editor: Editor }).editor).toBe(prose);
   expect((document.getElementById("scene-summary-9900") as HTMLTextAreaElement).value).toBe("New plan");
-  await mount(React.createElement("div")); await mount(React.createElement(SceneEditor, { scene }));
+  await mount(React.createElement("div")); await mount(React.createElement(WritingDocument, { scene, chapter }));
+  await click("Edit scene plan");
   expect((document.getElementById("scene-summary-9900") as HTMLTextAreaElement).value).toBe("New plan");
   expect(container.querySelector(".tiptap")?.textContent).toBe("New prose");
 });

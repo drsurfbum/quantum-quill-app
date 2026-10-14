@@ -1,3 +1,8 @@
+import { TextSelection } from "@tiptap/pm/state";
+import type { Editor } from "@tiptap/core";
+import { BibleReference } from "./bible-reference";
+import InlineLinker from "./inline-linker";
+import { bibleLinkId, BIBLE_LINK_ATTRIBUTE } from "@shared/writing-links";
 import { SaveStatus } from "@/components/save-status";
 import { Button } from "@/components/ui/button";
 import { Maximize, Minimize } from "lucide-react";
@@ -28,18 +33,22 @@ interface RichTextEditorProps {
   title?: string;
   projectId: number;
   onChange?: (content: string) => void;
+  onOpenEntry?: (id:number) => void;
+  onEditorReady?: (editor:Editor|null) => void;
 }
 
-export default function RichTextEditor({ 
+export default function RichTextEditor({
   resource = "chapters",
   content = "",
   chapterId,
   revision,
   title = "Chapter",
   projectId,
-  onChange 
+  onOpenEntry, onEditorReady, onChange
 }: RichTextEditorProps) {
   const labelId = useId();
+  const [linkRequest,setLinkRequest] = useState(0);
+  const openEntry = useRef(onOpenEntry); openEntry.current = onOpenEntry;
   const [wordCount, setWordCount] = useState(0);
   const autosave = useAutosave(`/api/${resource}/${chapterId}`, `/api/projects/${projectId}/${resource}`);
   const saveStatus = autosave.status;
@@ -49,6 +58,21 @@ export default function RichTextEditor({
   const editor = useEditor({
     parseOptions: { preserveWhitespace: "full" },
     editorProps: {
+      handleClick(view, pos, event) {
+        const target = (event.target as HTMLElement)?.closest?.(`span[${BIBLE_LINK_ATTRIBUTE}]`);
+        const id = bibleLinkId(target?.getAttribute(BIBLE_LINK_ATTRIBUTE));
+        if (!id || !openEntry.current) return false;
+        view.dispatch(view.state.tr.setSelection(TextSelection.create(view.state.doc,pos)));
+        setIsFullscreen(false);openEntry.current(id); return true;
+      },
+      handleKeyDown(view,event) {
+        if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+          const mark = view.state.selection.$from.marks().find(m=>m.type.name === "bibleReference");
+          const id = bibleLinkId(mark?.attrs.entryId);
+          if(id && openEntry.current) {event.preventDefault();setIsFullscreen(false);openEntry.current(id);return true;}
+        }
+        return false;
+      },
       attributes: {
         role: "textbox",
         "aria-multiline": "true",
@@ -58,6 +82,7 @@ export default function RichTextEditor({
     },
     extensions: [
       ...writingExtensions,
+      BibleReference,
       StarterKit.configure({ heading: false }),
       Heading.configure({
         levels: [1, 2, 3],
@@ -87,6 +112,8 @@ export default function RichTextEditor({
       }
     },
   });
+
+  useEffect(()=>{if(editor) onEditorReady?.(editor);return ()=>onEditorReady?.(null);},[editor,onEditorReady]);
 
   // Calculate word count
   const calculateWordCount = (text: string) => {
@@ -119,7 +146,7 @@ export default function RichTextEditor({
         setIsFullscreen(false);
       }
     };
-    
+
     window.addEventListener('keydown', handleEscapeKey);
     return () => window.removeEventListener('keydown', handleEscapeKey);
   }, [isFullscreen]);
@@ -129,14 +156,15 @@ export default function RichTextEditor({
   }
 
   return (
-    <div 
+    <div
       ref={editorContainerRef}
       className={cn(
-        "flex-1 min-h-0 min-w-0 flex flex-col overflow-hidden bg-muted/20",
+        "flex-1 min-h-0 min-w-0 flex flex-col overflow-hidden bg-muted/20 writing-editor",
         isFullscreen ? "fixed inset-0 z-50 bg-white dark:bg-neutral-900" : ""
       )}
     >
-      <EditorMenuBar editor={editor} />
+      <EditorMenuBar editor={editor} onLinkEntry={()=>setLinkRequest(n=>n+1)} />
+      <InlineLinker editor={editor} projectId={projectId} request={linkRequest} onOpenEntry={id=>{setIsFullscreen(false);onOpenEntry?.(id);}} />
       <div data-writing-scroll className="flex-1 min-h-0 min-w-0 overflow-y-auto [scrollbar-gutter:stable] p-3 md:p-4">
         <WritingSurface editor={editor} label={resource === "scenes" ? "Scene text" : "Chapter text"} labelId={labelId} />
       </div>

@@ -27,7 +27,7 @@ export default function ExportModal({ projectId, projectTitle, preview = false }
     finally { setBusy(false); }
   };
   return <Dialog open={open} onOpenChange={value => { if (!busy) { setOpen(value); setHTML(""); setError(""); setDownloaded(false); } }}>
-    <DialogTrigger asChild><Button variant={preview ? "default" : "ghost"} className="gap-1">{preview ? <ExternalLink className="h-4 w-4"/> : <Download className="h-4 w-4"/>}<span className="hidden sm:inline">{preview ? "Preview" : "Export"}</span></Button></DialogTrigger>
+    <DialogTrigger asChild><Button variant={preview ? "default" : "ghost"} className="gap-1" aria-label={preview ? "Preview manuscript" : "Export project"}>{preview ? <ExternalLink className="h-4 w-4"/> : <Download className="h-4 w-4"/>}<span className="hidden sm:inline">{preview ? "Preview" : "Export"}</span></Button></DialogTrigger>
     <DialogContent className={html ? "max-w-5xl max-h-[95dvh]" : "max-w-lg max-h-[95dvh] overflow-y-auto"}>
       <DialogHeader><DialogTitle>{preview ? "Manuscript preview" : "Export project"}</DialogTitle><DialogDescription>Saved writing in manuscript order. Pending edits are saved first; unresolved drafts must be reviewed.</DialogDescription></DialogHeader>
       {html ? <><iframe ref={frame} title="Manuscript print preview" sandbox="allow-same-origin allow-modals" srcDoc={html.replace("<head>", '<head><base href="about:srcdoc">')} referrerPolicy="no-referrer" onLoad={() => setReady(true)} className="w-full h-[60dvh] border rounded bg-white"/><p className="text-sm text-muted-foreground">Choose Save as PDF in the print dialog. Page numbers and paper size use your browser’s print settings.</p></> : <div className="space-y-4">

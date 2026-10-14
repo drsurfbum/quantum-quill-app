@@ -1,3 +1,4 @@
+import { validateWritingLinks, writingUses } from "./writing-links";
 import { readSceneContext, saveSceneContext, sceneUses } from "./scene-context";
 import { imageType, safeImageName, readProjectImage, userCanReadImage } from "./upload-access";
 import { manuscriptStructure, organizeManuscript } from "./manuscript";
@@ -9,7 +10,7 @@ import { createRelationship, changeRelationship, projectRelationships } from "./
 import { BIBLE_TYPES } from "@shared/bible-catalog";
 import { previewBibleDocument } from "@shared/bible-contract";
 import { saveWritingStyleSchema } from "@shared/writing-styles";
-import { createBibleEntry, updateBibleEntry, deleteBibleEntry } from "./story-bible";
+import { createBibleEntry, updateBibleEntry, deleteBibleEntry, createBibleStub } from "./story-bible";
 import express, { type Express, type Request, type RequestHandler } from "express";
 import multer from "multer";
 import path from "path";
@@ -192,6 +193,17 @@ export function registerRoutes(app: Express, storage: IStorage, directory = path
     const scene = await sceneFor(req), {patch,base,revision} = draftBody(req.body);
     res.json(await saveSceneContext(storage,scene,patch,checkedBase(base,revision)));
   }));
+  app.post("/api/projects/:projectId/bible-stubs", handler(async (req,res)=>{
+    const projectId=routeId(req.params.projectId);await projectFor(req,projectId);
+    const data=z.object({title,entryType:z.enum(BIBLE_TYPES)}).strict().parse(req.body);
+    res.json(await createBibleStub(storage,projectId,data.title,data.entryType));
+  }));
+  app.get("/api/story-bible/:id/writing-uses", handler(async (req,res) => {
+    const entry = await storage.getStoryBibleEntry(routeId(req.params.id));
+    if (!entry) fail(404,"Entry not found");
+    await projectFor(req,entry.projectId);
+    res.json(await storage.withReadSnapshot(scoped=>writingUses(scoped,entry.projectId,entry.id)));
+  }));
   app.get("/api/story-bible/:id/scene-uses", handler(async (req,res) => {
     const entry = await storage.getStoryBibleEntry(routeId(req.params.id));
     if (!entry) fail(404,"Entry not found");
@@ -205,7 +217,12 @@ export function registerRoutes(app: Express, storage: IStorage, directory = path
   }));
   app.put("/api/scenes/:id", handler(async (req, res) => {
     const scene = await sceneFor(req), { patch, base, revision } = draftBody(req.body);
-    const result = await storage.updateScene(scene.id, scenePatchSchema.parse(patch), checkedBase(base, revision));
+    const data = scenePatchSchema.parse(patch);
+    const result = await storage.withProjectLock(scene.projectId, async scoped => {
+      const current = await scoped.getScene(scene.id);
+      await validateWritingLinks(scoped, scene.projectId, data.content, current?.content);
+      return scoped.updateScene(scene.id, data, checkedBase(base, revision));
+    });
     if (!result) fail(409, "This scene changed elsewhere. Review both versions before restoring your draft.", "REVISION_CONFLICT");
     res.json(result);
   }));
@@ -250,7 +267,9 @@ export function registerRoutes(app: Express, storage: IStorage, directory = path
     get: storage.getChapter.bind(storage), list: storage.getProjectChapters.bind(storage),
     create: storage.createChapter.bind(storage), update: storage.updateChapter.bind(storage), remove: storage.deleteChapter.bind(storage),
     validate: async (data, projectId, id) => {
-      const mode = id ? (await storage.getChapter(id))?.writingMode : data.writingMode;
+      const current = id ? await storage.getChapter(id) : undefined;
+      const mode = current?.writingMode || data.writingMode;
+      await validateWritingLinks(storage, projectId, data.content, current?.content);
       if (mode === "scenes" && data.content) fail(409, "Write in the scenes of this chapter. Chapter prose cannot be mixed with scenes.", "CHAPTER_PROSE_PROTECTED");
     },
     beforeDelete: async item => { if ((await storage.getProjectScenes(item.projectId)).some(scene => scene.chapterId === item.id)) fail(409, "This chapter contains scenes. Keep it to preserve their writing.", "CHAPTER_HAS_SCENES"); },

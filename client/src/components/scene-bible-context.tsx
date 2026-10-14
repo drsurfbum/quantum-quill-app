@@ -30,13 +30,14 @@ export function bibleCardSummary(entry: StoryBibleEntry) {
   return text.length > 340 ? `${text.slice(0,340)}…` : text;
 }
 const roleList = Object.keys(SCENE_ROLES) as SceneRole[];
-export default function SceneBibleContext({scene, compact = false}: {scene:Scene; compact?:boolean}) {
+type CardOptions = {onOpenEntry?:(id:number)=>void;selectedEntryId?:number};
+export default function SceneBibleContext({scene, compact = false, onOpenEntry, selectedEntryId}: {scene:Scene; compact?:boolean} & CardOptions) {
   const url = `/api/scenes/${scene.id}/context`;
   const context = useQuery<SceneContext>({queryKey:[url],staleTime:0,refetchOnWindowFocus:true});
   if (!context.data) return <div className="p-4">{context.error ? <><p role="alert" className="text-sm text-destructive">Scene references could not load. {context.error.message}</p><Button size="sm" variant="outline" onClick={()=>void context.refetch()}>Retry references</Button></> : <p className="text-sm text-muted-foreground">Loading scene references…</p>}</div>;
-  return <ContextEditor key={scene.id} scene={scene} initial={context.data} compact={compact} />;
+  return <ContextEditor key={scene.id} scene={scene} initial={context.data} compact={compact} onOpenEntry={onOpenEntry} selectedEntryId={selectedEntryId} />;
 }
-export function ContextEditor({scene, initial, compact = false}: {scene:Scene;initial:SceneContext;compact?:boolean}) {
+export function ContextEditor({scene, initial, compact = false, onOpenEntry, selectedEntryId}: {scene:Scene;initial:SceneContext;compact?:boolean} & CardOptions) {
   const url = `/api/scenes/${scene.id}/context`;
   const [value, update] = useEditorDraft(withPendingEdits(url,initial));
   const autosave = useAutosave(url);
@@ -56,15 +57,30 @@ export function ContextEditor({scene, initial, compact = false}: {scene:Scene;in
     setAdding(null);setChoice(0);
   }
   async function openEntry(entry:StoryBibleEntry) {
+    if(onOpenEntry) {onOpenEntry(entry.id);return;}
     setError("");
     try { await prepareManuscriptAction(scene.projectId); navigate(`/project/${scene.projectId}/story-bible?entry=${entry.id}&fromScene=${scene.id}`); }
     catch(cause) { setError(cause instanceof Error ? cause.message : "Resolve pending writing before opening the entry."); }
+  }
+  if (selectedEntryId) {
+    const target=entries.find(entry=>entry.id===selectedEntryId);
+    const links=value.links.filter(link=>link.entryId===selectedEntryId);
+    return <section aria-label="Notes for this scene" className="space-y-3">
+      <div className="flex items-center justify-between gap-2"><p className="text-xs text-muted-foreground">Only in this scene</p><SaveStatus status={autosave.status} retry={autosave.flush} stable /></div>
+      {recovery && <p role="alert" className="text-sm">Review the saved reference draft before editing. <button className="underline" onClick={()=>window.dispatchEvent(new Event("qq:review-drafts"))}>Review draft</button></p>}
+      <fieldset disabled={recovery} className="space-y-3">
+        {!links.length && <><p className="text-sm text-muted-foreground">Pin this entry to add a scene note. Inline mentions stay separate.</p><Button size="sm" variant="outline" disabled={!target || bibleEntryArchived(target) || value.links.length>=200} onClick={()=>change(previous=>[...previous,{entryId:selectedEntryId,role:"reference",note:""}])}>Pin to scene</Button></>}
+        {links.map(link=>{const key=sceneLinkKey(link),label=`Note for ${target?.title || "entry"} in ${SCENE_ROLES[link.role].label}`;return <div key={key} className="space-y-2"><div className="flex items-center justify-between gap-2"><label className="text-sm font-medium" htmlFor={`context-note-${scene.id}-${key}`}>{SCENE_ROLES[link.role].label}</label><button className="text-xs underline" aria-label={`Remove ${target?.title || "entry"} from ${SCENE_ROLES[link.role].label}`} onClick={()=>change(previous=>previous.filter(item=>sceneLinkKey(item)!==key))}>Unpin</button></div><Textarea aria-label={label} id={`context-note-${scene.id}-${key}`} value={link.note} maxLength={5000} placeholder="Why this matters in this scene…" onChange={event=>{const note=event.target.value;change(previous=>previous.map(item=>sceneLinkKey(item)===key ? {...item,note} : item));}} /></div>;})}
+      </fieldset>
+      {autosave.error && <p role="alert" className="text-sm text-destructive">{autosave.error.message}</p>}
+    </section>;
   }
   return <section aria-label="Scene Story Bible" className={compact ? "space-y-3 p-3" : "space-y-4 p-4"}>
     <div className="flex items-center justify-between gap-2"><h3 className="font-semibold text-sm">Story Bible</h3><SaveStatus status={autosave.status} retry={autosave.flush} stable /></div>
     {!compact && <p className="text-xs text-muted-foreground">Choose who is here, where it happens, and what to keep in mind. These references stay separate from prose.</p>}
     {recovery && <div role="alert" className="rounded border p-3 text-sm">A scene-reference draft needs review. <button className="underline" onClick={()=>window.dispatchEvent(new Event("qq:review-drafts"))}>Review saved draft</button></div>}
     {entriesQuery.isError && <p role="alert" className="text-sm text-destructive">Bible entries could not refresh. Saved connections are retained. <button className="underline" onClick={()=>void entriesQuery.refetch()}>Retry</button></p>}
+
     <fieldset disabled={recovery} className="space-y-5 min-w-0">
       {roleList.map(role=><section key={role} aria-label={SCENE_ROLES[role].label} className="space-y-2">
         <div className="flex items-center justify-between gap-2"><h4 className="font-medium text-sm">{SCENE_ROLES[role].label}</h4><Button type="button" size="sm" variant="outline" disabled={entriesQuery.isLoading || entriesQuery.isError || value.links.length>=200} onClick={()=>{setAdding(role);setChoice(0);}}>{role==="viewpoint" && value.links.some(link=>link.role===role) ? "Change viewpoint" : `Add ${role === "cast" ? "character" : role === "location" ? "location" : role === "reference" ? "reference" : "viewpoint"}`}</Button></div>

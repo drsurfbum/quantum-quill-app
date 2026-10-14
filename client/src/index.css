@@ -77,3 +77,18 @@
   .writing-surface .tiptap .column-resize-handle { position: absolute; right: -2px; top: 0; bottom: -2px; width: 4px; background: hsl(var(--primary)); pointer-events: none; }
   .writing-surface .tiptap.resize-cursor { cursor: col-resize; }
 }
+
+/* Write is sized by its own available column, not the whole browser. */
+.writing-editor { container-type: inline-size; container-name: writing; }
+.write-toolbar { white-space: nowrap; }
+.bible-reference { color: #6d28d9; text-decoration: underline dotted; text-underline-offset: .2em; cursor: pointer; }
+@container writing (max-width: 650px) { .write-toolbar .paragraph-choice { display: none; } }
+@container writing (max-width: 540px) { .write-toolbar .font-choice { display: none; } }
+@container writing (max-width: 360px) { .write-toolbar .emphasis-choice { display: none; } }
+.manuscript-binder { width: clamp(240px,18vw,280px); }
+.writing-reference-pane { width: clamp(300px,24vw,360px); }
+@media (max-width: 1199px) { .writing-reference-pane { position: absolute; inset: 0 0 0 auto; z-index: 30; width: min(360px,100%); box-shadow: -8px 0 30px #0002; } }
+@media (max-width: 849px) { .manuscript-binder { position: absolute; inset: 0 auto 0 0; z-index: 30; width: min(280px,90%); box-shadow: 8px 0 30px #0002; } }
+
+.dark .bible-reference { color: #c4b5fd; }
+.writing-reference-pane [role="status"] { width: 8rem; }

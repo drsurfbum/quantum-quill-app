@@ -1,3 +1,5 @@
+import { insertStoryBibleEntrySchema } from "@shared/schema";
+import { writingUses } from "./writing-links";
 import { assertHierarchy, projectRelationships } from "./relationships";
 import { resolvedRelationships } from "@shared/relationships";
 import { legacyClassification } from "@shared/bible-contract";
@@ -67,10 +69,26 @@ export async function updateBibleEntry(storage: IStorage, id: number, patch: Par
 export async function deleteBibleEntry(storage: IStorage, id: number) {
   const entry = await storage.getStoryBibleEntry(id); if (!entry) return false;
   return storage.withProjectLock(entry.projectId, async scoped => {
+    const mentions = await writingUses(scoped, entry.projectId, id);
+    if (mentions.length) throw Object.assign(new Error(`This entry is mentioned in ${mentions.length} writing document(s). Remove those inline links first, or archive it to preserve the references.`), {status:409,code:"ENTRY_LINKED"});
     const sceneLinks = (await scoped.getProjectSceneContexts(entry.projectId)).filter(row=>row.links.some(link=>link.entryId===id));
     if (sceneLinks.length) throw Object.assign(new Error(`This entry is used in ${sceneLinks.length} scene(s). Remove those scene references first, or archive the entry to preserve them.`), {status:409,code:"ENTRY_LINKED"});
     const connected = (await projectRelationships(scoped, entry.projectId)).filter(link => link.sourceId === id || link.targetId === id);
     if (connected.length) throw Object.assign(new Error(`Remove incoming relationships and outgoing links first (${connected.length} relationships). Archive this entry to preserve its connections instead.`), { status: 409, code: "ENTRY_LINKED" });
     return scoped.deleteStoryBibleEntry(id);
+  });
+}
+
+/** A retry with the same name/type reuses the active stub under the project lock. */
+export async function createBibleStub(storage:IStorage, projectId:number, title:string, entryType:string) {
+  return storage.withProjectLock(projectId,async scoped=>{
+    const matches=(await scoped.getProjectStoryBible(projectId)).filter(entry=>entry.entryType===entryType && entry.title.trim().toLocaleLowerCase()===title.trim().toLocaleLowerCase());
+    if(matches.length>1) throw Object.assign(new Error("Several entries already have this name. Choose the intended entry from search."),{status:409});
+    if(matches[0]) {
+      if(legacyClassification(matches[0]).archived) throw Object.assign(new Error("An archived entry already has this name. Restore it in Story Bible or use a different name."),{status:409});
+      return matches[0];
+    }
+    const data={projectId,title,entryType,content:"",metadata:{}};
+    return scoped.createStoryBibleEntry(insertStoryBibleEntrySchema.parse({...data,...prepareBiblePatch({},data)}));
   });
 }

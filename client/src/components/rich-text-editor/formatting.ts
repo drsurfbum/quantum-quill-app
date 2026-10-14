@@ -98,6 +98,9 @@ export function applyWritingStyle(editor: Editor, style: WritingStyle) {
   return chain.run();
 }
 export function clearWritingFormatting(editor: Editor) {
-  return editor.chain().focus().unsetAllMarks().clearNodes()
+  // Semantic Story Bible links survive typography resets.
+  let chain = editor.chain().focus();
+  for (const name of Object.keys(editor.schema.marks)) if (name !== 'bibleReference') chain = chain.unsetMark(name);
+  return chain.clearNodes()
     .resetAttributes('paragraph', ['lineHeight', 'spaceAfter', 'firstLine', 'indent', 'textAlign']).run();
 }

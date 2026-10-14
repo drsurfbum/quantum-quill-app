@@ -1,3 +1,4 @@
+import WorkspaceHeader from "@/components/workspace-header";
 import { useParams, useLocation, Link } from "wouter";
 import SidebarNavigation from "@/components/sidebar-navigation";
 import ThemeToggle from "@/components/ui/theme-toggle";
@@ -33,69 +34,10 @@ export default function Storyboard() {
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-background">
       <div className="flex flex-row flex-1 w-full h-full overflow-hidden">
-        <SidebarNavigation onCollapsedChange={setIsCollapsed} />
 
-        <main className="flex-grow overflow-hidden flex flex-col w-full pl-0 md:pl-0" style={{marginLeft: isCollapsed ? '56px' : '0'}}>
-        <header className="min-h-16 shrink-0 border-b border-neutral-200 dark:border-neutral-800 flex flex-wrap items-center justify-between gap-2 px-3 sm:px-6 py-2">
-          <div className="flex items-center">
-            {isLoadingProject ? (
-              <Skeleton className="h-6 w-48" />
-            ) : (
-              <h1 className="text-xl font-semibold truncate max-w-[min(45vw,24rem)]">{project?.title}</h1>
-            )}
-          </div>
-          <div className="flex flex-wrap items-center gap-2 ml-auto">
-            <ThemeToggle />
 
-            <Button variant="ghost" className="hidden md:inline-flex" disabled title="Sharing is not available yet">Share · planned</Button>
-
-            {project && <ExportModal projectId={project.id} projectTitle={project.title} />}
-
-            {project && <ExportModal projectId={project.id} projectTitle={project.title} preview />}
-          </div>
-        </header>
-
-        <div className="border-b border-neutral-200 dark:border-neutral-800">
-          <Tabs defaultValue="storyboard">
-            <TabsList className="mx-4 h-10 w-auto">
-              <Link href={`/project/${id}/write`}>
-                <TabsTrigger value="write" className={cn(
-                  "data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none",
-                  location === `/project/${id}/write` ? "border-b-2 border-primary" : ""
-                )} style={{marginRight: '1rem'}}>
-                  <Edit3 className="mr-1 h-4 w-4" /> Write
-                </TabsTrigger>
-              </Link>
-
-              <Link href={`/project/${id}/storyboard`}>
-                <TabsTrigger value="storyboard" className={cn(
-                  "data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none",
-                  location === `/project/${id}/storyboard` ? "border-b-2 border-primary" : ""
-                )} style={{marginRight: '1rem'}}>
-                  <Grid className="mr-1 h-4 w-4" /> Storyboard
-                </TabsTrigger>
-              </Link>
-
-              <Link href={`/project/${id}/outline`}>
-                <TabsTrigger value="outline" className={cn(
-                  "data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none",
-                  location === `/project/${id}/outline` ? "border-b-2 border-primary" : ""
-                )} style={{marginRight: '1rem'}}>
-                  <ListTree className="mr-1 h-4 w-4" /> Outline
-                </TabsTrigger>
-              </Link>
-
-              <Link href={`/project/${id}/story-bible`}>
-                <TabsTrigger value="story-bible" className={cn(
-                  "data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none",
-                  location === `/project/${id}/story-bible` ? "border-b-2 border-primary" : ""
-                )} style={{marginRight: '1rem'}}>
-                  <BookOpen className="mr-1 h-4 w-4" /> Story Bible
-                </TabsTrigger>
-              </Link>
-            </TabsList>
-          </Tabs>
-        </div>
+        <main className="flex-grow overflow-hidden flex flex-col w-full pl-0 md:pl-0">
+        {project && <WorkspaceHeader project={project} />}
 
         <div className="flex-grow flex overflow-hidden">
           {isLoadingProject ? (

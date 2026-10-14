@@ -1,3 +1,5 @@
+import WorkspaceHeader from "@/components/workspace-header";
+import { EntryEditor } from "@/components/story-bible/entry-editor";
 import { SceneBacklinks, SceneReturn } from "@/components/story-bible/scene-backlinks";
 import { useQuery } from "@tanstack/react-query";
 import { prepareManuscriptAction } from "@/lib/manuscript-actions";
@@ -39,31 +41,6 @@ export default function StoryBible() {
   const isMobile = useIsMobile();
   const [isCollapsed, setIsCollapsed] = useState(false);
 
-  // Stable editor renderer component to prevent re-mounting
-  const EditorRenderer = useCallback(({ entry, projectId, onClose }: {
-    entry: StoryBibleEntry;
-    projectId: number;
-    onClose: () => void;
-  }) => {
-    switch (entry.entryType) {
-      case "characters":
-        return <CharacterEditor entry={entry} projectId={projectId} onClose={onClose} />;
-      case "groups_races":
-        return <GroupsRacesEditor entry={entry} projectId={projectId} onClose={onClose} />;
-      case "locations":
-        return <LocationsEditor entry={entry} projectId={projectId} onClose={onClose} />;
-      case "events":
-        return <EventsEditor entry={entry} projectId={projectId} onClose={onClose} />;
-      case "world_elements":
-        return <WorldElementsEditor entry={entry} projectId={projectId} onClose={onClose} />;
-      case "details":
-        return <DetailsEditor entry={entry} projectId={projectId} onClose={onClose} />;
-      case "research":
-        return <ResearchEditor entry={entry} projectId={projectId} onClose={onClose} />;
-      default:
-        return <EnhancedBibleEditor entry={entry} projectId={projectId} onClose={onClose} />;
-    }
-  }, []);
   const projectId = parseInt(id!);
   const { data: project, isLoading: projectLoading } = useProject(projectId);
   const createMutation = useCreateStoryBibleEntry();
@@ -145,66 +122,10 @@ export default function StoryBible() {
   return (
     <div className="h-dvh flex flex-col overflow-hidden bg-background">
       <div className="flex flex-row flex-1 min-h-0 w-full overflow-hidden">
-        <SidebarNavigation onCollapsedChange={setIsCollapsed} />
-        
-        <main className="flex-1 min-h-0 min-w-0 overflow-hidden flex flex-col" style={{ marginLeft: isMobile && isCollapsed ? '56px' : '0' }}>
-          <header className="h-16 shrink-0 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between px-4 sm:px-6">
-            <div className="flex items-center">
-              {projectLoading ? (
-                <Skeleton className="h-6 w-48" />
-              ) : (
-                <div className="flex items-center space-x-2">
-                  <h1 className="text-xl font-semibold">{project?.title}</h1>
-                </div>
-              )}
-            </div>
-            <div className="flex items-center space-x-2 sm:space-x-4">
-              <ThemeToggle />
-              <ExportModal projectId={projectId} projectTitle={project?.title || "Project"} />
-            </div>
-          </header>
 
-          <div className="shrink-0 overflow-x-auto border-b border-neutral-200 dark:border-neutral-800">
-            <Tabs defaultValue="story-bible">
-              <TabsList className="mx-4 h-10 w-auto">
-                <Link href={`/project/${id}/write`}>
-                  <TabsTrigger value="write" className={cn(
-                    "data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none",
-                    location.startsWith(`/project/${id}/write`) ? "border-b-2 border-primary" : ""
-                  )}>
-                    <Edit3 className="mr-1 h-4 w-4" /> Write
-                  </TabsTrigger>
-                </Link>
-                
-                <Link href={`/project/${id}/storyboard`}>
-                  <TabsTrigger value="storyboard" className={cn(
-                    "data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none",
-                    location.startsWith(`/project/${id}/storyboard`) ? "border-b-2 border-primary" : ""
-                  )}>
-                    <Grid className="mr-1 h-4 w-4" /> Storyboard
-                  </TabsTrigger>
-                </Link>
-                
-                <Link href={`/project/${id}/outline`}>
-                  <TabsTrigger value="outline" className={cn(
-                    "data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none",
-                    location.startsWith(`/project/${id}/outline`) ? "border-b-2 border-primary" : ""
-                  )}>
-                    <ListTree className="mr-1 h-4 w-4" /> Outline
-                  </TabsTrigger>
-                </Link>
-                
-                <Link href={`/project/${id}/story-bible`}>
-                  <TabsTrigger value="story-bible" className={cn(
-                    "data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none",
-                    location.startsWith(`/project/${id}/story-bible`) ? "border-b-2 border-primary" : ""
-                  )}>
-                    <BookOpen className="mr-1 h-4 w-4" /> Story Bible
-                  </TabsTrigger>
-                </Link>
-              </TabsList>
-            </Tabs>
-          </div>
+
+        <main className="flex-1 min-h-0 min-w-0 overflow-hidden flex flex-col">
+          {project && <WorkspaceHeader project={project} />}
 
           {/* One bounded scroll surface for the dashboard and every entry editor.
               Reset position only when opening/closing an entry, never on autosave. */}
@@ -240,7 +161,7 @@ export default function StoryBible() {
                 </div>
                 <ConversionPreview entry={editorState.entryData} />
                 <RelationshipNavigation.Provider value={handleEditEntry}>
-                  <EditorRenderer
+                  <EntryEditor
                     entry={editorState.entryData}
                     projectId={projectId}
                     onClose={handleBackToDashboard}
