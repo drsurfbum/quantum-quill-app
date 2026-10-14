@@ -92,3 +92,48 @@
 
 .dark .bible-reference { color: #c4b5fd; }
 .writing-reference-pane [role="status"] { width: 8rem; }
+
+/* Story Bible shares the workspace shell. The list and selected tab each own
+   one scroll surface; autosave never replaces their roots or changes height. */
+.bible-select { border: 1px solid hsl(var(--border)); border-radius: .375rem; background: hsl(var(--background)); padding: .45rem .6rem; font-size: .75rem; min-height: 2rem; color: hsl(var(--foreground)); }
+.bible-select:focus-visible { outline: 2px solid hsl(var(--ring)); outline-offset: 2px; }
+.bible-library-sidebar { width: clamp(275px, 24vw, 320px); }
+.bible-tab-panel { flex: 1; min-height: 0; overflow-y: auto; scrollbar-gutter: stable; padding: 1.5rem 1.75rem 3rem; margin-top: 0; }
+.bible-tab-panel[hidden] { display: none; }
+.bible-entry-workspace { container: bible-entry / inline-size; }
+.bible-overview-grid { display: grid; grid-template-columns: minmax(0,1fr) minmax(150px,220px); gap: 2rem; }
+.bible-overview-grid:not(:has(figure)) { grid-template-columns: minmax(0,1fr); }
+.bible-workspace-fields [data-bible-form] { min-height: 0; max-width: none; margin: 0; }
+.bible-workspace-fields [data-bible-form-header] { position: static; padding: 0 0 1rem; background: transparent; backdrop-filter: none; }
+.bible-workspace-fields [data-bible-form-header] > div { flex-wrap: wrap; gap: 1rem; }
+.bible-workspace-fields [data-bible-form-header] > div > div { min-width: 0; flex-wrap: wrap; }
+.bible-workspace-fields [data-bible-form-header] input { width: 100%; min-width: 0; }
+.bible-workspace-fields [data-bible-form-body] { display: grid; grid-template-columns: minmax(0,1fr); gap: 1.5rem; padding: 0; margin-top: 1.5rem; }
+.bible-workspace-fields [data-bible-form-body] > div { width: auto; min-width: 0; grid-column: auto; }
+.bible-workspace-fields .bg-card { background: hsl(var(--background)); box-shadow: none; }
+.bible-workspace-fields h3 { font-size: 1rem; }
+.bible-workspace-fields .grid { min-width: 0; }
+.bible-workspace-fields input, .bible-workspace-fields textarea { min-width: 0; }
+.bible-workspace-fields section { overflow-wrap: anywhere; }
+@container bible-entry (min-width: 1000px) { .bible-workspace-fields [data-bible-form-body] { grid-template-columns: minmax(0,1fr) 280px; } }
+@container bible-entry (max-width: 600px) {
+  .bible-overview-grid { grid-template-columns: minmax(0,1fr); gap: 1.5rem; }
+  .bible-overview-grid figure { max-width: 240px; }
+  .bible-workspace-fields .grid { grid-template-columns: minmax(0,1fr); }
+  .bible-tab-panel { padding: 1.25rem 1rem 2rem; }
+}
+@media (max-width: 1099px) { .bible-library-sidebar { display: none; } }
+
+/* The workspace header owns starring; embedded editors retain their existing
+   controls when used inside Write. Archive remains with the editing form. */
+.bible-workspace-fields [data-entry-priority] { display: none; }
+
+.bible-workspace-fields [data-bible-form-header] [role="status"],
+.bible-workspace-fields [data-bible-form-header] [aria-label="Back to library"],
+.bible-workspace-fields [data-bible-form-header] [data-entry-icon] { display: none; }
+.bible-workspace-fields [data-bible-form-header] > div > div:first-child { flex: 1; }
+.bible-workspace-fields [data-bible-form-header] input { font-size: 1rem; height: 2.5rem; font-weight: 500; }
+@media (max-width: 600px) {
+  .bible-library { display: block; overflow-y: auto; scrollbar-gutter: stable; }
+  .bible-library > div:last-child { overflow-y: visible; }
+}

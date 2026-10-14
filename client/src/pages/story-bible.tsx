@@ -1,179 +1,75 @@
-import WorkspaceHeader from "@/components/workspace-header";
-import { EntryEditor } from "@/components/story-bible/entry-editor";
-import { SceneBacklinks, SceneReturn } from "@/components/story-bible/scene-backlinks";
+import { useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { prepareManuscriptAction } from "@/lib/manuscript-actions";
-import { RelationshipNavigation } from "@/components/story-bible/relationships";
-import { ConversionPreview } from "@/components/story-bible/conversion-preview";
-import { EntryLinks } from "@/components/story-bible/entry-links";
 import { useParams, useLocation, useSearch, Link } from "wouter";
-import SidebarNavigation from "@/components/sidebar-navigation";
-import ThemeToggle from "@/components/ui/theme-toggle";
-import ExportModal from "@/components/export-modal";
+import type { StoryBibleEntry } from "@shared/schema";
+import WorkspaceHeader from "@/components/workspace-header";
+import { WorkspaceLibrary } from "@/components/story-bible/workspace-library";
+import { WorkspaceEntry } from "@/components/story-bible/workspace-entry";
+import { SceneReturn } from "@/components/story-bible/scene-backlinks";
 import { useProject } from "@/hooks/use-project";
+import { useCreateStoryBibleEntry, useStoryBibleEntries } from "@/hooks/use-story-bible";
+import { prepareManuscriptAction } from "@/lib/manuscript-actions";
+import { bibleGuidance, bibleTypes, defaultBibleFilters } from "@/lib/bible-workspace";
 import { Button } from "@/components/ui/button";
-import { BookOpen, Plus, ArrowLeft, Edit3, Grid, ListTree } from "lucide-react";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { cn } from "@/lib/utils";
-import { Skeleton } from "@/components/ui/skeleton";
-import { useCreateStoryBibleEntry } from "@/hooks/use-story-bible";
-import { StoryBibleEntry } from "@shared/schema";
-import { useState, useCallback } from "react";
-import { SimplifiedBentoDashboard } from "@/components/story-bible/simplified-bento-dashboard";
-import { EnhancedBibleEditor } from "@/components/story-bible/enhanced-bible-editor";
-import { CharacterEditor } from "@/components/story-bible/character-editor";
-import { GroupsRacesEditor } from "@/components/story-bible/groups-races-editor";
-import { LocationsEditor } from "@/components/story-bible/locations-editor";
-import { EventsEditor } from "@/components/story-bible/events-editor";
-import { WorldElementsEditor } from "@/components/story-bible/world-elements-editor";
-import { DetailsEditor } from "@/components/story-bible/details-editor";
-import { ResearchEditor } from "@/components/story-bible/research-editor";
-import { useToast } from "@/hooks/use-toast";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 export default function StoryBible() {
-  const { id } = useParams();
-  const [location, navigate] = useLocation();
+  const {id} = useParams();
+  return <StoryBibleWorkspace key={id} projectId={Number(id)}/>;
+}
+function StoryBibleWorkspace({projectId}:{projectId:number}) {
+  const [,navigate] = useLocation();
   const search = new URLSearchParams(useSearch());
   const requestedEntry = Number(search.get("entry"));
   const fromScene = Number(search.get("fromScene"));
-  const { toast } = useToast();
-  const isMobile = useIsMobile();
-  const [isCollapsed, setIsCollapsed] = useState(false);
-
-  const projectId = parseInt(id!);
-  const { data: project, isLoading: projectLoading } = useProject(projectId);
-  const createMutation = useCreateStoryBibleEntry();
-  const entryQuery = useQuery<StoryBibleEntry>({queryKey:[`/api/story-bible/${requestedEntry}`],enabled:Number.isSafeInteger(requestedEntry) && requestedEntry > 0,staleTime:0});
-  const entry = entryQuery.data?.projectId === projectId ? entryQuery.data : null;
-  const editorState = {mode: requestedEntry ? "editor" : "dashboard", entryData:entry, mountKey:requestedEntry ? `${projectId}:${requestedEntry}` : "dashboard"};
+  const hasEntry = Number.isSafeInteger(requestedEntry) && requestedEntry>0;
+  const {data:project,isLoading:projectLoading} = useProject(projectId);
+  const entries = useStoryBibleEntries(projectId);
+  const entryQuery = useQuery<StoryBibleEntry>({queryKey:[`/api/story-bible/${requestedEntry}`],enabled:hasEntry,staleTime:0});
+  const entry = entryQuery.data?.projectId === projectId ? entryQuery.data : undefined;
+  const [filters,setFilters] = useState(defaultBibleFilters);
   const [navigationError,setNavigationError] = useState("");
-  const entryUrl = (entryId?:number) => `/project/${projectId}/story-bible${entryId ? `?entry=${entryId}${fromScene ? `&fromScene=${fromScene}` : ""}` : fromScene ? `?fromScene=${fromScene}` : ""}`;
-
-
-  const handleCreateEntry = async (entryType: string) => {
+  const [creating,setCreating] = useState(false), [newType,setNewType] = useState("characters"), [newName,setNewName] = useState(""), [createError,setCreateError] = useState("");
+  const createMutation = useCreateStoryBibleEntry();
+  const createLock = useRef(false);
+  const [createBusy,setCreateBusy] = useState(false);
+  function entryUrl(entryId?:number,develop=false) {
+    const params = new URLSearchParams();
+    if(entryId) params.set("entry",String(entryId));
+    if(fromScene>0) params.set("fromScene",String(fromScene));
+    if(develop) params.set("section","develop");
+    return `/project/${projectId}/story-bible${params.size ? `?${params}` : ""}`;
+  }
+  async function openEntry(next?:StoryBibleEntry) {
+    setNavigationError("");
+    try { await prepareManuscriptAction(projectId); navigate(entryUrl(next?.id)); }
+    catch(cause) {setNavigationError(cause instanceof Error ? cause.message : "Could not leave this entry.");}
+  }
+  function openCreate() {setNewType(filters.type === "all" ? "characters" : filters.type);setNewName("");setCreateError("");setCreating(true);}
+  async function createEntry(event:React.FormEvent) {
+    event.preventDefault();if(!newName.trim() || createLock.current)return;
+    createLock.current=true;setCreateBusy(true);
+    setCreateError("");
     try {
-      const result = await createMutation.mutateAsync({
-        title: `New ${entryType.charAt(0).toUpperCase() + entryType.slice(1)}`,
-        content: "",
-        projectId,
-        entryType
-      });
-
-      if (result.success) {
-        navigate(entryUrl(result.data.id));
-        toast({
-          title: "Entry Created",
-          description: `New ${entryType} entry created successfully`,
-        });
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to create entry",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleEditEntry = async (entry: StoryBibleEntry) => {
-    setNavigationError("");
-    try { await prepareManuscriptAction(projectId); navigate(entryUrl(entry.id)); }
-    catch(error) { setNavigationError(error instanceof Error ? error.message : "Could not open entry."); }
-  };
-  const handleBackToDashboard = async () => {
-    setNavigationError("");
-    try { await prepareManuscriptAction(projectId); navigate(entryUrl()); }
-    catch(error) { setNavigationError(error instanceof Error ? error.message : "Could not leave entry."); }
-  };
-
-  if (projectLoading) {
-    return (
-      <div className="flex min-h-screen">
-        <SidebarNavigation onCollapsedChange={setIsCollapsed} />
-        <div className="flex-1 flex flex-col">
-          <div className="flex-1 p-6">
-            <div className="space-y-4">
-              <Skeleton className="h-8 w-64" />
-              <Skeleton className="h-64 w-full" />
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+      await prepareManuscriptAction(projectId);
+      const result = await createMutation.mutateAsync({title:newName.trim(),entryType:newType,content:"",projectId});
+      setCreating(false);navigate(entryUrl(result.data.id,true));
+    } catch(cause) {setCreateError(cause instanceof Error ? cause.message : "Entry could not be created. Your name is still here.");}
+    finally {createLock.current=false;setCreateBusy(false);}
   }
-
-  if (!project) {
-    return (
-      <div className="flex min-h-screen">
-        <SidebarNavigation onCollapsedChange={setIsCollapsed} />
-        <div className="flex-1 flex flex-col">
-          <div className="flex-1 p-6">
-            <div className="text-center">
-              <h2 className="text-xl font-semibold mb-2">Project not found</h2>
-              <p className="text-muted-foreground">The requested project could not be found.</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="h-dvh flex flex-col overflow-hidden bg-background">
-      <div className="flex flex-row flex-1 min-h-0 w-full overflow-hidden">
-
-
-        <main className="flex-1 min-h-0 min-w-0 overflow-hidden flex flex-col">
-          {project && <WorkspaceHeader project={project} />}
-
-          {/* One bounded scroll surface for the dashboard and every entry editor.
-              Reset position only when opening/closing an entry, never on autosave. */}
-          <div
-            key={editorState.mountKey || "dashboard"}
-            role="region"
-            aria-label="Story Bible content"
-            tabIndex={0}
-            className="flex-1 min-h-0 overflow-y-auto [scrollbar-gutter:stable]"
-          >
-            {fromScene > 0 && <SceneReturn sceneId={fromScene} projectId={projectId} />}
-            {navigationError && <p role="alert" className="p-4 text-destructive">{navigationError}</p>}
-            {requestedEntry > 0 && !entry && <p role="status" className="p-4">{entryQuery.isLoading ? "Opening Story Bible entry…" : "This entry is unavailable in this project."} <button className="underline" onClick={()=>void handleBackToDashboard()}>Back to Dashboard</button></p>}
-            {editorState.mode === "dashboard" ? (
-              <div className="p-4 sm:p-6">
-                <SimplifiedBentoDashboard
-                  projectId={projectId}
-                  onCreateEntry={handleCreateEntry}
-                  onEditEntry={handleEditEntry}
-                />
-              </div>
-            ) : editorState.mode === "editor" && editorState.entryData ? (
-              <div className="p-4 sm:p-6">
-                <div className="mb-4">
-                  <Button
-                    variant="ghost"
-                    onClick={handleBackToDashboard}
-                    className="mb-4"
-                  >
-                    <ArrowLeft className="h-4 w-4 mr-2" />
-                    Back to Dashboard
-                  </Button>
-                </div>
-                <ConversionPreview entry={editorState.entryData} />
-                <RelationshipNavigation.Provider value={handleEditEntry}>
-                  <EntryEditor
-                    entry={editorState.entryData}
-                    projectId={projectId}
-                    onClose={handleBackToDashboard}
-                  />
-                  <SceneBacklinks entry={editorState.entryData} />
-                  <EntryLinks entry={editorState.entryData} onOpen={handleEditEntry} />
-                </RelationshipNavigation.Provider>
-              </div>
-            ) : null}
-          </div>
-        </main>
-      </div>
+  if(!project) return <main className="p-8"><p role="status">{projectLoading ? "Opening your workspace…" : "This project is unavailable."}</p><Link href="/" className="underline text-sm">Back to projects</Link></main>;
+  const libraryProps = {entries:entries.data || [],filters,onFilter:setFilters,onOpen:(entry:StoryBibleEntry)=>void openEntry(entry),onCreate:openCreate,loading:entries.isLoading,error:entries.isError,retry:()=>void entries.refetch()};
+  return <main className="h-dvh flex flex-col overflow-hidden bg-background">
+    <WorkspaceHeader project={project}/>
+    {fromScene>0 && <SceneReturn sceneId={fromScene} projectId={projectId}/>}
+    {navigationError && <p role="alert" className="shrink-0 border-b px-4 py-3 text-sm text-destructive">{navigationError}</p>}
+    <div role="region" aria-label="Story Bible content" className="flex flex-1 min-h-0 overflow-hidden">
+      <div className={hasEntry ? "bible-library-sidebar border-r shrink-0 bg-muted/5" : "flex-1 min-w-0"}><WorkspaceLibrary {...libraryProps} compact={hasEntry} selectedId={requestedEntry}/></div>
+      {hasEntry && <section aria-label="Entry detail" className="flex-1 min-w-0 min-h-0">
+        {entry ? <WorkspaceEntry key={`${entry.id}:${entry.entryType}`} entry={entry} onOpen={next=>void openEntry(next)} onBack={()=>void openEntry()} initialTab={search.get("section")==="develop" ? "develop" : "overview"}/> : <div className="p-6 space-y-4"><p role="status">{entryQuery.isLoading ? "Opening Story Bible entry…" : "This entry is unavailable in this project."}</p><Button variant="outline" onClick={()=>void openEntry()}>Back to library</Button>{entryQuery.isError && <Button variant="ghost" onClick={()=>void entryQuery.refetch()}>Retry</Button>}</div>}
+      </section>}
     </div>
-  );
+    <Dialog open={creating} onOpenChange={open=>{if(!createBusy)setCreating(open);}}><DialogContent><DialogHeader><DialogTitle>New Story Bible entry</DialogTitle><DialogDescription>Start with a name. You can develop the details and connections as you write.</DialogDescription></DialogHeader><form onSubmit={event=>void createEntry(event)} className="space-y-4"><label className="block text-sm space-y-2"><span>Entry type</span><select value={newType} onChange={event=>setNewType(event.target.value)} className="bible-select w-full" disabled={createBusy}>{bibleTypes.map(type=><option key={type.key} value={type.key}>{type.name}</option>)}</select></label><p className="text-sm text-muted-foreground">{bibleGuidance[newType]}</p><label className="block text-sm space-y-2"><span>Name</span><Input value={newName} onChange={event=>setNewName(event.target.value)} autoFocus maxLength={500} required placeholder="Give this element a name…" disabled={createBusy}/></label>{createError && <p role="alert" className="text-sm text-destructive">{createError}</p>}<div className="flex justify-end gap-2"><Button type="button" variant="ghost" onClick={()=>setCreating(false)} disabled={createBusy}>Cancel</Button><Button type="submit" disabled={!newName.trim() || createBusy}>{createBusy ? "Creating…" : "Create entry"}</Button></div></form></DialogContent></Dialog>
+  </main>;
 }

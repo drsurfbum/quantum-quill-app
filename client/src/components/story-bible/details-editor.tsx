@@ -179,13 +179,13 @@ const DetailsEditor = memo(({ entry, projectId, onClose }: DetailsEditorProps) =
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div data-bible-form className="min-h-screen bg-background">
       {/* Sticky Header */}
-      <div className="sticky top-0 z-10 bg-background border-b p-4">
+      <div data-bible-form-header className="sticky top-0 z-10 bg-background border-b p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             {onClose && (
-              <Button variant="ghost" size="sm" onClick={onClose}>
+              <Button aria-label="Back to library" variant="ghost" size="sm" onClick={onClose}>
                 <ArrowLeft className="h-4 w-4" />
               </Button>
             )}
@@ -217,7 +217,7 @@ const DetailsEditor = memo(({ entry, projectId, onClose }: DetailsEditorProps) =
             <SaveStatus status={autosave.status} retry={autosave.flush} />
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button variant="outline" size="sm">
+                <Button aria-label="Delete entry" variant="outline" size="sm">
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </AlertDialogTrigger>
@@ -238,7 +238,7 @@ const DetailsEditor = memo(({ entry, projectId, onClose }: DetailsEditorProps) =
         </div>
       </div>
 
-      <div className="flex gap-6 p-6">
+      <div data-bible-form-body className="flex gap-6 p-6">
         {/* Main Column */}
         <div className="flex-1 space-y-6">
           {/* Core Link - Expanded initially */}

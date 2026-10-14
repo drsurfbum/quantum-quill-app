@@ -196,12 +196,12 @@ export function LocationsEditor({ entry, projectId, onClose }: LocationsEditorPr
   const isStructure = ["city", "station", "structure", "building"].includes(locationType);
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
+    <div data-bible-form className="max-w-4xl mx-auto space-y-8">
       {/* Header Area (Sticky) */}
-      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b py-4">
+      <div data-bible-form-header className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
+            <div data-entry-icon className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
               <MapPin className="h-6 w-6 text-muted-foreground" />
             </div>
             <div>
@@ -231,6 +231,7 @@ export function LocationsEditor({ entry, projectId, onClose }: LocationsEditorPr
             <Button
               variant="ghost"
               size="sm"
+              data-entry-priority aria-label={priority > 0 ? "Unstar entry" : "Star entry"}
               onClick={togglePriority}
               className={priority > 0 ? "text-yellow-600" : ""}
             >
@@ -239,13 +240,14 @@ export function LocationsEditor({ entry, projectId, onClose }: LocationsEditorPr
             <Button
               variant="ghost"
               size="sm"
+              aria-label={isArchived ? "Restore entry" : "Archive entry"}
               onClick={() => { setIsArchived(!isArchived); autosave.save({ isArchived: !isArchived }); }}
             >
               {isArchived ? <ArchiveRestore className="h-4 w-4" /> : <Archive className="h-4 w-4" />}
             </Button>
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button variant="ghost" size="sm">
+                <Button aria-label="Delete entry" variant="ghost" size="sm">
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </AlertDialogTrigger>
@@ -268,7 +270,7 @@ export function LocationsEditor({ entry, projectId, onClose }: LocationsEditorPr
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div data-bible-form-body className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-8">
           

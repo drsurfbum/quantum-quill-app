@@ -9,9 +9,9 @@ import { WorldElementsEditor } from "@/components/story-bible/world-elements-edi
 import { DetailsEditor } from "@/components/story-bible/details-editor";
 import { ResearchEditor } from "@/components/story-bible/research-editor";
 
-type Props = {entry:StoryBibleEntry;projectId:number;onClose:()=>void};
+type Props = {entry:StoryBibleEntry;projectId:number;onClose:()=>void;showSource?:boolean};
 export function EntryEditor(props:Props) {
-  return <><TypedEntryEditor {...props}/><ImportedSource entry={props.entry}/></>;
+  return <><TypedEntryEditor {...props}/>{props.showSource !== false && <ImportedSource entry={props.entry}/>}</>;
 }
 function TypedEntryEditor({entry,projectId,onClose}:Props) {
     switch (entry.entryType) {
