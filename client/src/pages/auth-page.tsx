@@ -72,12 +72,17 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="container flex h-screen items-center justify-center">
+    <div className="container flex min-h-screen items-center justify-center py-8">
       <div className="grid w-full max-w-4xl grid-cols-1 md:grid-cols-2 gap-8">
         <div className="flex flex-col justify-center">
           <div className="mb-8">
             <h1 className="text-3xl font-bold mb-2">Quantum Quill</h1>
-            <p className="text-muted-foreground">Bring your stories to life with our advanced writing platform.</p>
+            <p className="text-muted-foreground">A world beside your writing.</p>
+            <p className="mt-3 text-sm text-muted-foreground">Alpha preview · Start with a sample story and keep exports of writing you want to keep.</p>
+            <div className="mt-2 flex gap-4 text-sm">
+              <a className="underline underline-offset-4" href="https://drsurfbum.github.io/quantum-quill-roadmap/" target="_blank" rel="noopener noreferrer">Roadmap</a>
+              <a className="underline underline-offset-4" href="https://github.com/drsurfbum/quantum-quill-roadmap/issues" target="_blank" rel="noopener noreferrer">Share feedback</a>
+            </div>
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -141,7 +146,7 @@ export default function AuthPage() {
               <Card>
                 <CardHeader>
                   <CardTitle>Register</CardTitle>
-                  <CardDescription>Create a new account to start writing.</CardDescription>
+                  <CardDescription>Create your own account. Keep your password somewhere safe; email password recovery is not available yet.</CardDescription>
                 </CardHeader>
                 <Form {...registerForm}>
                   <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)}>
@@ -206,8 +211,8 @@ export default function AuthPage() {
         </div>
 
         <div className="hidden md:flex flex-col justify-center p-6 rounded-lg bg-muted">
-          <h2 className="text-2xl font-bold mb-2">Your Writing, Reimagined</h2>
-          <p className="mb-6">Quantum Quill helps you organize your writing process from brainstorming to final draft.</p>
+          <h2 className="text-2xl font-bold mb-2">Keep your story close</h2>
+          <p className="mb-6">Plan a novel, build its world, and write with the details beside you. Skip the planning whenever you want to start a scene.</p>
           
           <div className="space-y-4">
             <div className="flex items-start space-x-3">
@@ -231,8 +236,8 @@ export default function AuthPage() {
                 </svg>
               </div>
               <div>
-                <h3 className="font-medium">Track Your Progress</h3>
-                <p className="text-sm text-muted-foreground">Monitor your writing goals and stay motivated</p>
+                <h3 className="font-medium">Keep Your World in View</h3>
+                <p className="text-sm text-muted-foreground">Link characters and places to scenes, then open their cards while you write</p>
               </div>
             </div>
             

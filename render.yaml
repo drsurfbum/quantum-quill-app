@@ -1,0 +1,47 @@
+# Separate alpha resources only. No recovered/local writing is uploaded.
+# Deploy this reviewed feature branch; pushing a feature is not a release.
+services:
+  - type: web
+    name: quantum-quill-alpha
+    runtime: node
+    repo: https://github.com/drsurfbum/quantum-quill-app
+    branch: codex/writing-first-layout
+    region: oregon
+    plan: 0.5c-512mb
+    autoDeployTrigger: 'off'
+    buildCommand: npm ci --include=dev --ignore-scripts && npm run build && npm prune --omit=dev --ignore-scripts
+    preDeployCommand: npm run db:init:alpha
+    startCommand: npm start
+    healthCheckPath: /healthz
+    disk:
+      name: quantum-quill-alpha-uploads
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: 24
+      - key: HOST
+        value: 0.0.0.0
+      - key: UPLOAD_DIR
+        value: /var/data/uploads
+      - key: QQ_DATABASE_PURPOSE
+        value: fresh-alpha
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: quantum-quill-alpha-db
+          property: connectionString
+
+databases:
+  - name: quantum-quill-alpha-db
+    databaseName: quantum_quill_alpha
+    user: quantum_quill_alpha
+    region: oregon
+    plan: 0.1c-256mb
+    postgresMajorVersion: '16'
+    diskSizeGB: 1
+    storageAutoscalingEnabled: false
+    ipAllowList: []

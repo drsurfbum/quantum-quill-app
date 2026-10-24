@@ -1,34 +1,87 @@
 # Quantum Quill
 
-Quantum Quill is a local writing and world-building app built with React/TypeScript, TipTap, Express, and PostgreSQL. The recovered Replit data and original backups are preserved.
+### A world beside your writing.
 
-**Current status:** a functional local alpha with the writing workspace, interactive Story Bible cards and reviewed scene connection scanning. See the [feature roadmap](https://drsurfbum.github.io/quantum-quill-roadmap/), [workspace integration](docs/WORKSPACE_INTEGRATION.md), and [connection scanner](docs/SCENE_STORY_BIBLE.md). The [local stabilization closeout](docs/STABILIZATION_CLOSEOUT.md) describes the reliability foundation; older audits contain historical limitations that may now be fixed.
+Quantum Quill brings your manuscript, scene plans, characters, places, and research into one writing workspace. It is being built for novelists first: enough structure to keep a complex story coherent, with room to skip the planning and simply write.
 
-**Standing workflow:** commit and push each completed feature to its feature branch after appropriate checks; merging remains separate. See [development workflow](docs/DEVELOPMENT_WORKFLOW.md) and [agent instructions](AGENTS.md).
+[Explore the roadmap](https://drsurfbum.github.io/quantum-quill-roadmap/) · [Public introduction & feedback](https://github.com/drsurfbum/quantum-quill-roadmap) · [Alpha setup](docs/HOSTED_ALPHA.md)
 
-## Run locally
+![Quantum Quill's writing workspace with scene navigation, prose, and Story Bible context](docs/images/writing-workspace.jpg)
 
-Use Node 24. On the configured Mac, open `Start Quantum Quill.command` or run:
+**Status: early alpha.** The local app works; the separate hosted alpha is being prepared. A tester URL will be added after deployment and live verification. The roadmap and design study are previews, not a hosted copy of the writing app. Screenshots use a fictional demonstration project, *The Lantern Coast*.
+
+## Plan as much—or as little—as you need
+
+**Storyboard plot points → Outline scenes → Scene story beats → Write prose**
+
+Start with a guided New Project Wizard, choose a plot structure, and use the Blueprint Wizard to turn selected plot points into planned chapters and scenes. Add scene summaries and beats in the Outline, then move into prose. You can also start directly with a chapter or scene and plan later. Chapter-level drafts stay intact when you introduce scenes.
+
+![Chapter and scene planning in the Outline](docs/images/scene-outline.jpg)
+
+## Keep your world in the writing room
+
+The Story Bible holds seven kinds of entries: **Characters, Groups & Races, Locations, Events, World Elements, Details, and Research**. Guided sections, relationships, backlinks, search, tags, and project images help turn a collection of notes into a usable reference.
+
+Connect entries to a scene as its viewpoint character, cast, location, or reference material. Link an element inline in the prose and open its card beside the editor to check facts or edit notes without navigating away. The connection scanner finds mentions of **existing** entries and lets you review suggestions before adding links; it does not rewrite your prose or invent new characters.
+
+![Interactive character card opened beside the manuscript](docs/images/inline-character-card.jpg)
+
+![The Story Bible workspace](docs/images/story-bible.jpg)
+
+## Write comfortably, keep control of your work
+
+- Rich formatting: fonts, sizes, headings, lists, colors, alignment, images, tables, find/replace, and more.
+- Quill styles inspired by literary moods, plus reusable custom styles saved to your account.
+- Chapter and scene organization, a focus view, and light/dark themes.
+- Autosave with server revisions, explicit conflict review, and account/project-scoped local draft recovery. Failed saves stay recoverable; recovery offers restore/discard choices.
+- Export **Word, EPUB, HTML, plain text, or JSON**. Preview supports browser printing and Save as PDF.
+
+![Quill styles and full writing controls](docs/images/quill-styles.jpg)
+
+Draft recovery is a safety net, not a complete offline application or a substitute for exports. Browser storage can be cleared; keep copies of important writing outside the alpha.
+
+## Help test the alpha
+
+When the hosted link is available, anyone with it can register their own account. Begin with a sample story:
+
+1. Create a project and add a character and a location to its Story Bible.
+2. Plan a scene—or go straight to Write—and draft a few paragraphs.
+3. Link an element inline, open its card, and try the connection scanner.
+4. Change formatting, switch scenes, reload, and check that the writing remains as expected.
+5. Export a copy and tell us what felt useful, confusing, or missing.
+
+[Report feedback](https://github.com/drsurfbum/quantum-quill-roadmap/issues). Include your browser/device, the steps you took, and what you expected. Public issues are visible to everyone: use sample text and redact account details in screenshots. Report possible security or account-access problems privately to the maintainer through your tester contact channel, rather than posting sensitive details publicly.
+
+**Alpha boundaries:** desktop/tablet layouts are the main focus. Email verification, password-reset email, and self-service account deletion are not yet available. Collaboration, AI generation, graph/timeline views, and the legacy whiteboard are not active features. Other storytelling formats—RPG campaigns, scripts, plays, and historical narratives—are future directions, not current promises.
+
+## Run a fresh local instance
+
+Requires **Node 24** and **PostgreSQL 16**. This source repository is private; cloning requires access.
 
 ```sh
 npm ci --ignore-scripts
-npm run dev:local
+cp .env.example .env
+# Set DATABASE_URL to a new, empty PostgreSQL database.
+# Set SESSION_SECRET to a newly generated random secret.
+node --env-file=.env scripts/init-alpha-db.mjs
+node --env-file=.env --import tsx server/index.ts
 ```
 
-The app is at http://127.0.0.1:5055. See [local setup](LOCAL_SETUP.md) for the recovered database and uploads. Do not run `db:push` against recovered writing. Backups, environment settings, uploads, and local databases are excluded from Git.
+The example configuration serves the app at `http://127.0.0.1:5055`. The initializer refuses existing data and can be rerun on its own unchanged schema. It is not a migration tool.
 
-## Current workflows
+**On the existing recovery Mac:** continue using `Start Quantum Quill.command` or `npm run dev:local` and the [local setup guide](LOCAL_SETUP.md). Never run `db:push` or the fresh alpha initializer against recovered writing. Environment files, manuscripts, uploaded files, and database backups remain outside Git.
 
-- Start a project with the recoverable New Project Wizard, or go directly to writing.
-- Storyboard plot points → Blueprint Wizard → Outline scenes → scene story beats → Write prose. Planning is optional; original outline notes remain available.
-- Write with formatting controls, reusable Quill/custom styles, protected autosave, account-scoped draft recovery, and explicit conflict review.
-- Organize manuscript chapters/scenes with persisted ordering and safe scene moves.
-- Export Word, HTML, text, EPUB, or original-record JSON; Preview supports browser printing and Save as PDF.
-- Build seven Story Bible entry types with structured fields, shared relationships, backlinks, search, and images scoped to their projects.
+## For developers
 
-Sharing, AI, graph/timeline views, and the legacy whiteboard canvas are not active features. Render deployment remains a separate step after the security/deployment gates in the closeout report.
+React/TypeScript and TipTap provide the editor; Express, PostgreSQL, and Drizzle provide authenticated APIs, persistence, and transactional writes. A single Node service serves the built client and API.
 
-## Validation and recovery
+| Area | Responsibility |
+| --- | --- |
+| `client/src/` | Workspace screens, editors, protected save queues, recovery UI |
+| `server/` | Authentication, scoped APIs, revisions, planning, exports, upload access |
+| `shared/` | Data contracts, field validation, taxonomy, relationships, writing styles |
+| `deployment/` | Empty-database alpha schema; no user data |
+| `docs/` | Design decisions, audits, recovery and deployment procedures |
 
 ```sh
 npm run check
@@ -36,11 +89,6 @@ npm test
 npm run build
 ```
 
-[Testing instructions](README-Testing.md) describe synthetic fixtures and disposable PostgreSQL rehearsals. Stop the local app before `bash scripts/backup-local.sh` to create a private paired database/uploads backup.
+See [testing](README-Testing.md), [hosted alpha operations](docs/HOSTED_ALPHA.md), [draft protection](docs/DRAFT_RECOVERY_AND_DATA_INTEGRITY.md), [scene connections](docs/SCENE_STORY_BIBLE.md), and the [data contract](docs/DATA_CONTRACT.md).
 
-## Architecture and project history
-
-- `client/src/`: pages, editors, protected save queues, recovery UI.
-- `server/`: authenticated project APIs, revisions, transactional planning/organization, export and file access.
-- `shared/`: data contracts, validation, taxonomy, relationships and writing styles.
-- `docs/`: [original audit](docs/RESTART_AUDIT.md), [draft protection](docs/DRAFT_RECOVERY_AND_DATA_INTEGRITY.md), [data contract](docs/DATA_CONTRACT.md), [relationships](docs/SHARED_RELATIONSHIPS.md), [scene workflow](docs/SCENE_OUTLINE_WORKFLOW.md), and [Antigravity comparison](docs/ANTIGRAVITY_COMPARISON.md).
+Completed features are checked, committed, and pushed to their feature branches. **Merging and deployment are separate decisions.** See [development workflow](docs/DEVELOPMENT_WORKFLOW.md). The original recovered records and backups remain the rollback point; history is preserved in the [restart audit](docs/RESTART_AUDIT.md) and [Antigravity comparison](docs/ANTIGRAVITY_COMPARISON.md).

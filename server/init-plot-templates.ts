@@ -2,7 +2,7 @@ import { db } from './db';
 import { plotTemplates } from './data/plot-templates';
 import { plotStructureTemplates } from '@shared/schema';
 import { eq } from 'drizzle-orm';
-import { log } from './vite';
+import { log } from './log';
 
 /**
  * Initialize plot structure templates in the database if they don't exist
