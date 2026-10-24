@@ -8,6 +8,7 @@ import path from 'node:path';
 import os from 'node:os';
 import pg from 'pg';
 import { initializeAlphaDatabase } from '../scripts/init-alpha-db.mjs';
+import { migrateFeedback } from '../scripts/migrate-feedback.mjs';
 
 const adminURL = process.env.QQ_TEST_PG_ADMIN_URL;
 if (!adminURL) throw new Error('Set QQ_TEST_PG_ADMIN_URL to a disposable PostgreSQL test server');
@@ -72,9 +73,11 @@ try {
   await assert.rejects(() => initializeAlphaDatabase(urls[0], undefined), /configuration/);
   const init = await Promise.all([initializeAlphaDatabase(urls[0], 'fresh-alpha'), initializeAlphaDatabase(urls[0], 'fresh-alpha')]);
   assert.deepEqual(init.sort(), ['already-initialized', 'initialized']);
+  assert.deepEqual((await Promise.all([migrateFeedback(urls[0], 'fresh-alpha'),migrateFeedback(urls[0], 'fresh-alpha')])).sort(), ['already-applied','applied']);
   const existing = new pg.Client({ connectionString: urls[2] }); await existing.connect();
   await existing.query("CREATE TABLE original (prose text); INSERT INTO original VALUES ('Untouched writing Ω')");
   await assert.rejects(() => initializeAlphaDatabase(urls[2], 'fresh-alpha'), /not empty/);
+  await assert.rejects(() => migrateFeedback(urls[2], 'fresh-alpha'), /Not an initialized/);
   assert.deepEqual((await existing.query('SELECT * FROM original')).rows, [{ prose: 'Untouched writing Ω' }]); await existing.end();
   const uploads = path.join(temp, 'uploads'); await mkdir(uploads);
   await start(urls[0], uploads);
@@ -82,6 +85,10 @@ try {
   const credentials = { username: 'alpha-test-writer', password: 'synthetic-only-password', email: 'writer@example.test' };
   await a('POST', '/api/register', credentials, 201);
   await b('POST', '/api/register', { ...credentials, username: 'other-alpha-writer' }, 201);
+  const feedbackInput={requestId:randomUUID(),category:'bug',summary:'Synthetic alpha feedback',details:'This is a test of the private feedback process.',area:'Write',device:'',allowContact:false};
+  const feedback=await json(a('POST','/api/feedback',feedbackInput,201));
+  assert.deepEqual(await json(a('POST','/api/feedback',feedbackInput,201)),feedback);
+  assert.deepEqual(await json(b('GET','/api/feedback')),[]);
   const project = await json(a('POST', '/api/project-setup', { requestId: randomUUID(), title: 'Fresh alpha story', settings: {} }, 201));
   const scene = await json(a('POST', `/api/projects/${project.id}/scenes`, { requestId: randomUUID(), chapterTitle: 'Opening', title: 'At the harbor' }, 201));
   const prose = '<p><strong>Protected prose Ω</strong> at the harbor.</p>';
@@ -110,10 +117,13 @@ try {
   assert.deepEqual(await fingerprints(urls[1]), before);
   assert.deepEqual(await readFile(path.join(restoredUploads, '.access', `${image.filename}.json`)), await readFile(path.join(uploads, '.access', `${image.filename}.json`)));
   assert.equal(await initializeAlphaDatabase(urls[1], 'fresh-alpha'), 'already-initialized');
+  assert.equal(await migrateFeedback(urls[1], 'fresh-alpha'), 'already-applied');
   await start(urls[1], restoredUploads);
   assert.equal((await json(a('GET', `/api/scenes/${scene.id}`))).content, prose);
   assert.deepEqual(Buffer.from(await (await a('GET', image.url)).arrayBuffer()), png);
   await b('GET', image.url, undefined, 404);
+  assert.equal((await json(a('GET','/api/feedback')))[0].id,feedback.id);
+  assert.deepEqual(await json(b('GET','/api/feedback')),[]);
   console.log(JSON.stringify({ freshBootstrap: 'PASS', concurrentBootstrap: 'PASS', refusesExistingDatabase: 'PASS', registration: 'PASS', secureProxyCookie: 'PASS', sceneContext: 'PASS', staleWriteRejected: 'PASS', accountIsolation: 'PASS', export: 'PASS', restartSessionAndUploads: 'PASS', pairedRestore: 'PASS', restoredTables: Object.keys(before).length }));
 } finally {
   await stop();

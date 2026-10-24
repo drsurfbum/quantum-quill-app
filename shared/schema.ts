@@ -289,3 +289,19 @@ export const sceneBibleContexts = pgTable("scene_bible_contexts", {
   links: jsonb("links").$type<import("./scene-context").SceneBibleLink[]>().notNull().default([]),
 }, table => [index("scene_bible_contexts_project").on(table.projectId), check("scene_bible_contexts_revision_check", sql`${table.revision} >= 0`), check("scene_bible_contexts_links_check", sql`jsonb_typeof(${table.links}) = 'array'`)]);
 export type SceneContextRow = typeof sceneBibleContexts.$inferSelect;
+
+// Private tester reports are separate from manuscripts and project data.
+export const feedbackReports = pgTable("feedback_reports", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  requestId: text("request_id").notNull(),
+  category: text("category").notNull(),
+  summary: text("summary").notNull(),
+  details: text("details").notNull(),
+  area: text("area").notNull(),
+  device: text("device").notNull().default(""),
+  allowContact: boolean("allow_contact").notNull().default(false),
+  status: text("status").notNull().default("received"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, t => [uniqueIndex("feedback_user_request_unique").on(t.userId,t.requestId), index("feedback_user_created").on(t.userId,t.createdAt)]);
+export type FeedbackReport = typeof feedbackReports.$inferSelect;

@@ -1,6 +1,6 @@
 # Hosted alpha preparation — October 24, 2026
 
-Status: prepared and held at the user’s request, not a live release. Open registration and Render’s **My Workspace** are confirmed. On October 24 the user chose **“Keep it ready; don’t add charges yet.”** Do not create paid resources or deploy until the user authorizes launch and its recurring cost. No QQ resources or charges have been added. Do not advertise a guessed Render hostname.
+Status: launch authorized on October 24 after the earlier hold. The user approved the prepared paid setup in **My Workspace** and open registration. Render’s reviewed total is **$13.55/month** in base charges, plus possible usage overages. Initial deployment has started; verify the final live app before advertising its URL. SDH Studio is outside this deployment’s scope.
 
 ## Proposed isolated deployment
 
@@ -27,7 +27,7 @@ The app binds to Render's `PORT` on `0.0.0.0`, uses database-backed sessions, an
 
 ## Empty-database initialization
 
-The reviewed schema snapshot is `deployment/alpha-schema.sql`. `npm run db:init:alpha` requires `DATABASE_URL` and `QQ_DATABASE_PURPOSE=fresh-alpha` and runs as Render's pre-deploy command.
+The reviewed schema snapshot is `deployment/alpha-schema.sql`. `npm run db:init:alpha` requires `DATABASE_URL` and `QQ_DATABASE_PURPOSE=fresh-alpha` and runs first in Render’s pre-deploy command, followed by the separate additive feedback migration (`node scripts/migrate-feedback.mjs`).
 
 - Initialization runs in a transaction under a database advisory lock.
 - It refuses a nonempty database with no alpha marker, without modifying its contents.
@@ -37,9 +37,9 @@ The reviewed schema snapshot is `deployment/alpha-schema.sql`. `npm run db:init:
 
 ## Verification
 
-`npm run check`, all 383 tests across 37 suites, and `npm run build` pass locally. The compiled registration screen renders with the production CSP and no browser console warnings/errors. The new request tests cover deeply nested/oversized collections, JSON-encoded legacy payloads, large prose, rejected compression, and production headers.
+`npm run check`, the writing-protection test suite, and `npm run build` pass locally. The compiled registration screen renders with the production CSP and no browser console warnings/errors. The new request tests cover deeply nested/oversized collections, JSON-encoded legacy payloads, large prose, rejected compression, and production headers.
 
-`tests/hosted-alpha.mjs` exercises the actual compiled production server against random disposable databases. It checks concurrent/idempotent initialization, refusal of existing data, open registration, proxy/secure cookie behavior, scenes and Story Bible context, stale-write rejection, account and image isolation, export, restart persistence, and a paired database/upload restore. It compares all 16 restored table fingerprints and the upload access metadata. It does not read a recovered-data backup.
+`tests/hosted-alpha.mjs` exercises the actual compiled production server against random disposable databases. It checks concurrent/idempotent initialization, refusal of existing data, open registration, proxy/secure cookie behavior, scenes and Story Bible context, stale-write rejection, account and image isolation, export, restart persistence, and a paired database/upload restore. It compares all restored table fingerprints, including private feedback and its migration ledger and the upload access metadata. It does not read a recovered-data backup.
 
 ```sh
 # Use a disposable PostgreSQL server whose role may create databases.
@@ -70,3 +70,7 @@ Before a schema change or data operation: stop writes using a maintenance window
 For a code-only rollback, redeploy the previous verified commit while retaining the database, disk and session secret. Never restore an older database over newer writing merely to roll back UI code. A schema rollback or live data restore is a separate reviewed action.
 
 After launch, check Render health, errors, memory, disk and database capacity, and failed saves during the first tester sessions. There is no recurring monitoring automation configured by this document. Review storage/usage before inviting a substantially larger group. Do not change SDH's resources, workspace plan, notification settings, or permissions as part of QQ maintenance.
+
+## Feedback process
+
+The alpha includes private in-app feedback and each writer’s report receipts/history. See [feedback operations](FEEDBACK.md) for privacy, review, and migration details.
