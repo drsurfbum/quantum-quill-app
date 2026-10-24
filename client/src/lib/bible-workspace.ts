@@ -2,18 +2,11 @@ import type { StoryBibleEntry } from "@shared/schema";
 import { BIBLE_TAXONOMY, fieldChoices } from "@shared/bible-catalog";
 import { objectData, parseContent, structuredTypes } from "@shared/story-bible";
 import { bibleEntryArchived, bibleEntrySearchText, structuredBibleData } from "./story-bible-data";
+import { BIBLE_GUIDES } from "@shared/bible-guidance";
 
 export const bibleTypes = Object.values(BIBLE_TAXONOMY);
 export const bibleTypeName = (type: string) => bibleTypes.find(item => item.key === type)?.name || type;
-export const bibleGuidance: Record<string, string> = {
-  characters: "Start with who they are and what they want. Develop their appearance, motivations, abilities, and history as your story grows.",
-  groups_races: "Define what unites this group, what it believes, and how it is organized. Connect members, allies, and rivals under Connections.",
-  locations: "Establish what this place is and why it matters. Add its environment, inhabitants, and history when they become relevant.",
-  events: "Describe what happened, when, and why it matters. Use Connections for participants, locations, and consequences.",
-  world_elements: "Choose a category, then describe how this element works and affects your world. Category-specific fields are optional prompts.",
-  details: "Keep a useful idea, clue, quote, or continuity note here. Connect it to the people, places, or events it concerns.",
-  research: "Record the source and what you learned. Keep research separate from story facts, and connect it where you use it.",
-};
+export const bibleGuidance: Record<string, string> = Object.fromEntries(Object.entries(BIBLE_GUIDES).map(([type,guide])=>[type,guide.purpose]));
 
 /** Presentation only: compatibility readers never rewrite legacy or imported data. */
 export function bibleText(value: unknown): string {

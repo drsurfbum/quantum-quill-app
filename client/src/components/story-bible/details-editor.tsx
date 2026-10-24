@@ -1,3 +1,4 @@
+import { GuidedFieldGroup, FieldHelp } from "./guidance";
 import { RelationshipSection } from "./relationships";
 import { fieldOptions } from "@shared/bible-catalog";
 import { readBibleFields } from "@shared/story-bible";
@@ -14,9 +15,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Save, Trash2, Plus, X, ChevronDown, ChevronRight, FileText, Link2, Users, MapPin, Calendar, Zap, Tag, ArrowLeft, Clock, Archive, Lightbulb, MessageSquare, Eye, EyeOff, ImageIcon, Upload } from 'lucide-react';
+import { Save, Trash2, Plus, X, FileText, Link2, Users, MapPin, Calendar, Zap, Tag, ArrowLeft, Clock, Archive, Lightbulb, MessageSquare, Eye, EyeOff, ImageIcon, Upload } from 'lucide-react';
 import { useDeleteStoryBibleEntry, useStoryBibleEntries } from '@/hooks/use-story-bible';
 import { useToast } from '@/hooks/use-toast';
 import { StoryBibleEntry } from '@shared/schema';
@@ -242,20 +242,7 @@ const DetailsEditor = memo(({ entry, projectId, onClose }: DetailsEditorProps) =
         {/* Main Column */}
         <div className="flex-1 space-y-6">
           {/* Core Link - Expanded initially */}
-          <Collapsible open={coreLinkExpanded} onOpenChange={setCoreLinkExpanded}>
-            <Card>
-              <CollapsibleTrigger asChild>
-                <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
-                  <CardTitle className="text-lg flex items-center justify-between">
-                    <span className="flex items-center gap-2">
-                      <Link2 className="h-5 w-5" />
-                      Core Link
-                    </span>
-                    {coreLinkExpanded ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
-                  </CardTitle>
-                </CardHeader>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
+          <GuidedFieldGroup type="details" group="coreLink" open={coreLinkExpanded} onOpenChange={setCoreLinkExpanded}>
                 <CardContent className="space-y-4">
                   {/* Linked Elements */}
                   <RelationshipSection entry={entry} title="Linked applications" kinds={["application"]} />
@@ -279,11 +266,12 @@ const DetailsEditor = memo(({ entry, projectId, onClose }: DetailsEditorProps) =
                     </div>
                     <div>
                       <Label htmlFor="status">Status</Label>
+                    <FieldHelp type="details" field="status"/>
                       <Select
                         value={detailDataState.status}
                         onValueChange={(value) => updateDetailData({ status: value })}
                       >
-                        <SelectTrigger>
+                        <SelectTrigger id="status" aria-describedby="details-status-help">
                           <SelectValue placeholder="Select status" />
                         </SelectTrigger>
                         <SelectContent>
@@ -297,33 +285,19 @@ const DetailsEditor = memo(({ entry, projectId, onClose }: DetailsEditorProps) =
                   
                   <div>
                     <Label htmlFor="shortSummary">Short Summary (One-liner)</Label>
+                    <FieldHelp type="details" field="shortSummary"/>
                     <Input
-                      id="shortSummary"
+                      id="shortSummary" aria-describedby="details-shortSummary-help"
                       value={detailDataState.shortSummary}
                       onChange={(e) => updateDetailData({ shortSummary: e.target.value })}
                       placeholder="Brief description of this detail..."
                     />
                   </div>
                 </CardContent>
-              </CollapsibleContent>
-            </Card>
-          </Collapsible>
+              </GuidedFieldGroup>
 
           {/* Content - Expanded initially */}
-          <Collapsible open={contentExpanded} onOpenChange={setContentExpanded}>
-            <Card>
-              <CollapsibleTrigger asChild>
-                <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
-                  <CardTitle className="text-lg flex items-center justify-between">
-                    <span className="flex items-center gap-2">
-                      <FileText className="h-5 w-5" />
-                      Content
-                    </span>
-                    {contentExpanded ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
-                  </CardTitle>
-                </CardHeader>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
+          <GuidedFieldGroup type="details" group="content" open={contentExpanded} onOpenChange={setContentExpanded}>
                 <CardContent>
                   <div>
                     <Label htmlFor="content">Detail Content</Label>
@@ -336,30 +310,16 @@ const DetailsEditor = memo(({ entry, projectId, onClose }: DetailsEditorProps) =
                     />
                   </div>
                 </CardContent>
-              </CollapsibleContent>
-            </Card>
-          </Collapsible>
+              </GuidedFieldGroup>
 
           {/* Context & Usage - Collapsible */}
-          <Collapsible open={contextUsageExpanded} onOpenChange={setContextUsageExpanded}>
-            <Card>
-              <CollapsibleTrigger asChild>
-                <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
-                  <CardTitle className="text-lg flex items-center justify-between">
-                    <span className="flex items-center gap-2">
-                      <Lightbulb className="h-5 w-5" />
-                      Context & Usage
-                    </span>
-                    {contextUsageExpanded ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
-                  </CardTitle>
-                </CardHeader>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
+          <GuidedFieldGroup type="details" group="contextUsage" open={contextUsageExpanded} onOpenChange={setContextUsageExpanded}>
                 <CardContent className="space-y-4">
                   <div>
                     <Label htmlFor="explanation">How/When to Use This Detail</Label>
+                    <FieldHelp type="details" field="explanation"/>
                     <Textarea
-                      id="explanation"
+                      id="explanation" aria-describedby="details-explanation-help"
                       value={detailDataState.explanation || ''}
                       onChange={(e) => updateDetailData({ explanation: e.target.value })}
                       placeholder="e.g., 'Drop this hint in Chapter 3' or 'Use when describing the marketplace'"
@@ -369,11 +329,12 @@ const DetailsEditor = memo(({ entry, projectId, onClose }: DetailsEditorProps) =
                   
                   <div>
                     <Label htmlFor="visibility">Visibility</Label>
+                    <FieldHelp type="details" field="visibility"/>
                     <Select
                       value={detailDataState.visibility}
                       onValueChange={(value) => updateDetailData({ visibility: value })}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger id="visibility" aria-describedby="details-visibility-help">
                         <SelectValue placeholder="Select visibility" />
                       </SelectTrigger>
                       <SelectContent>
@@ -390,25 +351,10 @@ const DetailsEditor = memo(({ entry, projectId, onClose }: DetailsEditorProps) =
                     </Select>
                   </div>
                 </CardContent>
-              </CollapsibleContent>
-            </Card>
-          </Collapsible>
+              </GuidedFieldGroup>
 
           {/* Archive/Resolution - Collapsible */}
-          <Collapsible open={archiveResolutionExpanded} onOpenChange={setArchiveResolutionExpanded}>
-            <Card>
-              <CollapsibleTrigger asChild>
-                <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
-                  <CardTitle className="text-lg flex items-center justify-between">
-                    <span className="flex items-center gap-2">
-                      <Archive className="h-5 w-5" />
-                      Archive / Resolution
-                    </span>
-                    {archiveResolutionExpanded ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
-                  </CardTitle>
-                </CardHeader>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
+          <GuidedFieldGroup type="details" group="archiveResolution" open={archiveResolutionExpanded} onOpenChange={setArchiveResolutionExpanded}>
                 <CardContent className="space-y-4">
                   <div>
                     <Label htmlFor="outcomeNotes">Outcome Notes (if resolved)</Label>
@@ -421,9 +367,7 @@ const DetailsEditor = memo(({ entry, projectId, onClose }: DetailsEditorProps) =
                     />
                   </div>
                 </CardContent>
-              </CollapsibleContent>
-            </Card>
-          </Collapsible>
+              </GuidedFieldGroup>
         </div>
 
         {/* Sidebar */}

@@ -1,3 +1,4 @@
+import { GuidedFieldGroup, FieldHelp } from "./guidance";
 import { RelationshipSection } from "./relationships";
 import { fieldChoices } from "@shared/bible-catalog";
 import { TagInput } from "./tag-input";
@@ -12,9 +13,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Save, Trash2, Archive, ArchiveRestore, Star, StarOff, ChevronDown, ChevronRight, Plus, X, Users, ImageIcon } from "lucide-react";
+import { Save, Trash2, Archive, ArchiveRestore, Star, StarOff, Plus, X, Users, ImageIcon } from "lucide-react";
 import { FileUpload } from "@/components/ui/file-upload";
 import { useDeleteStoryBibleEntry, useStoryBibleEntries } from "@/hooks/use-story-bible";
 import { useToast } from "@/hooks/use-toast";
@@ -76,9 +76,8 @@ export function GroupsRacesEditor({ entry, projectId, onClose }: GroupsRacesEdit
   const [newAlliance, setNewAlliance] = useState("");
   const [newRivalry, setNewRivalry] = useState("");
 
-  // Section collapse states - smart defaults
-  const isNewEntry = !entry.id || entry.id === 0;
-  const [basicInfoExpanded, setBasicInfoExpanded] = useState(isNewEntry || !groupCategory || !tagline);
+  // Start with the overview; optional development stays available below.
+  const [basicInfoExpanded, setBasicInfoExpanded] = useState(true);
   const [hierarchyExpanded, setHierarchyExpanded] = useState(false);
   const [leadershipExpanded, setLeadershipExpanded] = useState(false);
   const [attributesExpanded, setAttributesExpanded] = useState(false);
@@ -279,21 +278,12 @@ export function GroupsRacesEditor({ entry, projectId, onClose }: GroupsRacesEdit
         <div className="lg:col-span-2 space-y-8">
           
           {/* Basic Info Card */}
-          <Collapsible open={basicInfoExpanded} onOpenChange={setBasicInfoExpanded}>
-            <Card>
-              <CollapsibleTrigger asChild>
-                <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
-                  <CardTitle className="text-xl flex items-center justify-between">
-                    Basic Info
-                    {basicInfoExpanded ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
-                  </CardTitle>
-                </CardHeader>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
+          <GuidedFieldGroup type="groups_races" group="basicInfo" open={basicInfoExpanded} onOpenChange={setBasicInfoExpanded}>
                 <CardContent className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="groupCategory">Category</Label>
+                    <FieldHelp type="groups_races" field="groupCategory"/>
                       <Select 
                         value={groupCategory} 
                         onValueChange={(value) => {
@@ -301,7 +291,7 @@ export function GroupsRacesEditor({ entry, projectId, onClose }: GroupsRacesEdit
                           updateMetadata({ groupCategory: value });
                         }}
                       >
-                        <SelectTrigger>
+                        <SelectTrigger id="groupCategory" aria-describedby="groups_races-groupCategory-help">
                           <SelectValue placeholder="Select category..." />
                         </SelectTrigger>
                         <SelectContent>
@@ -330,8 +320,9 @@ export function GroupsRacesEditor({ entry, projectId, onClose }: GroupsRacesEdit
 
                   <div className="space-y-2">
                     <Label htmlFor="tagline">Short Notes / Tagline</Label>
+                    <FieldHelp type="groups_races" field="tagline"/>
                     <Input
-                      id="tagline"
+                      id="tagline" aria-describedby="groups_races-tagline-help"
                       value={tagline}
                       onChange={(e) => {
                         setTagline(e.target.value);
@@ -343,30 +334,19 @@ export function GroupsRacesEditor({ entry, projectId, onClose }: GroupsRacesEdit
 
                   <div className="space-y-2">
                     <Label htmlFor="category">Category Tag</Label>
+                    <FieldHelp type="groups_races" field="category"/>
                     <Input
-                      id="category"
+                      id="category" aria-describedby="groups_races-category-help"
                       value={category}
                       onChange={(e) => handleCategoryChange(e.target.value)}
                       placeholder="Major Powers, Ancient Races, etc."
                     />
                   </div>
                 </CardContent>
-              </CollapsibleContent>
-            </Card>
-          </Collapsible>
+              </GuidedFieldGroup>
 
           {/* Hierarchy & Structure Card */}
-          <Collapsible open={hierarchyExpanded} onOpenChange={setHierarchyExpanded}>
-            <Card>
-              <CollapsibleTrigger asChild>
-                <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
-                  <CardTitle className="text-xl flex items-center justify-between">
-                    Hierarchy & Structure
-                    {hierarchyExpanded ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
-                  </CardTitle>
-                </CardHeader>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
+          <GuidedFieldGroup type="groups_races" group="hierarchy" open={hierarchyExpanded} onOpenChange={setHierarchyExpanded}>
                 <CardContent className="space-y-6">
                   <RelationshipSection entry={entry} title="Group hierarchy" kinds={["parent"]} />
 
@@ -405,8 +385,9 @@ export function GroupsRacesEditor({ entry, projectId, onClose }: GroupsRacesEdit
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="eraEstablished">Founding Date / Era Established</Label>
+                    <FieldHelp type="groups_races" field="eraEstablished"/>
                       <Input
-                        id="eraEstablished"
+                        id="eraEstablished" aria-describedby="groups_races-eraEstablished-help"
                         value={eraEstablished}
                         onChange={(e) => {
                           setEraEstablished(e.target.value);
@@ -429,22 +410,10 @@ export function GroupsRacesEditor({ entry, projectId, onClose }: GroupsRacesEdit
                     </div>
                   </div>
                 </CardContent>
-              </CollapsibleContent>
-            </Card>
-          </Collapsible>
+              </GuidedFieldGroup>
 
           {/* Leadership & Membership Card */}
-          <Collapsible open={leadershipExpanded} onOpenChange={setLeadershipExpanded}>
-            <Card>
-              <CollapsibleTrigger asChild>
-                <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
-                  <CardTitle className="text-xl flex items-center justify-between">
-                    Leadership & Membership
-                    {leadershipExpanded ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
-                  </CardTitle>
-                </CardHeader>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
+          <GuidedFieldGroup type="groups_races" group="leadership" open={leadershipExpanded} onOpenChange={setLeadershipExpanded}>
                 <CardContent className="space-y-6">
                   <RelationshipSection entry={entry} title="Membership & leadership" kinds={["member","leader"]} />
 
@@ -462,22 +431,10 @@ export function GroupsRacesEditor({ entry, projectId, onClose }: GroupsRacesEdit
                     />
                   </div>
                 </CardContent>
-              </CollapsibleContent>
-            </Card>
-          </Collapsible>
+              </GuidedFieldGroup>
 
           {/* Attributes & Traits Card */}
-          <Collapsible open={attributesExpanded} onOpenChange={setAttributesExpanded}>
-            <Card>
-              <CollapsibleTrigger asChild>
-                <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
-                  <CardTitle className="text-xl flex items-center justify-between">
-                    Attributes & Traits
-                    {attributesExpanded ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
-                  </CardTitle>
-                </CardHeader>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
+          <GuidedFieldGroup type="groups_races" group="attributes" open={attributesExpanded} onOpenChange={setAttributesExpanded}>
                 <CardContent className="space-y-6">
                   {groupCategory === "species" && (
                     <>
@@ -495,8 +452,9 @@ export function GroupsRacesEditor({ entry, projectId, onClose }: GroupsRacesEdit
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="physiology">Physiology & Biology</Label>
+                    <FieldHelp type="groups_races" field="physiology"/>
                         <Textarea
-                          id="physiology"
+                          id="physiology" aria-describedby="groups_races-physiology-help"
                           value={physiology}
                           onChange={(e) => {
                             setPhysiology(e.target.value);
@@ -526,8 +484,9 @@ export function GroupsRacesEditor({ entry, projectId, onClose }: GroupsRacesEdit
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="ideology">Ideology & Beliefs</Label>
+                    <FieldHelp type="groups_races" field="ideology"/>
                         <Textarea
-                          id="ideology"
+                          id="ideology" aria-describedby="groups_races-ideology-help"
                           value={ideology}
                           onChange={(e) => {
                             setIdeology(e.target.value);
@@ -567,46 +526,22 @@ export function GroupsRacesEditor({ entry, projectId, onClose }: GroupsRacesEdit
                     />
                   </div>
                 </CardContent>
-              </CollapsibleContent>
-            </Card>
-          </Collapsible>
+              </GuidedFieldGroup>
 
           {/* History & Events Card */}
-          <Collapsible open={historyExpanded} onOpenChange={setHistoryExpanded}>
-            <Card>
-              <CollapsibleTrigger asChild>
-                <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
-                  <CardTitle className="text-xl flex items-center justify-between">
-                    History & Events
-                    {historyExpanded ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
-                  </CardTitle>
-                </CardHeader>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
+          <GuidedFieldGroup type="groups_races" group="history" open={historyExpanded} onOpenChange={setHistoryExpanded}>
                 <CardContent>
-                  <Textarea
+                  <Textarea aria-label="Group history"
                     value={content}
                     onChange={handleContentChange}
                     placeholder="Origin story, major milestones, significant events, historical context..."
                     className="min-h-[200px] resize-none"
                   />
                 </CardContent>
-              </CollapsibleContent>
-            </Card>
-          </Collapsible>
+              </GuidedFieldGroup>
 
           {/* Relationships Card */}
-          <Collapsible open={relationshipsExpanded} onOpenChange={setRelationshipsExpanded}>
-            <Card>
-              <CollapsibleTrigger asChild>
-                <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
-                  <CardTitle className="text-xl flex items-center justify-between">
-                    Relationships
-                    {relationshipsExpanded ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
-                  </CardTitle>
-                </CardHeader>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
+          <GuidedFieldGroup type="groups_races" group="relationships" open={relationshipsExpanded} onOpenChange={setRelationshipsExpanded}>
                 <CardContent className="space-y-6">
                   <div className="space-y-4">
                     <Label>Alliance notes (free text)</Label>
@@ -672,23 +607,11 @@ export function GroupsRacesEditor({ entry, projectId, onClose }: GroupsRacesEdit
                     </div>
                   </div>
                 </CardContent>
-              </CollapsibleContent>
-            </Card>
-          </Collapsible>
+              </GuidedFieldGroup>
 
           <RelationshipSection entry={entry} title="Group connections & history" kinds={["ally","rival","history","associated"]} />
           {/* Notes / Internal Comments Card */}
-          <Collapsible open={notesExpanded} onOpenChange={setNotesExpanded}>
-            <Card>
-              <CollapsibleTrigger asChild>
-                <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
-                  <CardTitle className="text-xl flex items-center justify-between">
-                    Notes & Internal Comments
-                    {notesExpanded ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
-                  </CardTitle>
-                </CardHeader>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
+          <GuidedFieldGroup type="groups_races" group="notes" open={notesExpanded} onOpenChange={setNotesExpanded}>
                 <CardContent>
                   <Textarea
                     id="notes"
@@ -699,9 +622,7 @@ export function GroupsRacesEditor({ entry, projectId, onClose }: GroupsRacesEdit
                     className="min-h-[150px] resize-none"
                   />
                 </CardContent>
-              </CollapsibleContent>
-            </Card>
-          </Collapsible>
+              </GuidedFieldGroup>
 
         </div>
 

@@ -1,3 +1,4 @@
+import { GuidedFieldGroup, FieldHelp } from "./guidance";
 import { TagInput } from "./tag-input";
 import { RelationshipSection } from "./relationships";
 import { fieldOptions } from "@shared/bible-catalog";
@@ -15,9 +16,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Save, Trash2, Plus, X, ImageIcon, ChevronDown, ChevronRight, Calendar, Users, MapPin, Zap, Flag, Tag, ArrowLeft, Clock, Users2 } from 'lucide-react';
+import { Save, Trash2, Plus, X, ImageIcon, Calendar, Users, MapPin, Zap, Flag, Tag, ArrowLeft, Clock, Users2 } from 'lucide-react';
 import { useDeleteStoryBibleEntry, useStoryBibleEntries } from '@/hooks/use-story-bible';
 import { useToast } from '@/hooks/use-toast';
 import { StoryBibleEntry } from '@shared/schema';
@@ -29,7 +29,7 @@ interface EventData {
   // Header
   eventType?: string;
   status?: string;
-  
+
   // Date & Era (expanded initially)
   date?: {
     year: string;
@@ -39,7 +39,7 @@ interface EventData {
     isApproximate?: boolean;
   };
   era?: string;
-  
+
   // Core Summary (expanded initially)
   shortSummary?: string;
   locations?: Array<{
@@ -47,10 +47,10 @@ interface EventData {
     name: string;
     context?: string;
   }>;
-  
+
   // Narrative Context (collapsible)
   narrativeContext?: string;
-  
+
   // Participants (collapsible)
   charactersInvolved?: Array<{
     id: number;
@@ -62,7 +62,7 @@ interface EventData {
     name: string;
     role?: string;
   }>;
-  
+
   // Consequences & Follow-ups (collapsible)
   outcomeType?: string;
   outcomeTags?: string[];
@@ -71,20 +71,20 @@ interface EventData {
     name: string;
     relationship?: string;
   }>;
-  
+
   // Related World Elements (collapsible)
   worldElements?: Array<{
     id: number;
     name: string;
     context?: string;
   }>;
-  
+
   // Notes / GM/Writer Annotations (collapsed by default)
   writerNotes?: string;
   hiddenDetails?: string;
   alternativeVersions?: string;
   researchReminders?: string;
-  
+
   // Metadata
   includeOnTimeline?: boolean;
   tags?: string[];
@@ -117,8 +117,8 @@ const EventsEditor = memo(({ entry, projectId, onClose }: EventsEditorProps) => 
 
 
 
-  // Collapsible states - Date & Era and Core Summary expanded initially
-  const [dateEraExpanded, setDateEraExpanded] = useState(true);
+  // Summary opens first; chronology can wait.
+  const [dateEraExpanded, setDateEraExpanded] = useState(false);
   const [coreSummaryExpanded, setCoreSummaryExpanded] = useState(true);
   const [narrativeExpanded, setNarrativeExpanded] = useState(false);
   const [participantsExpanded, setParticipantsExpanded] = useState(false);
@@ -266,21 +266,42 @@ const EventsEditor = memo(({ entry, projectId, onClose }: EventsEditorProps) => 
       <div data-bible-form-body className="flex gap-6 p-6">
         {/* Main Column */}
         <div className="flex-1 space-y-6">
-          {/* Date & Era - Expanded initially */}
-          <Collapsible open={dateEraExpanded} onOpenChange={setDateEraExpanded}>
-            <Card>
-              <CollapsibleTrigger asChild>
-                <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
-                  <CardTitle className="text-lg flex items-center justify-between">
-                    <span className="flex items-center gap-2">
-                      <Calendar className="h-5 w-5" />
-                      Date & Era
-                    </span>
-                    {dateEraExpanded ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
-                  </CardTitle>
-                </CardHeader>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
+          {/* Start with what happened. */}
+          <GuidedFieldGroup type="events" group="coreSummary" open={coreSummaryExpanded} onOpenChange={setCoreSummaryExpanded}>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label htmlFor="shortSummary">Short Summary (one-liner)</Label>
+                    <FieldHelp type="events" field="shortSummary"/>
+                    <Input
+                      id="shortSummary" aria-describedby="events-shortSummary-help"
+                      value={eventDataState.shortSummary || ''}
+                      onChange={(e) => updateEventData({ shortSummary: e.target.value })}
+                      placeholder="Brief description of what happened..."
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="eventType">Type</Label>
+                    <Select
+                      value={eventDataState.eventType || ''}
+                      onValueChange={(value) => updateEventData({ eventType: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select event type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {EVENT_TYPES.map((type) => (
+                          <SelectItem key={type} value={type}>{type}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <RelationshipSection entry={entry} title="Event locations" kinds={["occurs_at"]} />
+                </CardContent>
+              </GuidedFieldGroup>
+
+          <GuidedFieldGroup type="events" group="dateEra" open={dateEraExpanded} onOpenChange={setDateEraExpanded}>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-3 gap-4">
                     <div>
@@ -289,7 +310,7 @@ const EventsEditor = memo(({ entry, projectId, onClose }: EventsEditorProps) => 
                         id="year"
                         value={eventDataState.date?.year || ''}
                         onChange={(e) => updateNestedData('date', { year: e.target.value })}
-                        placeholder="Required if known"
+                        placeholder="Optional year or period"
                       />
                     </div>
                     <div>
@@ -311,12 +332,13 @@ const EventsEditor = memo(({ entry, projectId, onClose }: EventsEditorProps) => 
                       />
                     </div>
                   </div>
-                  
+
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="fictionalDate">Fictional Calendar</Label>
+                    <FieldHelp type="events" field="fictionalDate"/>
                       <Input
-                        id="fictionalDate"
+                        id="fictionalDate" aria-describedby="events-fictionalDate-help"
                         value={eventDataState.date?.fictionalDate || ''}
                         onChange={(e) => updateNestedData('date', { fictionalDate: e.target.value })}
                         placeholder="e.g., Cycle 12, Sol 82..."
@@ -324,15 +346,16 @@ const EventsEditor = memo(({ entry, projectId, onClose }: EventsEditorProps) => 
                     </div>
                     <div>
                       <Label htmlFor="era">Era</Label>
+                    <FieldHelp type="events" field="era"/>
                       <Input
-                        id="era"
+                        id="era" aria-describedby="events-era-help"
                         value={eventDataState.era || ''}
                         onChange={(e) => updateEventData({ era: e.target.value })}
                         placeholder="e.g., Colonial Era, Dark Cycle..."
                       />
                     </div>
                   </div>
-                  
+
                   <div className="flex items-center space-x-2">
                     <Checkbox
                       id="isApproximate"
@@ -342,58 +365,10 @@ const EventsEditor = memo(({ entry, projectId, onClose }: EventsEditorProps) => 
                     <Label htmlFor="isApproximate">Date is approximate</Label>
                   </div>
                 </CardContent>
-              </CollapsibleContent>
-            </Card>
-          </Collapsible>
+              </GuidedFieldGroup>
 
-          {/* Core Summary - Expanded initially */}
-          <Collapsible open={coreSummaryExpanded} onOpenChange={setCoreSummaryExpanded}>
-            <Card>
-              <CollapsibleTrigger asChild>
-                <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
-                  <CardTitle className="text-lg flex items-center justify-between">
-                    <span className="flex items-center gap-2">
-                      <Flag className="h-5 w-5" />
-                      Core Summary
-                    </span>
-                    {coreSummaryExpanded ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
-                  </CardTitle>
-                </CardHeader>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                <CardContent className="space-y-4">
-                  <div>
-                    <Label htmlFor="shortSummary">Short Summary (one-liner)</Label>
-                    <Input
-                      id="shortSummary"
-                      value={eventDataState.shortSummary || ''}
-                      onChange={(e) => updateEventData({ shortSummary: e.target.value })}
-                      placeholder="Brief description of what happened..."
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="eventType">Type</Label>
-                    <Select
-                      value={eventDataState.eventType || ''}
-                      onValueChange={(value) => updateEventData({ eventType: value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select event type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {EVENT_TYPES.map((type) => (
-                          <SelectItem key={type} value={type}>{type}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+          {/* Optional chronology and further development. */}
 
-                  <RelationshipSection entry={entry} title="Event locations" kinds={["occurs_at"]} />
-                </CardContent>
-              </CollapsibleContent>
-            </Card>
-          </Collapsible>
 
           <RelationshipSection entry={entry} title="Participants" kinds={["participant"]} />
           <RelationshipSection entry={entry} title="Consequences & follow-ups" kinds={["consequence"]} />
@@ -403,44 +378,19 @@ const EventsEditor = memo(({ entry, projectId, onClose }: EventsEditorProps) => 
           </CardContent></Card>
           <RelationshipSection entry={entry} title="References & other connections" kinds={["reference","related","associated","history"]} />
           {/* Narrative Context - Collapsible */}
-          <Collapsible open={narrativeExpanded} onOpenChange={setNarrativeExpanded}>
-            <Card>
-              <CollapsibleTrigger asChild>
-                <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
-                  <CardTitle className="text-lg flex items-center justify-between">
-                    Narrative Context
-                    {narrativeExpanded ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
-                  </CardTitle>
-                </CardHeader>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
+          <GuidedFieldGroup type="events" group="narrative" open={narrativeExpanded} onOpenChange={setNarrativeExpanded}>
                 <CardContent>
-                  <Textarea
+                  <Textarea aria-label="Causes & story context"
                     value={eventDataState.narrativeContext || ''}
                     onChange={(e) => updateEventData({ narrativeContext: e.target.value })}
                     placeholder="Detailed description: causes, participants, outcomes..."
                     className="min-h-32"
                   />
                 </CardContent>
-              </CollapsibleContent>
-            </Card>
-          </Collapsible>
+              </GuidedFieldGroup>
 
           {/* Notes / GM/Writer Annotations - Collapsed by default */}
-          <Collapsible open={notesExpanded} onOpenChange={setNotesExpanded}>
-            <Card>
-              <CollapsibleTrigger asChild>
-                <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
-                  <CardTitle className="text-lg flex items-center justify-between">
-                    <span className="flex items-center gap-2">
-                      <Tag className="h-5 w-5" />
-                      Notes / GM Annotations
-                    </span>
-                    {notesExpanded ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
-                  </CardTitle>
-                </CardHeader>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
+          <GuidedFieldGroup type="events" group="notes" open={notesExpanded} onOpenChange={setNotesExpanded}>
                 <CardContent className="space-y-4">
                   <div>
                     <Label htmlFor="writerNotes">Writer's Notes</Label>
@@ -452,29 +402,31 @@ const EventsEditor = memo(({ entry, projectId, onClose }: EventsEditorProps) => 
                       className="min-h-24"
                     />
                   </div>
-                  
+
                   <div>
                     <Label htmlFor="hiddenDetails">Hidden Details</Label>
+                    <FieldHelp type="events" field="hiddenDetails"/>
                     <Textarea
-                      id="hiddenDetails"
+                      id="hiddenDetails" aria-describedby="events-hiddenDetails-help"
                       value={eventDataState.hiddenDetails || ''}
                       onChange={(e) => updateEventData({ hiddenDetails: e.target.value })}
                       placeholder="Secret information not known to characters..."
                       className="min-h-24"
                     />
                   </div>
-                  
+
                   <div>
                     <Label htmlFor="alternativeVersions">Alternative Versions</Label>
+                    <FieldHelp type="events" field="alternativeVersions"/>
                     <Textarea
-                      id="alternativeVersions"
+                      id="alternativeVersions" aria-describedby="events-alternativeVersions-help"
                       value={eventDataState.alternativeVersions || ''}
                       onChange={(e) => updateEventData({ alternativeVersions: e.target.value })}
                       placeholder="Different ways this event could have played out..."
                       className="min-h-24"
                     />
                   </div>
-                  
+
                   <div>
                     <Label htmlFor="researchReminders">Research Reminders</Label>
                     <Textarea
@@ -486,9 +438,7 @@ const EventsEditor = memo(({ entry, projectId, onClose }: EventsEditorProps) => 
                     />
                   </div>
                 </CardContent>
-              </CollapsibleContent>
-            </Card>
-          </Collapsible>
+              </GuidedFieldGroup>
         </div>
 
         {/* Sidebar */}
@@ -531,7 +481,7 @@ const EventsEditor = memo(({ entry, projectId, onClose }: EventsEditorProps) => 
                 {(eventDataState.date?.year || eventDataState.date?.fictionalDate) ? (
                   <>
                     {eventDataState.date.isApproximate && '~'}
-                    {eventDataState.date.month && eventDataState.date.day ? 
+                    {eventDataState.date.month && eventDataState.date.day ?
                       `${eventDataState.date.month}/${eventDataState.date.day}/` : ''
                     }{eventDataState.date.year}
                     {eventDataState.era && (

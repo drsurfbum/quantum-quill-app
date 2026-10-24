@@ -1,3 +1,4 @@
+import { GuidedFieldGroup, FieldHelp } from "./guidance";
 import { RelationshipSection } from "./relationships";
 import { fieldOptions } from "@shared/bible-catalog";
 import { readBibleFields } from "@shared/story-bible";
@@ -13,9 +14,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Save, Trash2, Plus, X, ChevronDown, ChevronRight, Zap, Tag, ArrowLeft, Clock, Users, MapPin, Calendar, Archive, Book, ImageIcon, Upload } from 'lucide-react';
+import { Save, Trash2, Plus, X, Zap, Tag, ArrowLeft, Clock, Users, MapPin, Calendar, Archive, Book, ImageIcon, Upload } from 'lucide-react';
 import { useDeleteStoryBibleEntry, useStoryBibleEntries } from '@/hooks/use-story-bible';
 import { useToast } from '@/hooks/use-toast';
 import { StoryBibleEntry } from '@shared/schema';
@@ -385,8 +385,9 @@ const WorldElementsEditor = memo(({ entry, projectId, onClose }: WorldElementsEd
               </div>
               <div>
                 <Label htmlFor="limitations">Limitations</Label>
+                    <FieldHelp type="world_elements" field="limitations"/>
                 <Textarea
-                  id="limitations"
+                  id="limitations" aria-describedby="world_elements-limitations-help"
                   value={details.limitations || ''}
                   onChange={(e) => updateNestedData('categoryDetails', { limitations: e.target.value })}
                   placeholder="What it can't do..."
@@ -549,29 +550,17 @@ const WorldElementsEditor = memo(({ entry, projectId, onClose }: WorldElementsEd
         {/* Main Column */}
         <div className="flex-1 space-y-6">
           {/* Core Overview - Expanded initially */}
-          <Collapsible open={coreOverviewExpanded} onOpenChange={setCoreOverviewExpanded}>
-            <Card>
-              <CollapsibleTrigger asChild>
-                <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
-                  <CardTitle className="text-lg flex items-center justify-between">
-                    <span className="flex items-center gap-2">
-                      <Zap className="h-5 w-5" />
-                      Core Overview
-                    </span>
-                    {coreOverviewExpanded ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
-                  </CardTitle>
-                </CardHeader>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
+          <GuidedFieldGroup type="world_elements" group="coreOverview" open={coreOverviewExpanded} onOpenChange={setCoreOverviewExpanded}>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="category">Category</Label>
+                    <FieldHelp type="world_elements" field="category"/>
                       <Select
                         value={worldElementDataState.category || ''}
                         onValueChange={(value) => updateWorldElementData({ category: value })}
                       >
-                        <SelectTrigger>
+                        <SelectTrigger id="category" aria-describedby="world_elements-category-help">
                           <SelectValue placeholder="Select category" />
                         </SelectTrigger>
                         <SelectContent>
@@ -601,8 +590,9 @@ const WorldElementsEditor = memo(({ entry, projectId, onClose }: WorldElementsEd
                   
                   <div>
                     <Label htmlFor="shortNotes">Short Notes / One-line Significance</Label>
+                    <FieldHelp type="world_elements" field="shortNotes"/>
                     <Textarea
-                      id="shortNotes"
+                      id="shortNotes" aria-describedby="world_elements-shortNotes-help"
                       value={worldElementDataState.shortNotes || ''}
                       onChange={(e) => updateWorldElementData({ shortNotes: e.target.value })}
                       placeholder="Brief description of its importance or uniqueness..."
@@ -610,51 +600,25 @@ const WorldElementsEditor = memo(({ entry, projectId, onClose }: WorldElementsEd
                     />
                   </div>
                 </CardContent>
-              </CollapsibleContent>
-            </Card>
-          </Collapsible>
+              </GuidedFieldGroup>
 
           {/* Category-Specific Details - Dynamic based on category */}
           {worldElementDataState.category && (
-            <Collapsible open={categoryDetailsExpanded} onOpenChange={setCategoryDetailsExpanded}>
-              <Card>
-                <CollapsibleTrigger asChild>
-                  <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
-                    <CardTitle className="text-lg flex items-center justify-between">
-                      {worldElementDataState.category} Details
-                      {categoryDetailsExpanded ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
-                    </CardTitle>
-                  </CardHeader>
-                </CollapsibleTrigger>
-                <CollapsibleContent>
+            <GuidedFieldGroup type="world_elements" group="categoryDetails" open={categoryDetailsExpanded} onOpenChange={setCategoryDetailsExpanded}>
                   <CardContent>
                     {getCategorySpecificFields()}
                   </CardContent>
-                </CollapsibleContent>
-              </Card>
-            </Collapsible>
+                </GuidedFieldGroup>
           )}
 
           {/* Origins & History - Collapsible */}
-          <Collapsible open={originsHistoryExpanded} onOpenChange={setOriginsHistoryExpanded}>
-            <Card>
-              <CollapsibleTrigger asChild>
-                <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
-                  <CardTitle className="text-lg flex items-center justify-between">
-                    <span className="flex items-center gap-2">
-                      <Clock className="h-5 w-5" />
-                      Origins & History
-                    </span>
-                    {originsHistoryExpanded ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
-                  </CardTitle>
-                </CardHeader>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
+          <GuidedFieldGroup type="world_elements" group="originsHistory" open={originsHistoryExpanded} onOpenChange={setOriginsHistoryExpanded}>
                 <CardContent className="space-y-4">
                   <div>
                     <Label htmlFor="discoveryOrigin">How/When Discovered or Invented</Label>
+                    <FieldHelp type="world_elements" field="discoveryOrigin"/>
                     <Textarea
-                      id="discoveryOrigin"
+                      id="discoveryOrigin" aria-describedby="world_elements-discoveryOrigin-help"
                       value={worldElementDataState.discoveryOrigin || ''}
                       onChange={(e) => updateWorldElementData({ discoveryOrigin: e.target.value })}
                       placeholder="Origin story, discovery circumstances..."
@@ -662,34 +626,20 @@ const WorldElementsEditor = memo(({ entry, projectId, onClose }: WorldElementsEd
                     />
                   </div>
                 </CardContent>
-              </CollapsibleContent>
-            </Card>
-          </Collapsible>
+              </GuidedFieldGroup>
 
           <RelationshipSection entry={entry} title="Origins & historical events" kinds={["history"]} />
           <RelationshipSection entry={entry} title="Usage & impact" kinds={["used_by","affects"]} />
           <RelationshipSection entry={entry} title="References & connections" kinds={["reference","associated","related"]} />
           <RelationshipSection entry={entry} title="World element hierarchy" kinds={["parent"]} />
           {/* Details / Lore Hooks - Collapsed by default */}
-          <Collapsible open={loreHooksExpanded} onOpenChange={setLoreHooksExpanded}>
-            <Card>
-              <CollapsibleTrigger asChild>
-                <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
-                  <CardTitle className="text-lg flex items-center justify-between">
-                    <span className="flex items-center gap-2">
-                      <Book className="h-5 w-5" />
-                      Details / Lore Hooks
-                    </span>
-                    {loreHooksExpanded ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
-                  </CardTitle>
-                </CardHeader>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
+          <GuidedFieldGroup type="world_elements" group="loreHooks" open={loreHooksExpanded} onOpenChange={setLoreHooksExpanded}>
                 <CardContent className="space-y-4">
                   <div>
                     <Label htmlFor="loreHooks">General Lore Hooks</Label>
+                    <FieldHelp type="world_elements" field="loreHooks"/>
                     <Textarea
-                      id="loreHooks"
+                      id="loreHooks" aria-describedby="world_elements-loreHooks-help"
                       value={worldElementDataState.loreHooks || ''}
                       onChange={(e) => updateWorldElementData({ loreHooks: e.target.value })}
                       placeholder="Story hooks and interesting details..."
@@ -710,8 +660,9 @@ const WorldElementsEditor = memo(({ entry, projectId, onClose }: WorldElementsEd
                     </div>
                     <div>
                       <Label htmlFor="rumors">Rumors</Label>
+                    <FieldHelp type="world_elements" field="rumors"/>
                       <Textarea
-                        id="rumors"
+                        id="rumors" aria-describedby="world_elements-rumors-help"
                         value={worldElementDataState.rumors || ''}
                         onChange={(e) => updateWorldElementData({ rumors: e.target.value })}
                         placeholder="What people whisper about it..."
@@ -731,9 +682,7 @@ const WorldElementsEditor = memo(({ entry, projectId, onClose }: WorldElementsEd
                     />
                   </div>
                 </CardContent>
-              </CollapsibleContent>
-            </Card>
-          </Collapsible>
+              </GuidedFieldGroup>
         </div>
 
         {/* Sidebar */}

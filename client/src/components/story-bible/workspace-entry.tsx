@@ -16,6 +16,8 @@ import { useStoryBibleEntries } from "@/hooks/use-story-bible";
 import { EntryLinks } from "./entry-links";
 import { SceneBacklinks } from "./scene-backlinks";
 import { ConversionPreview } from "./conversion-preview";
+import { bibleGuide } from "@shared/bible-guidance";
+import { BibleGuidanceVisibility, RetainedEntryValues } from "./guidance";
 
 const facts: Record<string, Array<[string,string]>> = {
   characters: [["primaryRole","Role"],["age","Age"],["origin","Origin"],["species","Species"],["motivations","Motivations"],["conflicts","Conflicts"]],
@@ -27,13 +29,16 @@ const facts: Record<string, Array<[string,string]>> = {
   research: [["sourceType","Source type"],["status","Status"],["urlOrReference","Source reference"],["nextSteps","Next steps"]],
 };
 
-export function WorkspaceEntry({entry:serverEntry,onOpen,onBack,initialTab="overview"}:{entry:StoryBibleEntry;onOpen:(entry:StoryBibleEntry)=>void;onBack:()=>void;initialTab?:string}) {
+export function WorkspaceEntry({entry:serverEntry,onOpen,onBack,initialTab="overview",guidance:guided,onGuidanceChange}:{entry:StoryBibleEntry;onOpen:(entry:StoryBibleEntry)=>void;onBack:()=>void;initialTab?:string;guidance?:boolean;onGuidanceChange?:(visible:boolean)=>void}) {
   const [tab,setTab] = useState(initialTab);
+  const [localGuidance,setLocalGuidance] = useState(true);
+  const guidance = guided ?? localGuidance;
+  const setGuidance = onGuidanceChange || setLocalGuidance;
   const url = `/api/story-bible/${serverEntry.id}`;
   const autosave = useAutosave(url,`/api/projects/${serverEntry.projectId}/story-bible`);
   const entry = withPendingEdits(url,serverEntry);
   const source = hasImportedSource(entry);
-  return <RelationshipNavigation.Provider value={onOpen}>
+  return <RelationshipNavigation.Provider value={onOpen}><BibleGuidanceVisibility.Provider value={guidance}>
     <Tabs value={tab} onValueChange={setTab} className="bible-entry-workspace flex flex-col min-h-0 h-full">
       <div className="shrink-0 border-b bg-background px-4 pt-4 sm:px-7">
         <div className="flex items-center justify-between gap-2 mb-3"><Button size="sm" variant="ghost" onClick={onBack} className="-ml-2 gap-1.5"><ArrowLeft className="h-4 w-4"/>Library</Button><SaveStatus status={autosave.status} retry={autosave.flush} stable/></div>
@@ -45,11 +50,17 @@ export function WorkspaceEntry({entry:serverEntry,onOpen,onBack,initialTab="over
       {/* Keep the editor and connection dialogs mounted across tabs. Local field
           state and failed-save drafts must survive a change of view. */}
       <TabsContent forceMount value="overview" hidden={tab!=="overview"} className="bible-tab-panel"><EntryOverview entry={entry} onDevelop={()=>setTab("develop")} onConnections={()=>setTab("connections")}/></TabsContent>
-      <TabsContent forceMount value="develop" hidden={tab!=="develop"} className="bible-tab-panel"><div className="mb-5"><h2 className="text-lg font-semibold">Develop this element</h2><p className="mt-1 text-sm leading-relaxed text-muted-foreground">{bibleGuidance[entry.entryType]} Fill in only what helps your story.</p></div><div className="bible-workspace-fields"><EntryEditor entry={serverEntry} projectId={entry.projectId} onClose={onBack} showSource={false}/></div><div className="mt-8"><ConversionPreview entry={entry}/></div></TabsContent>
-      <TabsContent forceMount value="connections" hidden={tab!=="connections"} className="bible-tab-panel"><h2 className="text-lg font-semibold">Connections</h2><p className="mt-1 mb-5 text-sm text-muted-foreground">Link this element to your world and see where it appears in your writing.</p><RelationshipSection entry={entry} title="Linked elements"/><EntryLinks entry={entry} onOpen={onOpen} showArchive={false}/><p className="mt-4 text-sm text-muted-foreground">Archive and other entry options are available in <button className="underline" onClick={()=>setTab("develop")}>Develop</button>.</p><SceneBacklinks entry={entry}/></TabsContent>
+      <TabsContent forceMount value="develop" hidden={tab!=="develop"} className="bible-tab-panel">
+        <div className="mb-5"><div className="flex flex-wrap items-center justify-between gap-2"><h2 className="text-lg font-semibold">Develop this element</h2><Button type="button" size="sm" variant="ghost" aria-pressed={guidance} onClick={()=>setGuidance(!guidance)}>{guidance ? "Hide guidance" : "Show guidance"}</Button></div>
+          <p hidden={!guidance} className="mt-1 text-sm leading-relaxed text-muted-foreground">{bibleGuide(entry.entryType)?.purpose || bibleGuidance[entry.entryType]} Start with what you know; every field below the name is optional. Changes save automatically.</p>
+        </div>
+        <div className="bible-workspace-fields"><EntryEditor entry={serverEntry} projectId={entry.projectId} onClose={onBack} showSource={false}/></div>
+        <div className="mt-8"><RetainedEntryValues entry={entry}/><ConversionPreview entry={entry}/></div>
+      </TabsContent>
+      <TabsContent forceMount value="connections" hidden={tab!=="connections"} className="bible-tab-panel"><h2 className="text-lg font-semibold">Connections</h2><p className="mt-1 mb-5 text-sm text-muted-foreground">Link this element to your world and see where it appears in your writing. Choose a target and save explicitly to add a connection.</p><RelationshipSection entry={entry} title="Linked elements" suggestions={bibleGuide(entry.entryType)?.connections}/><EntryLinks entry={entry} onOpen={onOpen} showArchive={false}/><p className="mt-4 text-sm text-muted-foreground">Archive and other entry options are available in <button className="underline" onClick={()=>setTab("develop")}>Develop</button>.</p><SceneBacklinks entry={entry}/></TabsContent>
       {source && <TabsContent forceMount value="source" hidden={tab!=="source"} className="bible-tab-panel"><h2 className="text-lg font-semibold mb-1">Original source</h2><p className="text-sm text-muted-foreground mb-5">Your imported notes and original pages, kept alongside your working entry.</p><ImportedSource entry={entry} expanded/></TabsContent>}
     </Tabs>
-  </RelationshipNavigation.Provider>;
+  </BibleGuidanceVisibility.Provider></RelationshipNavigation.Provider>;
 }
 
 function EntryOverview({entry,onDevelop,onConnections}:{entry:StoryBibleEntry;onDevelop:()=>void;onConnections:()=>void}) {
