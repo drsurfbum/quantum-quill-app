@@ -10,6 +10,8 @@ The Story Bible uses the approved Workspace direction: a searchable library of a
 
 Desktop keeps a compact library alongside the entry. Narrow screens use one pane with an explicit Library button. Scroll surfaces are bounded by the viewport, and autosave status reserves a fixed amount of space.
 
+QQ-14 adds shared optional guidance, examples, stable field-group disclosures, type explanations and suggested starting points in the existing connection picker. See [guided Story Bible](GUIDED_STORY_BIBLE.md) for feature-branch scope and current validation. The original validation snapshot below predates QQ-14.
+
 ## Writing protections
 
 Tab changes keep the same editors mounted; they do not discard local fields, recreate editors, or write data. Entry navigation and creation pass through the existing pending-save/recovery guard. Existing account/project draft journals, revision checks, upload access, relationship validation, and original import payloads are unchanged. Archive remains with the specialized editing form to avoid two independently mounted copies of structured archive state.

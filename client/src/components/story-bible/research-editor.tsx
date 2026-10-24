@@ -1,3 +1,4 @@
+import { GuidedFieldGroup, FieldHelp } from "./guidance";
 import { RelationshipSection } from "./relationships";
 import { fieldOptions } from "@shared/bible-catalog";
 import { readBibleFields } from "@shared/story-bible";
@@ -14,9 +15,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Save, Trash2, Plus, X, ChevronDown, ChevronRight, BookOpen, Link2, Users, MapPin, Calendar, Zap, Tag, ArrowLeft, Clock, Archive, FileText, ExternalLink, CheckCircle, Eye, AlertCircle, ImageIcon, Upload } from 'lucide-react';
+import { Save, Trash2, Plus, X, BookOpen, Link2, Users, MapPin, Calendar, Zap, Tag, ArrowLeft, Clock, Archive, FileText, ExternalLink, CheckCircle, Eye, AlertCircle, ImageIcon, Upload } from 'lucide-react';
 import { useDeleteStoryBibleEntry, useStoryBibleEntries } from '@/hooks/use-story-bible';
 import { useToast } from '@/hooks/use-toast';
 import { StoryBibleEntry } from '@shared/schema';
@@ -106,7 +106,7 @@ const ResearchEditor = memo(({ entry, projectId, onClose }: ResearchEditorProps)
   const [detailedNotesExpanded, setDetailedNotesExpanded] = useState(false);
   const [utilityActionsExpanded, setUtilityActionsExpanded] = useState(false);
   const [attachmentsExpanded, setAttachmentsExpanded] = useState(false);
-  const [tagsTopicsExpanded, setTagsTopicsExpanded] = useState(true);
+  const [tagsTopicsExpanded, setTagsTopicsExpanded] = useState(false);
   const [teamNotesExpanded, setTeamNotesExpanded] = useState(false);
 
   // Parse research data from content
@@ -274,20 +274,7 @@ const ResearchEditor = memo(({ entry, projectId, onClose }: ResearchEditorProps)
         {/* Main Column */}
         <div className="flex-1 space-y-6">
           {/* Core Info - Expanded initially */}
-          <Collapsible open={coreInfoExpanded} onOpenChange={setCoreInfoExpanded}>
-            <Card>
-              <CollapsibleTrigger asChild>
-                <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
-                  <CardTitle className="text-lg flex items-center justify-between">
-                    <span className="flex items-center gap-2">
-                      <BookOpen className="h-5 w-5" />
-                      Core Info
-                    </span>
-                    {coreInfoExpanded ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
-                  </CardTitle>
-                </CardHeader>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
+          <GuidedFieldGroup type="research" group="coreInfo" open={coreInfoExpanded} onOpenChange={setCoreInfoExpanded}>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
@@ -308,11 +295,12 @@ const ResearchEditor = memo(({ entry, projectId, onClose }: ResearchEditorProps)
                     </div>
                     <div>
                       <Label htmlFor="status">Status</Label>
+                    <FieldHelp type="research" field="status"/>
                       <Select
                         value={researchDataState.status}
                         onValueChange={(value) => updateResearchData({ status: value })}
                       >
-                        <SelectTrigger>
+                        <SelectTrigger id="status" aria-describedby="research-status-help">
                           <SelectValue placeholder="Select status" />
                         </SelectTrigger>
                         <SelectContent>
@@ -331,9 +319,10 @@ const ResearchEditor = memo(({ entry, projectId, onClose }: ResearchEditorProps)
                   
                   <div>
                     <Label htmlFor="urlOrReference">URL or Reference Details</Label>
+                    <FieldHelp type="research" field="urlOrReference"/>
                     <div className="flex gap-2">
                       <Input
-                        id="urlOrReference"
+                        id="urlOrReference" aria-describedby="research-urlOrReference-help"
                         value={researchDataState.urlOrReference}
                         onChange={(e) => updateResearchData({ urlOrReference: e.target.value })}
                         placeholder="https://example.com or book reference..."
@@ -350,8 +339,9 @@ const ResearchEditor = memo(({ entry, projectId, onClose }: ResearchEditorProps)
                   
                   <div>
                     <Label htmlFor="shortSummary">Short Summary of Findings</Label>
+                    <FieldHelp type="research" field="shortSummary"/>
                     <Textarea
-                      id="shortSummary"
+                      id="shortSummary" aria-describedby="research-shortSummary-help"
                       value={researchDataState.shortSummary}
                       onChange={(e) => updateResearchData({ shortSummary: e.target.value })}
                       placeholder="Brief summary of key findings or relevance..."
@@ -359,25 +349,10 @@ const ResearchEditor = memo(({ entry, projectId, onClose }: ResearchEditorProps)
                     />
                   </div>
                 </CardContent>
-              </CollapsibleContent>
-            </Card>
-          </Collapsible>
+              </GuidedFieldGroup>
 
           {/* Tags & Topics - Expanded initially */}
-          <Collapsible open={tagsTopicsExpanded} onOpenChange={setTagsTopicsExpanded}>
-            <Card>
-              <CollapsibleTrigger asChild>
-                <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
-                  <CardTitle className="text-lg flex items-center justify-between">
-                    <span className="flex items-center gap-2">
-                      <Tag className="h-5 w-5" />
-                      Tags & Topics
-                    </span>
-                    {tagsTopicsExpanded ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
-                  </CardTitle>
-                </CardHeader>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
+          <GuidedFieldGroup type="research" group="tagsTopics" open={tagsTopicsExpanded} onOpenChange={setTagsTopicsExpanded}>
                 <CardContent className="space-y-4">
                   {/* Topics */}
                   <div>
@@ -447,48 +422,18 @@ const ResearchEditor = memo(({ entry, projectId, onClose }: ResearchEditorProps)
                     </div>
                   </div>
                 </CardContent>
-              </CollapsibleContent>
-            </Card>
-          </Collapsible>
+              </GuidedFieldGroup>
 
           {/* Linked Applications - Collapsible */}
-          <Collapsible open={linkedApplicationsExpanded} onOpenChange={setLinkedApplicationsExpanded}>
-            <Card>
-              <CollapsibleTrigger asChild>
-                <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
-                  <CardTitle className="text-lg flex items-center justify-between">
-                    <span className="flex items-center gap-2">
-                      <Link2 className="h-5 w-5" />
-                      Linked Applications
-                    </span>
-                    {linkedApplicationsExpanded ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
-                  </CardTitle>
-                </CardHeader>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
+          <GuidedFieldGroup type="research" group="linkedApplications" open={linkedApplicationsExpanded} onOpenChange={setLinkedApplicationsExpanded}>
                 <CardContent className="space-y-4">
                   {/* Linked Elements */}
                   <RelationshipSection entry={entry} title="Linked applications" kinds={["application"]} />
                 </CardContent>
-              </CollapsibleContent>
-            </Card>
-          </Collapsible>
+              </GuidedFieldGroup>
 
           {/* Detailed Notes - Collapsible */}
-          <Collapsible open={detailedNotesExpanded} onOpenChange={setDetailedNotesExpanded}>
-            <Card>
-              <CollapsibleTrigger asChild>
-                <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
-                  <CardTitle className="text-lg flex items-center justify-between">
-                    <span className="flex items-center gap-2">
-                      <FileText className="h-5 w-5" />
-                      Detailed Notes
-                    </span>
-                    {detailedNotesExpanded ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
-                  </CardTitle>
-                </CardHeader>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
+          <GuidedFieldGroup type="research" group="detailedNotes" open={detailedNotesExpanded} onOpenChange={setDetailedNotesExpanded}>
                 <CardContent>
                   <div>
                     <Label htmlFor="detailedNotes">Key Points, Quotes, Data Captured</Label>
@@ -501,30 +446,16 @@ const ResearchEditor = memo(({ entry, projectId, onClose }: ResearchEditorProps)
                     />
                   </div>
                 </CardContent>
-              </CollapsibleContent>
-            </Card>
-          </Collapsible>
+              </GuidedFieldGroup>
 
           {/* Utility & Actions - Collapsible */}
-          <Collapsible open={utilityActionsExpanded} onOpenChange={setUtilityActionsExpanded}>
-            <Card>
-              <CollapsibleTrigger asChild>
-                <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
-                  <CardTitle className="text-lg flex items-center justify-between">
-                    <span className="flex items-center gap-2">
-                      <CheckCircle className="h-5 w-5" />
-                      Utility & Actions
-                    </span>
-                    {utilityActionsExpanded ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
-                  </CardTitle>
-                </CardHeader>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
+          <GuidedFieldGroup type="research" group="utilityActions" open={utilityActionsExpanded} onOpenChange={setUtilityActionsExpanded}>
                 <CardContent className="space-y-4">
                   <div>
                     <Label htmlFor="nextSteps">Next Steps</Label>
+                    <FieldHelp type="research" field="nextSteps"/>
                     <Textarea
-                      id="nextSteps"
+                      id="nextSteps" aria-describedby="research-nextSteps-help"
                       value={researchDataState.nextSteps || ''}
                       onChange={(e) => updateResearchData({ nextSteps: e.target.value })}
                       placeholder="What to do with this research? e.g., 'Incorporate into World Element: Low-gravity agriculture'"
@@ -534,8 +465,9 @@ const ResearchEditor = memo(({ entry, projectId, onClose }: ResearchEditorProps)
                   
                   <div>
                     <Label htmlFor="incorporationPlans">Incorporation Plans</Label>
+                    <FieldHelp type="research" field="incorporationPlans"/>
                     <Textarea
-                      id="incorporationPlans"
+                      id="incorporationPlans" aria-describedby="research-incorporationPlans-help"
                       value={researchDataState.incorporationPlans || ''}
                       onChange={(e) => updateResearchData({ incorporationPlans: e.target.value })}
                       placeholder="How to integrate this research into the story..."
@@ -543,25 +475,10 @@ const ResearchEditor = memo(({ entry, projectId, onClose }: ResearchEditorProps)
                     />
                   </div>
                 </CardContent>
-              </CollapsibleContent>
-            </Card>
-          </Collapsible>
+              </GuidedFieldGroup>
 
           {/* Team Notes - Collapsed by default */}
-          <Collapsible open={teamNotesExpanded} onOpenChange={setTeamNotesExpanded}>
-            <Card>
-              <CollapsibleTrigger asChild>
-                <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
-                  <CardTitle className="text-lg flex items-center justify-between">
-                    <span className="flex items-center gap-2">
-                      <Users className="h-5 w-5" />
-                      Notes for Team/You
-                    </span>
-                    {teamNotesExpanded ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
-                  </CardTitle>
-                </CardHeader>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
+          <GuidedFieldGroup type="research" group="teamNotes" open={teamNotesExpanded} onOpenChange={setTeamNotesExpanded}>
                 <CardContent>
                   <div>
                     <Label htmlFor="teamNotes">Reminders & Team Notes</Label>
@@ -574,9 +491,7 @@ const ResearchEditor = memo(({ entry, projectId, onClose }: ResearchEditorProps)
                     />
                   </div>
                 </CardContent>
-              </CollapsibleContent>
-            </Card>
-          </Collapsible>
+              </GuidedFieldGroup>
         </div>
 
         {/* Sidebar */}

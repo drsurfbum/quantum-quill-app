@@ -27,6 +27,14 @@ if (process.env.QQ_DEMO_FEEDBACK === "1") {
 }
 const project = await storage.createProject({ userId: user.id, title: "The Lantern Coast", description: "When the coast's last true chart disappears, a reluctant navigator must choose between the people who raised her and the islands they erased.", settings: { author: "Demo Writer", genre: "Fantasy", targetWordCount: 80000 } });
 async function entry(title: string, entryType: string, content: string, metadata: Record<string, unknown> = {}, tags: string[] = []) {
+  if (process.env.QQ_DEMO_GUIDANCE === "1") {
+    // Opt-in, entirely synthetic compatibility payloads for QQ-14 browser QA.
+    metadata = { ...metadata, qq14Unknown: { retained: ["older value", { exact: true }] } };
+    if (["events", "world_elements", "details", "research"].includes(entryType)) {
+      content = JSON.stringify({ ...JSON.parse(content), qq14Unknown: { nested: ["retain me", 0, false] } });
+    }
+    if (title === "Mara Vale") metadata._notionImport = { version: 1, sourceId: "a".repeat(32), originalMarkdown: "# Synthetic original\n\nA **formatted** navigation note. Preserve this exact original.", notes: [], supportingPages: [] };
+  }
   return storage.createStoryBibleEntry({ projectId: project.id, title, entryType, content, metadata, tags, priority: 1 } as InsertStoryBibleEntry);
 }
 const mara = await entry("Mara Vale", "characters", "A coastal navigator with an extraordinary memory for maps and a stubborn distrust of people. Mara can read a current by the way it bends a lantern's reflection. She has spent her life charting safe passages for others; now the route she needs most is the one her teachers insist never existed.", { age: "29", gender: "Female", species: "Human", primaryRole: "Protagonist", origin: "Old Harbor", motivations: "Find her brother and return the missing islands to the map.", conflicts: "Loyalty to the Tidekeepers versus the truth they have hidden.", personalityTraits: "Observant, dryly funny, reluctant to ask for help.", eyeColor: "Gray-green", hairColor: "Black", abilities: ["Navigation", "Reading currents", "Cartographic memory"] }, ["navigator", "found family", "truth"]);

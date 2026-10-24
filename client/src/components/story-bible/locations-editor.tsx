@@ -1,3 +1,4 @@
+import { GuidedFieldGroup, FieldHelp } from "./guidance";
 import { RelationshipSection } from "./relationships";
 import { fieldChoices } from "@shared/bible-catalog";
 import { TagInput } from "./tag-input";
@@ -12,9 +13,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Save, Trash2, Archive, ArchiveRestore, Star, StarOff, ChevronDown, ChevronRight, Plus, X, MapPin, ImageIcon } from "lucide-react";
+import { Save, Trash2, Archive, ArchiveRestore, Star, StarOff, Plus, X, MapPin, ImageIcon } from "lucide-react";
 import { useDeleteStoryBibleEntry, useStoryBibleEntries, useCreateStoryBibleEntry } from "@/hooks/use-story-bible";
 import { useToast } from "@/hooks/use-toast";
 import { FileUpload } from "@/components/ui/file-upload";
@@ -79,9 +79,8 @@ export function LocationsEditor({ entry, projectId, onClose }: LocationsEditorPr
   const [newKeyFeature, setNewKeyFeature] = useState("");
   const [newWorldElement, setNewWorldElement] = useState("");
 
-  // Section collapse states - smart defaults
-  const isNewEntry = !entry.id || entry.id === 0;
-  const [coreInfoExpanded, setCoreInfoExpanded] = useState(isNewEntry || !locationType || !tagline);
+  // Start with the overview; optional development stays available below.
+  const [coreInfoExpanded, setCoreInfoExpanded] = useState(true);
   const [physicalExpanded, setPhysicalExpanded] = useState(false);
   const [significanceExpanded, setSignificanceExpanded] = useState(false);
   const [historyExpanded, setHistoryExpanded] = useState(false);
@@ -275,21 +274,12 @@ export function LocationsEditor({ entry, projectId, onClose }: LocationsEditorPr
         <div className="lg:col-span-2 space-y-8">
           
           {/* Core Info Card */}
-          <Collapsible open={coreInfoExpanded} onOpenChange={setCoreInfoExpanded}>
-            <Card>
-              <CollapsibleTrigger asChild>
-                <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
-                  <CardTitle className="text-xl flex items-center justify-between">
-                    Core Info
-                    {coreInfoExpanded ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
-                  </CardTitle>
-                </CardHeader>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
+          <GuidedFieldGroup type="locations" group="coreInfo" open={coreInfoExpanded} onOpenChange={setCoreInfoExpanded}>
                 <CardContent className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="locationType">Type</Label>
+                    <FieldHelp type="locations" field="locationType"/>
                       <Select 
                         value={locationType} 
                         onValueChange={(value) => {
@@ -297,7 +287,7 @@ export function LocationsEditor({ entry, projectId, onClose }: LocationsEditorPr
                           updateMetadata({ locationType: value });
                         }}
                       >
-                        <SelectTrigger>
+                        <SelectTrigger id="locationType" aria-describedby="locations-locationType-help">
                           <SelectValue placeholder="Select type..." />
                         </SelectTrigger>
                         <SelectContent>
@@ -328,8 +318,9 @@ export function LocationsEditor({ entry, projectId, onClose }: LocationsEditorPr
 
                   <div className="space-y-2">
                     <Label htmlFor="tagline">Short Notes / Tagline</Label>
+                    <FieldHelp type="locations" field="tagline"/>
                     <Input
-                      id="tagline"
+                      id="tagline" aria-describedby="locations-tagline-help"
                       value={tagline}
                       onChange={(e) => {
                         setTagline(e.target.value);
@@ -341,30 +332,19 @@ export function LocationsEditor({ entry, projectId, onClose }: LocationsEditorPr
 
                   <div className="space-y-2">
                     <Label htmlFor="category">Category Tag</Label>
+                    <FieldHelp type="locations" field="category"/>
                     <Input
-                      id="category"
+                      id="category" aria-describedby="locations-category-help"
                       value={category}
                       onChange={(e) => handleCategoryChange(e.target.value)}
                       placeholder="Core Worlds, Frontier, Hidden Bases, etc."
                     />
                   </div>
                 </CardContent>
-              </CollapsibleContent>
-            </Card>
-          </Collapsible>
+              </GuidedFieldGroup>
 
           {/* Physical & Environmental Details Card */}
-          <Collapsible open={physicalExpanded} onOpenChange={setPhysicalExpanded}>
-            <Card>
-              <CollapsibleTrigger asChild>
-                <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
-                  <CardTitle className="text-xl flex items-center justify-between">
-                    Physical & Environmental Details
-                    {physicalExpanded ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
-                  </CardTitle>
-                </CardHeader>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
+          <GuidedFieldGroup type="locations" group="physical" open={physicalExpanded} onOpenChange={setPhysicalExpanded}>
                 <CardContent className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
@@ -474,27 +454,16 @@ export function LocationsEditor({ entry, projectId, onClose }: LocationsEditorPr
                     </div>
                   )}
                 </CardContent>
-              </CollapsibleContent>
-            </Card>
-          </Collapsible>
+              </GuidedFieldGroup>
 
           {/* Significance & Function Card */}
-          <Collapsible open={significanceExpanded} onOpenChange={setSignificanceExpanded}>
-            <Card>
-              <CollapsibleTrigger asChild>
-                <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
-                  <CardTitle className="text-xl flex items-center justify-between">
-                    Significance & Function
-                    {significanceExpanded ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
-                  </CardTitle>
-                </CardHeader>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
+          <GuidedFieldGroup type="locations" group="significance" open={significanceExpanded} onOpenChange={setSignificanceExpanded}>
                 <CardContent className="space-y-6">
                   <div className="space-y-2">
                     <Label htmlFor="purpose">Purpose</Label>
+                    <FieldHelp type="locations" field="purpose"/>
                     <Textarea
-                      id="purpose"
+                      id="purpose" aria-describedby="locations-purpose-help"
                       value={purpose}
                       onChange={(e) => {
                         setPurpose(e.target.value);
@@ -537,22 +506,10 @@ export function LocationsEditor({ entry, projectId, onClose }: LocationsEditorPr
                     </div>
                   </div>
                 </CardContent>
-              </CollapsibleContent>
-            </Card>
-          </Collapsible>
+              </GuidedFieldGroup>
 
           {/* History & Timeline Card */}
-          <Collapsible open={historyExpanded} onOpenChange={setHistoryExpanded}>
-            <Card>
-              <CollapsibleTrigger asChild>
-                <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
-                  <CardTitle className="text-xl flex items-center justify-between">
-                    History & Timeline
-                    {historyExpanded ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
-                  </CardTitle>
-                </CardHeader>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
+          <GuidedFieldGroup type="locations" group="history" open={historyExpanded} onOpenChange={setHistoryExpanded}>
                 <CardContent className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
@@ -592,26 +549,14 @@ export function LocationsEditor({ entry, projectId, onClose }: LocationsEditorPr
                     />
                   </div>
                 </CardContent>
-              </CollapsibleContent>
-            </Card>
-          </Collapsible>
+              </GuidedFieldGroup>
 
           {/* Inhabitants & Governance Card */}
           <RelationshipSection entry={entry} title="Governance & history" kinds={["governed_by","history","associated"]} />
           <RelationshipSection entry={entry} title="Inhabitants" kinds={["inhabitant"]} />
 
           {/* Relational Connections Card */}
-          <Collapsible open={relationalExpanded} onOpenChange={setRelationalExpanded}>
-            <Card>
-              <CollapsibleTrigger asChild>
-                <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
-                  <CardTitle className="text-xl flex items-center justify-between">
-                    Relational Connections
-                    {relationalExpanded ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
-                  </CardTitle>
-                </CardHeader>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
+          <GuidedFieldGroup type="locations" group="relational" open={relationalExpanded} onOpenChange={setRelationalExpanded}>
                 <CardContent className="space-y-6">
                   <RelationshipSection entry={entry} title="Nearby locations" kinds={["nearby"]} />
 
@@ -647,22 +592,10 @@ export function LocationsEditor({ entry, projectId, onClose }: LocationsEditorPr
                     </div>
                   </div>
                 </CardContent>
-              </CollapsibleContent>
-            </Card>
-          </Collapsible>
+              </GuidedFieldGroup>
 
           {/* Notes / Development Ideas Card */}
-          <Collapsible open={notesExpanded} onOpenChange={setNotesExpanded}>
-            <Card>
-              <CollapsibleTrigger asChild>
-                <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
-                  <CardTitle className="text-xl flex items-center justify-between">
-                    Notes & Development Ideas
-                    {notesExpanded ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
-                  </CardTitle>
-                </CardHeader>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
+          <GuidedFieldGroup type="locations" group="notes" open={notesExpanded} onOpenChange={setNotesExpanded}>
                 <CardContent>
                   <Textarea
                     id="notes"
@@ -673,9 +606,7 @@ export function LocationsEditor({ entry, projectId, onClose }: LocationsEditorPr
                     className="min-h-[150px] resize-none"
                   />
                 </CardContent>
-              </CollapsibleContent>
-            </Card>
-          </Collapsible>
+              </GuidedFieldGroup>
 
         </div>
 

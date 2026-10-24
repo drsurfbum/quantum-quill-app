@@ -56,13 +56,13 @@ export function EntryPicker({ entries, sourceId, types, value, onChange, onStub,
 
 type Form = RelationshipInput & { requestId: string; stub: boolean; stubTitle: string; stubType: string; baseVersion?: string };
 const recoveredForm = relationshipInput.extend({ targetId: z.number().int().nonnegative(), requestId: z.string().uuid(), stub: z.boolean(), stubTitle: z.string(), stubType: z.string(), baseVersion: z.string().optional() });
-function RelationshipForm({ entry, link, kinds, close }: { entry: StoryBibleEntry; link?: Relationship; kinds: RelationshipType[]; close: () => void }) {
+function RelationshipForm({ entry, link, kinds, initialKind, close }: { entry: StoryBibleEntry; link?: Relationship; kinds: RelationshipType[]; initialKind?: RelationshipType; close: () => void }) {
   const { data: entries = [] } = useStoryBibleEntries(entry.projectId, { staleTime: 0 });
   const owner = useRef(currentAccount()).current;
   const prefix = `quantum-quill:relationship-draft:v1:${owner}:${entry.projectId}:${entry.id}:${link?.id || `new:${[...kinds].sort().join(",")}`}:`;
   const key = prefix + relationshipPageId;
   const restored = useRef<{ key: string; raw: string } | null>(null);
-  const initial = (): Form => ({ sourceId: link?.sourceId || entry.id, targetId: link?.targetId || 0, relationshipType: link?.relationshipType || kinds[0], role: link?.role || "", context: link?.context || "", startDate: link?.startDate || "", endDate: link?.endDate || "", requestId: crypto.randomUUID(), stub: false, stubTitle: "", stubType: "", baseVersion: link?.version });
+  const initial = (): Form => ({ sourceId: link?.sourceId || entry.id, targetId: link?.targetId || 0, relationshipType: link?.relationshipType || (initialKind && kinds.includes(initialKind) ? initialKind : kinds[0]), role: link?.role || "", context: link?.context || "", startDate: link?.startDate || "", endDate: link?.endDate || "", requestId: crypto.randomUUID(), stub: false, stubTitle: "", stubType: "", baseVersion: link?.version });
   const [form, setForm] = useState<Form>(initial);
   const [recovery, setRecovery] = useState<Array<{ key: string; raw: string; form: Form }>>(() => {
     try { return Object.keys(window.localStorage).filter(key => key.startsWith(prefix)).flatMap(key => {
@@ -132,12 +132,13 @@ function RelationshipForm({ entry, link, kinds, close }: { entry: StoryBibleEntr
   </div>;
 }
 
-export function RelationshipSection({ entry, kinds, title = "Relationships" }: { entry: StoryBibleEntry; kinds?: RelationshipType[]; title?: string }) {
+export function RelationshipSection({ entry, kinds, title = "Relationships", suggestions }: { entry: StoryBibleEntry; kinds?: RelationshipType[]; title?: string; suggestions?: ReadonlyArray<{kind: RelationshipType; label: string; reason: string}> }) {
   const { data: links = [], isError, refetch } = useRelationships(entry.projectId);
   const { data: entries = [] } = useStoryBibleEntries(entry.projectId, { staleTime: 0 });
   const choices = kinds || availableRelationshipTypes(entry.entryType);
   const current = entries.find(item => item.id === entry.id) || entry;
   const [edit, setEdit] = useState<Relationship | "new" | null>(null);
+  const [initialKind, setInitialKind] = useState<RelationshipType>();
   const [removing, setRemoving] = useState<Relationship | null>(null); const [busy, setBusy] = useState(false); const [error, setError] = useState("");
   const outgoing = links.filter(link => link.sourceId === entry.id && choices.includes(link.relationshipType));
   const archived = bibleEntryArchived(current);
@@ -147,7 +148,8 @@ export function RelationshipSection({ entry, kinds, title = "Relationships" }: {
     catch (cause) { setError(cause instanceof Error ? cause.message : "Could not remove link."); } finally { setBusy(false); }
   }
   return <section className="rounded-lg border bg-card p-4 space-y-3" aria-label={title}>
-    <div className="flex flex-wrap gap-2 items-center justify-between"><h3 className="font-semibold">{title}</h3><Button size="sm" variant="outline" disabled={archived || isError || !choices.length} onClick={() => setEdit("new")}>Add link</Button></div>
+    <div className="flex flex-wrap gap-2 items-center justify-between"><h3 className="font-semibold">{title}</h3><Button size="sm" variant="outline" disabled={archived || isError || !choices.length} onClick={() => {setInitialKind(undefined);setEdit("new");}}>Add link</Button></div>
+    {!!suggestions?.length && <details className="text-sm"><summary className="cursor-pointer text-muted-foreground">Ideas for connections (optional)</summary><p className="mt-2 text-xs text-muted-foreground">These open the shared picker. Nothing is linked until you choose an entry and save.</p><ul className="mt-3 space-y-3">{suggestions.filter(item=>choices.includes(item.kind)).map(item=><li key={item.kind}><Button type="button" size="sm" variant="outline" disabled={archived || isError} onClick={()=>{setInitialKind(item.kind);setEdit("new");}}>{item.label}</Button><p className="mt-1 text-xs text-muted-foreground">{item.reason}</p></li>)}</ul></details>}
     {isError ? <p role="alert">Relationships could not load. <button className="underline" onClick={() => void refetch()}>Retry</button></p> : outgoing.length === 0 ? <p className="text-sm text-muted-foreground">No links yet.</p> : <ul className="space-y-3">{outgoing.map(link => <li key={link.id} className="border rounded p-3 space-y-1" data-relationship-id={link.id}>
       <RelationshipTarget entry={entries.find(item => item.id === link.targetId)} />
       <p className="text-xs text-muted-foreground">{relationshipDefinition(link.relationshipType).label}{link.role && ` · ${link.role}`}{link.legacy && " · Recovered link"}</p>
@@ -156,7 +158,7 @@ export function RelationshipSection({ entry, kinds, title = "Relationships" }: {
       <div className="flex gap-2"><Button size="sm" variant="ghost" disabled={archived || link.unavailable || entries.some(item => item.id === link.targetId && bibleEntryArchived(item))} onClick={() => setEdit(link)}>Edit link</Button><Button size="sm" variant="ghost" onClick={() => { setError(""); setRemoving(link); }}>Remove link</Button></div>
     </li>)}</ul>}
     {archived && <p className="text-sm text-muted-foreground">Archived. Connections are retained; restore this entry to add or edit links.</p>}
-    <Dialog open={edit !== null} onOpenChange={open => { if (!open) setEdit(null); }}><DialogContent className="max-h-[90vh] overflow-y-auto"><DialogHeader><DialogTitle>{edit === "new" ? "Add relationship" : "Edit relationship"}</DialogTitle><DialogDescription>Connect entries in this project. Save explicitly; unfinished edits stay on this device.</DialogDescription></DialogHeader>{edit && <RelationshipForm key={edit === "new" ? "new" : edit.id} entry={entry} link={edit === "new" ? undefined : edit} kinds={choices} close={() => setEdit(null)} />}</DialogContent></Dialog>
+    <Dialog open={edit !== null} onOpenChange={open => { if (!open) setEdit(null); }}><DialogContent className="max-h-[90vh] overflow-y-auto"><DialogHeader><DialogTitle>{edit === "new" ? "Add relationship" : "Edit relationship"}</DialogTitle><DialogDescription>Connect entries in this project. Save explicitly; unfinished edits stay on this device.</DialogDescription></DialogHeader>{edit && <RelationshipForm key={edit === "new" ? "new" : edit.id} entry={entry} link={edit === "new" ? undefined : edit} kinds={choices} initialKind={initialKind} close={() => setEdit(null)} />}</DialogContent></Dialog>
     <Dialog open={!!removing} onOpenChange={open => { if (!open && !busy) setRemoving(null); }}><DialogContent><DialogHeader><DialogTitle>Remove relationship?</DialogTitle><DialogDescription>This removes the connection and its backlink. Both entries remain. Recovered source payloads are retained.</DialogDescription></DialogHeader>{error && <p role="alert">{error}</p>}<div className="flex justify-end gap-2"><Button variant="outline" disabled={busy} onClick={() => setRemoving(null)}>Cancel</Button><Button disabled={busy} onClick={() => void remove()}>Remove relationship</Button></div></DialogContent></Dialog>
   </section>;
 }

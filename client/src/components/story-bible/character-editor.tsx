@@ -1,3 +1,4 @@
+import { GuidedFieldGroup, FieldHelp } from "./guidance";
 import { RelationshipSection } from "./relationships";
 import { fieldChoices } from "@shared/bible-catalog";
 import { TagInput } from "./tag-input";
@@ -12,9 +13,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Save, Trash2, Archive, ArchiveRestore, Star, StarOff, ChevronDown, ChevronRight, Plus, X, User, ImageIcon } from "lucide-react";
+import { Save, Trash2, Archive, ArchiveRestore, Star, StarOff, Plus, X, User, ImageIcon } from "lucide-react";
 import { FileUpload } from "@/components/ui/file-upload";
 import { useDeleteStoryBibleEntry, useStoryBibleEntries } from "@/hooks/use-story-bible";
 import { useToast } from "@/hooks/use-toast";
@@ -46,36 +46,35 @@ export function CharacterEditor({ entry, projectId, onClose }: CharacterEditorPr
   const [species, setSpecies] = useState((metadata as any)?.species || "");
   const [origin, setOrigin] = useState((metadata as any)?.origin || "");
   const [primaryRole, setPrimaryRole] = useState((metadata as any)?.primaryRole || "");
-  
+
   // Appearance
   const [eyeColor, setEyeColor] = useState((metadata as any)?.eyeColor || "");
   const [hairColor, setHairColor] = useState((metadata as any)?.hairColor || "");
   const [build, setBuild] = useState((metadata as any)?.build || "");
   const [clothingStyle, setClothingStyle] = useState((metadata as any)?.clothingStyle || "");
   const [distinguishingFeatures, setDistinguishingFeatures] = useState((metadata as any)?.distinguishingFeatures || "");
-  
+
   // Personality & Motivations
   const [personalityTraits, setPersonalityTraits] = useState((metadata as any)?.personalityTraits || "");
   const [beliefs, setBeliefs] = useState((metadata as any)?.beliefs || "");
   const [motivations, setMotivations] = useState((metadata as any)?.motivations || "");
   const [conflicts, setConflicts] = useState((metadata as any)?.conflicts || "");
-  
+
   // Abilities
   const [abilities, setAbilities] = useState<string[]>((metadata as any)?.abilities || []);
   const [newAbility, setNewAbility] = useState("");
-  
+
   // Image
   const [imageUrl, setImageUrl] = useState((metadata as any)?.imageUrl || "");
   const [imageDescription, setImageDescription] = useState((metadata as any)?.imageDescription || "");
 
-  // Section collapse states - smart defaults based on entry content
-  const isNewEntry = !entry.id || entry.id === 0;
-  const [basicInfoExpanded, setBasicInfoExpanded] = useState(isNewEntry || !age || !gender || !species);
+  // Story notes open first; all additional development is optional.
+  const [basicInfoExpanded, setBasicInfoExpanded] = useState(false);
   const [appearanceExpanded, setAppearanceExpanded] = useState(false);
   const [personalityExpanded, setPersonalityExpanded] = useState(false);
   const [abilitiesExpanded, setAbilitiesExpanded] = useState(false);
   const [relationshipsExpanded, setRelationshipsExpanded] = useState(false);
-  const [backstoryExpanded, setBackstoryExpanded] = useState(false);
+  const [backstoryExpanded, setBackstoryExpanded] = useState(true);
   const [researchExpanded, setResearchExpanded] = useState(false);
 
   const deleteMutation = useDeleteStoryBibleEntry();
@@ -180,7 +179,7 @@ export function CharacterEditor({ entry, projectId, onClose }: CharacterEditorPr
               <SaveStatus status={saveStatus} retry={autosave.flush} />
             </div>
           </div>
-          
+
           <div className="flex items-center gap-2">
             {category && (
               <Badge variant="secondary">{category}</Badge>
@@ -230,19 +229,20 @@ export function CharacterEditor({ entry, projectId, onClose }: CharacterEditorPr
       <div data-bible-form-body className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-8">
-          
+
           {/* Basic Info Card */}
-          <Collapsible open={basicInfoExpanded} onOpenChange={setBasicInfoExpanded}>
-            <Card>
-              <CollapsibleTrigger asChild>
-                <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
-                  <CardTitle className="text-xl flex items-center justify-between">
-                    Basic Info
-                    {basicInfoExpanded ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
-                  </CardTitle>
-                </CardHeader>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
+          <GuidedFieldGroup type="characters" group="backstory" open={backstoryExpanded} onOpenChange={setBackstoryExpanded}>
+                <CardContent>
+                  <Textarea aria-label="Story notes"
+                    value={content}
+                    onChange={handleContentChange}
+                    placeholder="Character's backstory, detailed notes, development ideas..."
+                    className="min-h-[300px] resize-none"
+                  />
+                </CardContent>
+              </GuidedFieldGroup>
+
+          <GuidedFieldGroup type="characters" group="basicInfo" open={basicInfoExpanded} onOpenChange={setBasicInfoExpanded}>
                 <CardContent className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="space-y-2">
@@ -271,8 +271,9 @@ export function CharacterEditor({ entry, projectId, onClose }: CharacterEditorPr
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="species">Species</Label>
+                    <FieldHelp type="characters" field="species"/>
                       <Input
-                        id="species"
+                        id="species" aria-describedby="characters-species-help"
                         value={species}
                         onChange={(e) => {
                           setSpecies(e.target.value);
@@ -282,12 +283,13 @@ export function CharacterEditor({ entry, projectId, onClose }: CharacterEditorPr
                       />
                     </div>
                   </div>
-                  
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="origin">Origin/Homeworld</Label>
+                    <FieldHelp type="characters" field="origin"/>
                       <Input
-                        id="origin"
+                        id="origin" aria-describedby="characters-origin-help"
                         value={origin}
                         onChange={(e) => {
                           setOrigin(e.target.value);
@@ -298,14 +300,15 @@ export function CharacterEditor({ entry, projectId, onClose }: CharacterEditorPr
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="primaryRole">Primary Role</Label>
-                      <Select 
-                        value={primaryRole} 
+                    <FieldHelp type="characters" field="primaryRole"/>
+                      <Select
+                        value={primaryRole}
                         onValueChange={(value) => {
                           setPrimaryRole(value);
                           updateMetadata({ primaryRole: value });
                         }}
                       >
-                        <SelectTrigger>
+                        <SelectTrigger id="primaryRole" aria-describedby="characters-primaryRole-help">
                           <SelectValue placeholder="Select role..." />
                         </SelectTrigger>
                         <SelectContent>
@@ -317,30 +320,19 @@ export function CharacterEditor({ entry, projectId, onClose }: CharacterEditorPr
 
                   <div className="space-y-2">
                     <Label htmlFor="category">Category</Label>
+                    <FieldHelp type="characters" field="category"/>
                     <Input
-                      id="category"
+                      id="category" aria-describedby="characters-category-help"
                       value={category}
                       onChange={(e) => handleCategoryChange(e.target.value)}
                       placeholder="Main Characters, Villains, etc."
                     />
                   </div>
                 </CardContent>
-              </CollapsibleContent>
-            </Card>
-          </Collapsible>
+              </GuidedFieldGroup>
 
           {/* Appearance Card */}
-          <Collapsible open={appearanceExpanded} onOpenChange={setAppearanceExpanded}>
-            <Card>
-              <CollapsibleTrigger asChild>
-                <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
-                  <CardTitle className="text-xl flex items-center justify-between">
-                    Appearance
-                    {appearanceExpanded ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
-                  </CardTitle>
-                </CardHeader>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
+          <GuidedFieldGroup type="characters" group="appearance" open={appearanceExpanded} onOpenChange={setAppearanceExpanded}>
                 <CardContent className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
@@ -368,7 +360,7 @@ export function CharacterEditor({ entry, projectId, onClose }: CharacterEditorPr
                       />
                     </div>
                   </div>
-                  
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="build">Build</Label>
@@ -410,22 +402,10 @@ export function CharacterEditor({ entry, projectId, onClose }: CharacterEditorPr
                     />
                   </div>
                 </CardContent>
-              </CollapsibleContent>
-            </Card>
-          </Collapsible>
+              </GuidedFieldGroup>
 
           {/* Personality & Motivations Card */}
-          <Collapsible open={personalityExpanded} onOpenChange={setPersonalityExpanded}>
-            <Card>
-              <CollapsibleTrigger asChild>
-                <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
-                  <CardTitle className="text-xl flex items-center justify-between">
-                    Personality & Motivations
-                    {personalityExpanded ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
-                  </CardTitle>
-                </CardHeader>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
+          <GuidedFieldGroup type="characters" group="personality" open={personalityExpanded} onOpenChange={setPersonalityExpanded}>
                 <CardContent className="space-y-6">
                   <div className="space-y-2">
                     <Label htmlFor="personalityTraits">Personality Traits</Label>
@@ -443,8 +423,9 @@ export function CharacterEditor({ entry, projectId, onClose }: CharacterEditorPr
 
                   <div className="space-y-2">
                     <Label htmlFor="beliefs">Beliefs</Label>
+                    <FieldHelp type="characters" field="beliefs"/>
                     <Textarea
-                      id="beliefs"
+                      id="beliefs" aria-describedby="characters-beliefs-help"
                       value={beliefs}
                       onChange={(e) => {
                         setBeliefs(e.target.value);
@@ -457,8 +438,9 @@ export function CharacterEditor({ entry, projectId, onClose }: CharacterEditorPr
 
                   <div className="space-y-2">
                     <Label htmlFor="motivations">Motivations</Label>
+                    <FieldHelp type="characters" field="motivations"/>
                     <Textarea
-                      id="motivations"
+                      id="motivations" aria-describedby="characters-motivations-help"
                       value={motivations}
                       onChange={(e) => {
                         setMotivations(e.target.value);
@@ -471,8 +453,9 @@ export function CharacterEditor({ entry, projectId, onClose }: CharacterEditorPr
 
                   <div className="space-y-2">
                     <Label htmlFor="conflicts">Conflicts</Label>
+                    <FieldHelp type="characters" field="conflicts"/>
                     <Textarea
-                      id="conflicts"
+                      id="conflicts" aria-describedby="characters-conflicts-help"
                       value={conflicts}
                       onChange={(e) => {
                         setConflicts(e.target.value);
@@ -483,22 +466,10 @@ export function CharacterEditor({ entry, projectId, onClose }: CharacterEditorPr
                     />
                   </div>
                 </CardContent>
-              </CollapsibleContent>
-            </Card>
-          </Collapsible>
+              </GuidedFieldGroup>
 
           {/* Abilities/Skills Card */}
-          <Collapsible open={abilitiesExpanded} onOpenChange={setAbilitiesExpanded}>
-            <Card>
-              <CollapsibleTrigger asChild>
-                <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
-                  <CardTitle className="text-xl flex items-center justify-between">
-                    Abilities & Skills
-                    {abilitiesExpanded ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
-                  </CardTitle>
-                </CardHeader>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
+          <GuidedFieldGroup type="characters" group="abilities" open={abilitiesExpanded} onOpenChange={setAbilitiesExpanded}>
                 <CardContent className="space-y-4">
                   {/* Current Abilities */}
                   {abilities.length > 0 && (
@@ -532,39 +503,16 @@ export function CharacterEditor({ entry, projectId, onClose }: CharacterEditorPr
                     </Button>
                   </div>
                 </CardContent>
-              </CollapsibleContent>
-            </Card>
-          </Collapsible>
+              </GuidedFieldGroup>
 
           {/* Backstory/Notes Card */}
-          <Collapsible open={backstoryExpanded} onOpenChange={setBackstoryExpanded}>
-            <Card>
-              <CollapsibleTrigger asChild>
-                <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
-                  <CardTitle className="text-xl flex items-center justify-between">
-                    Backstory & Notes
-                    {backstoryExpanded ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
-                  </CardTitle>
-                </CardHeader>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                <CardContent>
-                  <Textarea
-                    value={content}
-                    onChange={handleContentChange}
-                    placeholder="Character's backstory, detailed notes, development ideas..."
-                    className="min-h-[300px] resize-none"
-                  />
-                </CardContent>
-              </CollapsibleContent>
-            </Card>
-          </Collapsible>
+
 
         </div>
 
         {/* Sidebar */}
         <div className="space-y-6">
-          
+
           {/* Relationships Card */}
           <RelationshipSection entry={entry} title="Relationships" kinds={["related","affiliation","home","history","associated"]} />
 
