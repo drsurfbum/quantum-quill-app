@@ -37,6 +37,7 @@ async function open(){
 it.each(BIBLE_TYPES)('creates an unfinished %s with only its name and type; examples never enter the payload',async type=>{
  await open();
  const select=dialog().querySelector<HTMLSelectElement>('select')!;
+ expect([...select.labels!].map(label=>label.textContent)).toEqual(['Entry type']);
  await act(async()=>{select.value=type;Simulate.change(select);});
  expect(dialog().textContent).toContain(bibleGuide(type)!.purpose);
  expect(dialog().textContent).toContain(bibleGuide(type)!.examples);

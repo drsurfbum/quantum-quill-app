@@ -1,7 +1,7 @@
 // Real Chromium + the loopback-only disposable fixture. Never reads .env or a DB.
 // CI installs pinned Playwright only in its disposable runner, outside the lockfile.
 import assert from 'node:assert/strict';
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, writeFile, readFile } from 'node:fs/promises';
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
 import { chromium } from 'playwright';
@@ -48,7 +48,7 @@ try {
   };
   const group = key => page.locator(`[data-bible-group="${key}"] > h3 > button`);
   const openGroup = async key => { if (await group(key).getAttribute('aria-expanded') === 'false') await group(key).click(); };
-  const screenshot = async name => page.screenshot({ path: `${artifacts}/${name}.png` });
+  const screenshot = async name => page.screenshot({ type: 'jpeg', quality: 85, path: `${artifacts}/${name}.jpg` });
   const cases = [
     ['characters','Identity & role','basicInfo','#age','metadata','age'],
     ['groups_races','Group at a glance','basicInfo','#tagline','metadata','tagline'],
@@ -169,7 +169,11 @@ try {
   record('Compact viewport: bounded scrolling, labels, save indicator and creation dialog');
   assert.deepEqual(errors, []);
   await writeFile(`${artifacts}/receipt.json`, JSON.stringify({ fixture: 'The Lantern Coast; in-memory synthetic only', checks, consoleErrors: errors, browser: await browser.version(), viewport: [1440,1000], compactViewport: [390,844] }, null, 2));
+  console.log('QQ14_RECEIPT:' + await readFile(`${artifacts}/receipt.json`, 'utf8'));
+  // Synthetic evidence only; allow review through GitHub without a local executor.
+  for (const name of ['01-choose-a-type','02-develop-character','05-compact-develop']) console.log(`QQ14_IMAGE:${name}:${(await readFile(`${artifacts}/${name}.jpg`)).toString('base64')}`);
 } catch (error) {
+  if (page) console.error('Synthetic browser failure at', page.url(), await page.locator('body').innerText().catch(()=>''));
   if (page) await page.screenshot({ path: `${artifacts}/failure.png` }).catch(() => {});
   await writeFile(`${artifacts}/failure.txt`, `${error.stack}\n\n${output}`);
   throw error;
