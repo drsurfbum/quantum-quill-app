@@ -2,7 +2,9 @@
 
 Quantum Quill is a local writing and world-building app built with React/TypeScript, TipTap, Express, and PostgreSQL. The recovered Replit data and original backups are preserved.
 
-**Current status:** [local stabilization closeout](docs/STABILIZATION_CLOSEOUT.md). Start with this report; older audits describe historical defects and limitations that may now be fixed.
+**Current status:** a functional local alpha with the writing workspace, interactive Story Bible cards and reviewed scene connection scanning. See the [feature roadmap](https://drsurfbum.github.io/quantum-quill-roadmap/), [workspace integration](docs/WORKSPACE_INTEGRATION.md), and [connection scanner](docs/SCENE_STORY_BIBLE.md). The [local stabilization closeout](docs/STABILIZATION_CLOSEOUT.md) describes the reliability foundation; older audits contain historical limitations that may now be fixed.
+
+**Standing workflow:** commit and push each completed feature to its feature branch after appropriate checks; merging remains separate. See [development workflow](docs/DEVELOPMENT_WORKFLOW.md) and [agent instructions](AGENTS.md).
 
 ## Run locally
 

@@ -9,7 +9,7 @@ Read [the restart audit](docs/RESTART_AUDIT.md) before working on features. The 
 ## Locations
 
 - Working project: `/Users/austinhartt/Documents/GitHub/quantum-quill-app`
-- Private GitHub repository: https://github.com/achartt/quantum-quill-app
+- Private GitHub repository: https://github.com/drsurfbum/quantum-quill-app
 - Recovery backups and audit evidence: `/Users/austinhartt/Documents/QuantumQuill Backups/2026-10-11`
 - Local PostgreSQL data: `.local/postgres`, excluded from Git
 - Local settings: `.env`, excluded from Git
