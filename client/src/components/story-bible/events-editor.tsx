@@ -286,7 +286,7 @@ const EventsEditor = memo(({ entry, projectId, onClose }: EventsEditorProps) => 
                       value={eventDataState.eventType || ''}
                       onValueChange={(value) => updateEventData({ eventType: value })}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger id="eventType">
                         <SelectValue placeholder="Select event type" />
                       </SelectTrigger>
                       <SelectContent>
@@ -455,7 +455,7 @@ const EventsEditor = memo(({ entry, projectId, onClose }: EventsEditorProps) => 
                   value={eventDataState.status || ''}
                   onValueChange={(value) => updateEventData({ status: value })}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger id="status">
                     <SelectValue placeholder="Select status" />
                   </SelectTrigger>
                   <SelectContent>

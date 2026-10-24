@@ -576,7 +576,7 @@ const WorldElementsEditor = memo(({ entry, projectId, onClose }: WorldElementsEd
                         value={worldElementDataState.status || ''}
                         onValueChange={(value) => updateWorldElementData({ status: value })}
                       >
-                        <SelectTrigger>
+                        <SelectTrigger id="status">
                           <SelectValue placeholder="Select status" />
                         </SelectTrigger>
                         <SelectContent>

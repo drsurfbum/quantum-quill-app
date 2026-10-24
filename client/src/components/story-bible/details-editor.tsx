@@ -254,7 +254,7 @@ const DetailsEditor = memo(({ entry, projectId, onClose }: DetailsEditorProps) =
                         value={detailDataState.type}
                         onValueChange={(value) => updateDetailData({ type: value })}
                       >
-                        <SelectTrigger>
+                        <SelectTrigger id="type">
                           <SelectValue placeholder="Select type" />
                         </SelectTrigger>
                         <SelectContent>

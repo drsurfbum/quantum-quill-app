@@ -308,7 +308,7 @@ export function GroupsRacesEditor({ entry, projectId, onClose }: GroupsRacesEdit
                           updateMetadata({ status: value });
                         }}
                       >
-                        <SelectTrigger>
+                        <SelectTrigger id="status">
                           <SelectValue placeholder="Select status..." />
                         </SelectTrigger>
                         <SelectContent>

@@ -283,7 +283,7 @@ const ResearchEditor = memo(({ entry, projectId, onClose }: ResearchEditorProps)
                         value={researchDataState.sourceType}
                         onValueChange={(value) => updateResearchData({ sourceType: value })}
                       >
-                        <SelectTrigger>
+                        <SelectTrigger id="sourceType">
                           <SelectValue placeholder="Select source type" />
                         </SelectTrigger>
                         <SelectContent>
