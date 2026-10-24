@@ -1,4 +1,4 @@
-import type { FeedbackInput } from "@shared/feedback";
+import type { FeedbackInput, FeedbackInboxQuery, FeedbackStatus } from "@shared/feedback";
 import { feedbackReports } from "@shared/schema";
 import { sceneBibleContexts, type SceneContextRow } from "@shared/schema";
 import type { ManuscriptOrder } from "@shared/manuscript";
@@ -38,6 +38,18 @@ function baseCondition(table: any, base?: Record<string, unknown>) {
 }
 
 export class DatabaseStorage implements IStorage {
+  async listFeedback(query: FeedbackInboxQuery) {
+    return this.database.select({id:feedbackReports.id, category:feedbackReports.category, summary:feedbackReports.summary, area:feedbackReports.area, status:feedbackReports.status, createdAt:feedbackReports.createdAt}).from(feedbackReports).where(and(
+      query.status ? eq(feedbackReports.status,query.status) : undefined,
+      query.category ? eq(feedbackReports.category,query.category) : undefined,
+      query.before ? sql`${feedbackReports.id} < ${query.before}` : undefined,
+      query.q ? sql`strpos(lower(${feedbackReports.summary} || E'\n' || ${feedbackReports.details}), lower(${query.q})) > 0` : undefined,
+    )).orderBy(sql`${feedbackReports.id} desc`).limit(51);
+  }
+  async getFeedback(id: number) { const [row] = await this.database.select().from(feedbackReports).where(eq(feedbackReports.id,id)); return row; }
+  async updateFeedbackStatus(id: number, status: FeedbackStatus, expectedStatus: FeedbackStatus) {
+    const [row] = await this.database.update(feedbackReports).set({status}).where(and(eq(feedbackReports.id,id),eq(feedbackReports.status,expectedStatus))).returning(); return row;
+  }
   async getFeedbackByRequest(userId: number, requestId: string) { const [row] = await this.database.select().from(feedbackReports).where(and(eq(feedbackReports.userId,userId),eq(feedbackReports.requestId,requestId))); return row; }
   async getUserFeedback(userId: number) { return this.database.select().from(feedbackReports).where(eq(feedbackReports.userId,userId)).orderBy(sql`${feedbackReports.id} desc`).limit(50); }
   async countRecentFeedback(userId: number, since: Date) { const [row] = await this.database.select({count:sql<number>`count(*)::int`}).from(feedbackReports).where(and(eq(feedbackReports.userId,userId),sql`${feedbackReports.createdAt} >= ${since}`)); return row.count; }

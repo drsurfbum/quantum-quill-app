@@ -10,6 +10,7 @@ import { Label } from "./ui/label";
 import type { FeedbackInput } from "@shared/feedback";
 import type { FeedbackReport } from "@shared/schema";
 import { feedbackInput } from "@shared/feedback";
+import { FeedbackInboxLink } from "./feedback-inbox-link";
 
 export function FeedbackButton({compact=false}: {compact?:boolean}) {
   return <Button variant="ghost" size="sm" className="shrink-0 text-muted-foreground" title="Report feedback" aria-label="Report feedback" onClick={()=>window.dispatchEvent(new Event("qq:feedback"))}><MessageSquarePlus className="h-4 w-4"/>{!compact && <span className="ml-2 hidden sm:inline">Feedback</span>}</Button>;
@@ -57,6 +58,7 @@ function FeedbackForAccount({userId}: {userId:number}) {
   return <Dialog open={open} onOpenChange={value=>{if(!busy)setOpen(value);}}>
     <DialogContent className="max-w-xl max-h-[90dvh] overflow-y-auto" onPointerDownOutside={event=>event.preventDefault()}>
       <DialogHeader><DialogTitle>Report feedback</DialogTitle><DialogDescription>Send a private report to the Quantum Quill maintainer. Your writing stays open behind this window.</DialogDescription></DialogHeader>
+      <FeedbackInboxLink />
       {receipt ? <div className="space-y-4"><p role="status" className="font-medium">Thank you — report #{receipt} received.</p><p className="text-sm text-muted-foreground">We’ll review it as part of the alpha. Reports aren’t monitored as a live support chat.</p><div className="flex gap-2"><Button onClick={()=>setOpen(false)}>Back to writing</Button><Button variant="outline" onClick={()=>setReceipt(undefined)}>Send another report</Button></div></div> :
       <form onSubmit={submit} className="space-y-4">
         <div className="grid grid-cols-2 gap-3">

@@ -81,3 +81,7 @@ After launch, check Render health, errors, memory, disk and database capacity, a
 ## Feedback process
 
 The alpha includes private in-app feedback and each writer’s report receipts/history. See [feedback operations](FEEDBACK.md) for privacy, review, and migration details.
+
+## Private admin inbox follow-up
+
+The inbox at `/admin/feedback` uses the existing feedback table; no schema migration, new resource or hosting-cost increase is required. Configure only the verified owner’s hosted account ID in `QQ_FEEDBACK_ADMIN_USER_IDS`, then release the tested feature commit. The app checks this server-side on every admin request. See [feedback operations](FEEDBACK.md). Local GoTV data is a separate, explicit account/project transfer; never overwrite the hosted database with a local backup.

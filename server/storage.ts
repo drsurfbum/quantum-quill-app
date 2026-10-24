@@ -1,4 +1,4 @@
-import type { FeedbackInput } from "@shared/feedback";
+import type { FeedbackInput, FeedbackInboxQuery, FeedbackStatus, FeedbackSummary } from "@shared/feedback";
 import type { FeedbackReport } from "@shared/schema";
 import type { SceneContextRow } from "@shared/schema";
 import type { ManuscriptOrder } from "@shared/manuscript";
@@ -24,6 +24,9 @@ import session from "express-session";
 import createMemoryStore from "memorystore";
 
 export interface IStorage {
+  listFeedback(query: FeedbackInboxQuery): Promise<FeedbackSummary[]>;
+  getFeedback(id: number): Promise<FeedbackReport | undefined>;
+  updateFeedbackStatus(id: number, status: FeedbackStatus, expectedStatus: FeedbackStatus): Promise<FeedbackReport | undefined>;
   getFeedbackByRequest(userId: number, requestId: string): Promise<FeedbackReport | undefined>;
   getUserFeedback(userId: number): Promise<FeedbackReport[]>;
   countRecentFeedback(userId: number, since: Date): Promise<number>;
@@ -118,6 +121,16 @@ export interface IStorage {
 
 export class MemStorage implements IStorage {
   private feedback = new Map<number, FeedbackReport>();
+  async listFeedback(query: FeedbackInboxQuery) {
+    return [...this.feedback.values()].filter(row => (!query.status || row.status === query.status) && (!query.category || row.category === query.category) && (!query.before || row.id < query.before) && (!query.q || `${row.summary}\n${row.details}`.toLowerCase().includes(query.q.toLowerCase())))
+      .sort((a,b) => b.id-a.id).slice(0,51).map(({id,category,summary,area,status,createdAt}) => ({id,category,summary,area,status,createdAt}));
+  }
+  async getFeedback(id: number) { return this.feedback.get(id); }
+  async updateFeedbackStatus(id: number, status: FeedbackStatus, expectedStatus: FeedbackStatus) {
+    const current = this.feedback.get(id);
+    if (!current || current.status !== expectedStatus) return undefined;
+    const updated = {...current,status}; this.feedback.set(id,updated); return updated;
+  }
   async getFeedbackByRequest(userId: number, requestId: string) { return [...this.feedback.values()].find(r => r.userId === userId && r.requestId === requestId); }
   async getUserFeedback(userId: number) { return [...this.feedback.values()].filter(r => r.userId === userId).sort((a,b) => b.id-a.id).slice(0,50); }
   async countRecentFeedback(userId: number, since: Date) { return [...this.feedback.values()].filter(r => r.userId === userId && r.createdAt >= since).length; }

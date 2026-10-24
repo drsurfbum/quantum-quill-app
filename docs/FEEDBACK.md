@@ -8,26 +8,21 @@ A successful submission returns a report number. **My recent reports** shows tha
 
 ## Maintainer review
 
-Reports are private database records, not GitHub issues. There are no automatic emails or a promised response time. The maintainer can ask Codex to review alpha feedback through the QQ service’s authenticated Render Shell, or use authenticated tooling inside Render’s private network. The hosted Render Postgres connector cannot query this database because its external IP allowlist is intentionally empty; do not expose the database to make reporting easier. No unauthenticated or general-user endpoint lists other writers’ reports.
+Reports are private database records, not GitHub issues. Authorized maintainers can open **Admin inbox** from the dashboard footer or the Feedback window. It opens a separate QQ tab so the writing workspace stays in place.
 
-Read the inbox without joining account/contact details unless needed. In the **Quantum Quill web service → Shell**, the installed `pg` package can use `process.env.DATABASE_URL` without printing credentials. For example:
+The inbox supports summary/detail search, category/status filters, newest-first pagination (50 reports per page), full report details and optional browser information. Choose **Received**, **Reviewing**, **Planned** or **Resolved**, then **Save status**. The tester sees that status in **My recent reports**. A stale update is rejected and the latest status is refreshed for review. Submitted text cannot be edited or deleted from the inbox.
 
-```sh
-node --input-type=module -e 'import pg from "pg"; const c=new pg.Client({connectionString:process.env.DATABASE_URL}); await c.connect(); console.log(JSON.stringify((await c.query("SELECT id, category, summary, details, area, device, allow_contact, status, created_at FROM feedback_reports ORDER BY created_at DESC LIMIT 100")).rows,null,2)); await c.end();'
-```
+Reporter email is returned only when the tester opted in to follow-up. There are no automatic emails, scheduled monitoring, or promised response times. Obtain human authorization before sending a message. Reproduce issues with synthetic content, and only copy a sanitized summary to the public roadmap/GitHub when appropriate.
 
-Equivalent SQL:
+### Provisioning access
 
-```sql
-SELECT id, category, summary, details, area, device, allow_contact, status, created_at
-FROM feedback_reports
-ORDER BY created_at DESC
-LIMIT 100;
-```
+`QQ_FEEDBACK_ADMIN_USER_IDS` is a server-only, deployment-specific comma-separated allowlist of existing numeric account IDs. Missing, blank or malformed configuration denies all inbox access. Registration cannot set this permission; usernames, emails and signup order never confer access. `/api/user` exposes only the current account’s capability, and every admin API independently checks the allowlist. Revocation takes effect when the service starts with the updated configuration; existing cookies do not preserve admin privileges.
 
-Review new reports for reproducible bugs, writing/data-loss problems, confusing controls, and feature ideas. Group duplicates by their report numbers. Reproduce with synthetic content, preserve private reports, and only copy a sanitized summary to the public roadmap/GitHub when appropriate. Contact a reporter through their account email only when `allow_contact` is true and a human authorizes sending that message.
+Before enabling access, the human owner must identify the intended account. Verify its ID against the target database. Configure only the QQ service through Render’s environment-variable merge operation (`replace: false`), then deploy the reviewed commit. Keep the value out of source control and public assets. This variable is deliberately managed on the service, outside the Blueprint; Blueprint sync preserves omitted variables. Do not add temporary test accounts to the production allowlist.
 
-After review, an authorized maintainer may move a report through `received`, `reviewing`, `planned`, or `resolved` using database administration. Writers see the resulting status in their report history. Status changes do not send messages. An admin UI and optional notifications can follow later; do not create a recurring monitor without a user request.
+There is no self-service admin promotion or general role editor. Admin access covers feedback only and does not bypass manuscript/project ownership. The API rejects anonymous, ordinary-account, cross-origin and stale-account requests; responses use `Cache-Control: no-store`. The UI clears account-scoped queries on sign-out/account switches.
+
+The authenticated Render Shell remains an emergency operator fallback; external database access stays disabled. No new database migration is required for the inbox: it uses the original feedback table and its constrained status field. The original feedback migration and schema checksums are unchanged. Rolling back the app keeps all reports and saved statuses intact.
 
 ## Storage and migration
 

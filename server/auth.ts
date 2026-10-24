@@ -1,4 +1,5 @@
 import { authLimiter } from "./auth-limit";
+import { canReviewFeedback } from "./feedback-access";
 import { Passport } from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
 import type { Express, RequestHandler } from "express";
@@ -14,7 +15,7 @@ export interface AuthOptions { secret?: string; production?: boolean }
 const scryptAsync = promisify(scrypt);
 const credentialsSchema = z.object({ username: z.string().min(1).max(200), password: z.string().min(1).max(1024) }).strict();
 const registrationSchema = credentialsSchema.extend({ email: z.string().email().max(320), password: z.string().min(8).max(1024) });
-const publicUser = (user: UserType) => ({ id: user.id, username: user.username, email: user.email });
+const publicUser = (user: UserType) => ({ id: user.id, username: user.username, email: user.email, feedbackAdmin: canReviewFeedback(user.id) });
 
 export async function hashPassword(password: string) {
   const salt = randomBytes(16).toString("hex");
