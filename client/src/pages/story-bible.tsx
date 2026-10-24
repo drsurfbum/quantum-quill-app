@@ -76,7 +76,7 @@ function StoryBibleWorkspace({projectId}:{projectId:number}) {
       <DialogContent className="max-h-[90dvh] overflow-y-auto">
         <DialogHeader><DialogTitle>New Story Bible entry</DialogTitle><DialogDescription>Only a name and type are needed. Save an unfinished idea now and develop it as you write.</DialogDescription></DialogHeader>
         <form onSubmit={event=>void createEntry(event)} className="space-y-4">
-          <label className="block text-sm space-y-2"><span>Entry type</span><select value={newType} onChange={event=>setNewType(event.target.value)} className="bible-select w-full" disabled={createBusy}>{bibleTypes.map(type=><option key={type.key} value={type.key}>{type.name}</option>)}</select></label>
+          <div className="text-sm space-y-2"><label htmlFor="new-bible-type" className="block">Entry type</label><select id="new-bible-type" value={newType} onChange={event=>setNewType(event.target.value)} className="bible-select w-full" disabled={createBusy}>{bibleTypes.map(type=><option key={type.key} value={type.key}>{type.name}</option>)}</select></div>
           <TypeGuidance type={newType}/>
           <label className="block text-sm space-y-2"><span>Name <span className="text-muted-foreground">(required)</span></span><Input value={newName} onChange={event=>setNewName(event.target.value)} autoFocus maxLength={500} required placeholder="Give this element a name…" disabled={createBusy}/></label>
           <p className="text-xs text-muted-foreground">Descriptions, facts, images and connections are optional. Nothing from the examples is added to your entry.</p>
