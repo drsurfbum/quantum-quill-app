@@ -59,7 +59,7 @@ try {
     ['research','Source & takeaway','coreInfo','#shortSummary','content','shortSummary'],
   ];
   for (const [type,,key,selector,bucket,field] of cases) {
-    await page.getByRole('button', { name: 'New', exact: true }).click();
+    await page.getByRole('button', { name: 'New entry', exact: true }).click();
     const dialog = page.getByRole('dialog');
     await dialog.getByLabel('Entry type', { exact: true }).selectOption(type);
     assert.ok(await dialog.getByText('For example:', { exact: false }).isVisible());
@@ -144,9 +144,8 @@ try {
   assert.ok(await linkDialog.getByRole('button', { name: 'Add relationship', exact: true }).isDisabled());
   assert.equal(writes, beforeConnection);
   await screenshot('04-optional-connection-picker');
-  await linkDialog.getByLabel('Relationship type', { exact: true }).selectOption('related');
-  await linkDialog.getByLabel('Search entries', { exact: true }).fill('Elian Rook');
-  await linkDialog.getByRole('option', { name: /Elian Rook/ }).click();
+  await linkDialog.getByLabel('Search entries', { exact: true }).fill('A partial groups_races idea');
+  await linkDialog.getByRole('option', { name: /A partial groups_races idea/ }).click();
   await linkDialog.getByLabel('Context', { exact: true }).fill('An explicitly selected companion.');
   await linkDialog.getByRole('button', { name: 'Add relationship', exact: true }).click();
   await linkDialog.waitFor({ state: 'hidden' });
@@ -163,7 +162,7 @@ try {
   assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), 'No horizontal page overflow at 390px');
   await screenshot('05-compact-develop');
   await page.getByRole('button', { name: 'Library', exact: true }).click();
-  await page.getByRole('button', { name: 'New', exact: true }).click();
+  await page.getByRole('button', { name: 'New entry', exact: true }).click();
   await page.getByRole('dialog').getByLabel('Entry type', { exact: true }).selectOption('research');
   await screenshot('06-compact-creation');
   await page.getByRole('dialog').getByRole('button', { name: 'Cancel', exact: true }).click();

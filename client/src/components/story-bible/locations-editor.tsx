@@ -304,7 +304,7 @@ export function LocationsEditor({ entry, projectId, onClose }: LocationsEditorPr
                           updateMetadata({ status: value });
                         }}
                       >
-                        <SelectTrigger>
+                        <SelectTrigger id="status">
                           <SelectValue placeholder="Select status..." />
                         </SelectTrigger>
                         <SelectContent>
@@ -356,7 +356,7 @@ export function LocationsEditor({ entry, projectId, onClose }: LocationsEditorPr
                           updateMetadata({ environment: value });
                         }}
                       >
-                        <SelectTrigger>
+                        <SelectTrigger id="environment">
                           <SelectValue placeholder="Select environment..." />
                         </SelectTrigger>
                         <SelectContent>
