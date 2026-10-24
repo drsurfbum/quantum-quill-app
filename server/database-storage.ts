@@ -1,3 +1,5 @@
+import type { FeedbackInput } from "@shared/feedback";
+import { feedbackReports } from "@shared/schema";
 import { sceneBibleContexts, type SceneContextRow } from "@shared/schema";
 import type { ManuscriptOrder } from "@shared/manuscript";
 import { scenes, creationRequests, type Scene, type InsertScene, type CreationRequest } from "@shared/schema";
@@ -36,6 +38,11 @@ function baseCondition(table: any, base?: Record<string, unknown>) {
 }
 
 export class DatabaseStorage implements IStorage {
+  async getFeedbackByRequest(userId: number, requestId: string) { const [row] = await this.database.select().from(feedbackReports).where(and(eq(feedbackReports.userId,userId),eq(feedbackReports.requestId,requestId))); return row; }
+  async getUserFeedback(userId: number) { return this.database.select().from(feedbackReports).where(eq(feedbackReports.userId,userId)).orderBy(sql`${feedbackReports.id} desc`).limit(50); }
+  async countRecentFeedback(userId: number, since: Date) { const [row] = await this.database.select({count:sql<number>`count(*)::int`}).from(feedbackReports).where(and(eq(feedbackReports.userId,userId),sql`${feedbackReports.createdAt} >= ${since}`)); return row.count; }
+  async createFeedback(userId: number, input: FeedbackInput) { const [row] = await this.database.insert(feedbackReports).values({...input,userId}).returning(); return row; }
+
   async getSceneContext(sceneId: number) { const [row] = await this.database.select().from(sceneBibleContexts).where(eq(sceneBibleContexts.sceneId,sceneId)); return row; }
   async getProjectSceneContexts(projectId: number) { return this.database.select().from(sceneBibleContexts).where(eq(sceneBibleContexts.projectId,projectId)); }
   // Only called under the same project lock used by Bible updates/deletion.

@@ -1,3 +1,4 @@
+import { FeedbackButton } from "./feedback-dialog";
 import { Link, useLocation } from "wouter";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
@@ -215,8 +216,8 @@ export default function SidebarNavigation({ onCollapsedChange }: { onCollapsedCh
             )}
           </>
         )}
-        <div className="flex flex-1 items-end pb-1">
-          <RoadmapLink compact />
+        <div className="flex flex-1 flex-col justify-end items-center gap-2 pb-1">
+          <FeedbackButton compact /><RoadmapLink compact />
         </div>
       </div>
     );
@@ -265,8 +266,8 @@ export default function SidebarNavigation({ onCollapsedChange }: { onCollapsedCh
             <ProjectNav projectId={currentProjectId} location={location} />
           </div>
         </ScrollArea>
-        <div className="px-4 py-2">
-          <RoadmapLink />
+        <div className="px-4 py-2 flex items-center gap-2">
+          <FeedbackButton /><RoadmapLink />
         </div>
         <UserProfile />
       </div>

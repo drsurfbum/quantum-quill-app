@@ -1,3 +1,4 @@
+import { FeedbackDialog } from "@/components/feedback-dialog";
 import { useEffect, useState } from "react";
 import { DraftRecovery } from "@/components/draft-recovery";
 import { PendingSaves } from "@/components/pending-saves";
@@ -45,6 +46,7 @@ function App() {
         <AppStateProvider>
           <RecoverableRouter />
           <Toaster />
+          <FeedbackDialog />
           <PendingSaves />
           <DraftRecovery />
         </AppStateProvider>

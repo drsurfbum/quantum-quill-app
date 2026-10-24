@@ -1,3 +1,5 @@
+import type { FeedbackInput } from "@shared/feedback";
+import type { FeedbackReport } from "@shared/schema";
 import type { SceneContextRow } from "@shared/schema";
 import type { ManuscriptOrder } from "@shared/manuscript";
 import type { Scene, InsertScene, CreationRequest } from "@shared/schema";
@@ -22,6 +24,10 @@ import session from "express-session";
 import createMemoryStore from "memorystore";
 
 export interface IStorage {
+  getFeedbackByRequest(userId: number, requestId: string): Promise<FeedbackReport | undefined>;
+  getUserFeedback(userId: number): Promise<FeedbackReport[]>;
+  countRecentFeedback(userId: number, since: Date): Promise<number>;
+  createFeedback(userId: number, input: FeedbackInput): Promise<FeedbackReport>;
   getSceneContext(sceneId: number): Promise<SceneContextRow | undefined>;
   getProjectSceneContexts(projectId: number): Promise<SceneContextRow[]>;
   putSceneContext(row: SceneContextRow): Promise<SceneContextRow>;
@@ -111,6 +117,12 @@ export interface IStorage {
 }
 
 export class MemStorage implements IStorage {
+  private feedback = new Map<number, FeedbackReport>();
+  async getFeedbackByRequest(userId: number, requestId: string) { return [...this.feedback.values()].find(r => r.userId === userId && r.requestId === requestId); }
+  async getUserFeedback(userId: number) { return [...this.feedback.values()].filter(r => r.userId === userId).sort((a,b) => b.id-a.id).slice(0,50); }
+  async countRecentFeedback(userId: number, since: Date) { return [...this.feedback.values()].filter(r => r.userId === userId && r.createdAt >= since).length; }
+  async createFeedback(userId: number, input: FeedbackInput) { const row = {...input, userId, id:this.feedback.size+1, status:"received", createdAt:new Date()}; this.feedback.set(row.id,row); return row; }
+
   private sceneContexts = new Map<number, SceneContextRow>();
   async getSceneContext(sceneId: number) { return this.sceneContexts.get(sceneId); }
   async getProjectSceneContexts(projectId: number) { return [...this.sceneContexts.values()].filter(row=>row.projectId===projectId); }

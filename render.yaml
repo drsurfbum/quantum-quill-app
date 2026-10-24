@@ -10,7 +10,7 @@ services:
     plan: 0.5c-512mb
     autoDeployTrigger: 'off'
     buildCommand: npm ci --include=dev --ignore-scripts && npm run build && npm prune --omit=dev --ignore-scripts
-    preDeployCommand: npm run db:init:alpha
+    preDeployCommand: npm run db:init:alpha && node scripts/migrate-feedback.mjs
     startCommand: npm start
     healthCheckPath: /healthz
     disk:
