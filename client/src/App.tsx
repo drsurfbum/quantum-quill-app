@@ -11,6 +11,7 @@ import { ProtectedRoute } from "@/lib/protected-route";
 import { AppStateProvider } from "@/contexts/app-state-context";
 
 import NotFound from "@/pages/not-found";
+import FeedbackInboxPage from "@/pages/feedback-inbox";
 import Dashboard from "@/pages/dashboard";
 import Project from "@/pages/project";
 import Write from "@/pages/write";
@@ -22,6 +23,7 @@ import AuthPage from "@/pages/auth-page";
 function Router() {
   return (
     <Switch>
+      <ProtectedRoute path="/admin/feedback" component={FeedbackInboxPage} />
       <ProtectedRoute path="/" component={Dashboard} />
       <ProtectedRoute path="/project/:id" component={Project} />
       <ProtectedRoute path="/project/:id/write" component={Write} />

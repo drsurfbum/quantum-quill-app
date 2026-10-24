@@ -7,7 +7,8 @@ describe("Session authentication", () => {
   it("registers, persists login, stores a hash and never returns the password", async () => {
     const { app, agent, storage } = fixture();
     const result = await agent.post("/api/register").send(credentials).expect(201);
-    expect(Object.keys(result.body).sort()).toEqual(["email", "id", "username"]);
+    expect(Object.keys(result.body).sort()).toEqual(["email", "feedbackAdmin", "id", "username"]);
+    expect(result.body.feedbackAdmin).toBe(false);
     const user = await storage.getUser(result.body.id);
     expect(user!.password).not.toBe(credentials.password);
     expect(await comparePasswords(credentials.password, user!.password)).toBe(true);

@@ -17,6 +17,14 @@ const storage = new MemStorage();
 (storage.sessionStore as session.Store & { stopInterval?: () => void }).stopInterval?.();
 storage.sessionStore = new session.MemoryStore();
 const user = await storage.createUser({ username: "demo-writer", email: "writer@example.test", password: await hashPassword("synthetic-showcase-only") });
+if (process.env.QQ_DEMO_FEEDBACK === "1") {
+  const tester = await storage.createUser({username:"demo-tester",email:"tester@example.test",password:await hashPassword("synthetic-showcase-only")});
+  for (const item of [
+    {category:"bug",summary:"The scene list loses my place",details:"I scrolled to the end of the scene list, opened a scene, and returned. I expected to stay near the same scene.",area:"Write",allowContact:false},
+    {category:"idea",summary:"A quick way to find unresolved story questions",details:"Could the Story Bible keep track of questions I still need to answer about a character?",area:"Story Bible",allowContact:true},
+    {category:"confusing",summary:"What happens when a chapter has no scenes?",details:"I went straight to writing in a chapter. The option to add scenes made me wonder whether my existing draft would move.",area:"Outline",allowContact:false},
+  ] as const) await storage.createFeedback(tester.id,{...item,requestId:randomUUID(),device:"Synthetic browser walkthrough"});
+}
 const project = await storage.createProject({ userId: user.id, title: "The Lantern Coast", description: "When the coast's last true chart disappears, a reluctant navigator must choose between the people who raised her and the islands they erased.", settings: { author: "Demo Writer", genre: "Fantasy", targetWordCount: 80000 } });
 async function entry(title: string, entryType: string, content: string, metadata: Record<string, unknown> = {}, tags: string[] = []) {
   return storage.createStoryBibleEntry({ projectId: project.id, title, entryType, content, metadata, tags, priority: 1 } as InsertStoryBibleEntry);

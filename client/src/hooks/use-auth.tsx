@@ -12,6 +12,7 @@ type User = {
   id: number;
   username: string;
   email: string;
+  feedbackAdmin?: boolean;
 };
 
 type AuthContextType = {

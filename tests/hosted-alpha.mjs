@@ -28,7 +28,7 @@ async function start(url, uploads) {
   const { createServer } = await import('node:net');
   const probe = createServer(); await new Promise(resolve => probe.listen(0, '127.0.0.1', resolve));
   port = probe.address().port; await new Promise(resolve => probe.close(resolve));
-  child = spawn(process.execPath, ['dist/index.js'], { env: { ...process.env, NODE_ENV: 'production', HOST: '127.0.0.1', PORT: String(port), DATABASE_URL: url, SESSION_SECRET: secret, UPLOAD_DIR: uploads }, stdio: ['ignore', 'pipe', 'pipe'] });
+  child = spawn(process.execPath, ['dist/index.js'], { env: { ...process.env, NODE_ENV: 'production', HOST: '127.0.0.1', PORT: String(port), DATABASE_URL: url, SESSION_SECRET: secret, UPLOAD_DIR: uploads, QQ_FEEDBACK_ADMIN_USER_IDS: '1' }, stdio: ['ignore', 'pipe', 'pipe'] });
   let output = ''; child.stdout.on('data', chunk => output += chunk); child.stderr.on('data', chunk => output += chunk);
   for (let i = 0; i < 100; i++) {
     if (child.exitCode !== null) throw new Error(`Production server exited: ${output}`);
@@ -89,6 +89,15 @@ try {
   const feedback=await json(a('POST','/api/feedback',feedbackInput,201));
   assert.deepEqual(await json(a('POST','/api/feedback',feedbackInput,201)),feedback);
   assert.deepEqual(await json(b('GET','/api/feedback')),[]);
+  await b('GET','/api/admin/feedback',undefined,403);
+  const inbox=await json(a('GET','/api/admin/feedback?status=received&q=private'));
+  assert.equal(inbox.reports[0].id,feedback.id);
+  assert.equal(inbox.reports[0].details,undefined);
+  const detail=await json(a('GET',`/api/admin/feedback/${feedback.id}`));
+  assert.equal(detail.reporter.email,null);
+  await a('PATCH',`/api/admin/feedback/${feedback.id}`,{status:'reviewing',expectedStatus:'received'});
+  await a('PATCH',`/api/admin/feedback/${feedback.id}`,{status:'resolved',expectedStatus:'received'},409);
+  assert.equal((await json(a('GET','/api/feedback')))[0].status,'reviewing');
   const project = await json(a('POST', '/api/project-setup', { requestId: randomUUID(), title: 'Fresh alpha story', settings: {} }, 201));
   const scene = await json(a('POST', `/api/projects/${project.id}/scenes`, { requestId: randomUUID(), chapterTitle: 'Opening', title: 'At the harbor' }, 201));
   const prose = '<p><strong>Protected prose Ω</strong> at the harbor.</p>';
@@ -123,6 +132,7 @@ try {
   assert.deepEqual(Buffer.from(await (await a('GET', image.url)).arrayBuffer()), png);
   await b('GET', image.url, undefined, 404);
   assert.equal((await json(a('GET','/api/feedback')))[0].id,feedback.id);
+  assert.equal((await json(a('GET',`/api/admin/feedback/${feedback.id}`))).status,'reviewing');
   assert.deepEqual(await json(b('GET','/api/feedback')),[]);
   console.log(JSON.stringify({ freshBootstrap: 'PASS', concurrentBootstrap: 'PASS', refusesExistingDatabase: 'PASS', registration: 'PASS', secureProxyCookie: 'PASS', sceneContext: 'PASS', staleWriteRejected: 'PASS', accountIsolation: 'PASS', export: 'PASS', restartSessionAndUploads: 'PASS', pairedRestore: 'PASS', restoredTables: Object.keys(before).length }));
 } finally {
