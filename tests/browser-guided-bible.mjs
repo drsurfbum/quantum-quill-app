@@ -152,7 +152,7 @@ try {
   assert.ok((await page.getByRole('region', { name: 'Story Bible content' }).innerText()).includes('An explicitly selected companion.'));
   await page.reload();
   await page.getByRole('tab', { name: 'Connections', exact: true }).click();
-  await page.getByText('An explicitly selected companion.', { exact: true }).waitFor();
+  await page.locator('section[aria-label="Linked elements"]').getByText('An explicitly selected companion.', { exact: true }).waitFor();
   record('Optional suggestion uses shared picker; no target/write until explicit selection and save; link survives reload');
 
   await page.setViewportSize({ width: 390, height: 844 });
