@@ -12,6 +12,7 @@ import {
   Grid
 } from "lucide-react";
 import UserProfile from "./user-profile";
+import RoadmapLink from "./roadmap-link";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { type Project } from "@shared/schema";
@@ -214,6 +215,9 @@ export default function SidebarNavigation({ onCollapsedChange }: { onCollapsedCh
             )}
           </>
         )}
+        <div className="flex flex-1 items-end pb-1">
+          <RoadmapLink compact />
+        </div>
       </div>
     );
   };
@@ -261,6 +265,9 @@ export default function SidebarNavigation({ onCollapsedChange }: { onCollapsedCh
             <ProjectNav projectId={currentProjectId} location={location} />
           </div>
         </ScrollArea>
+        <div className="px-4 py-2">
+          <RoadmapLink />
+        </div>
         <UserProfile />
       </div>
     </>
