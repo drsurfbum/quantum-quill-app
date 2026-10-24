@@ -8,9 +8,15 @@ A successful submission returns a report number. **My recent reports** shows tha
 
 ## Maintainer review
 
-Reports are private database records, not GitHub issues. There are no automatic emails or a promised response time. The maintainer can ask Codex to review alpha feedback through the connected Render Postgres tool, or use authenticated database tooling. No unauthenticated or general-user endpoint lists other writers’ reports.
+Reports are private database records, not GitHub issues. There are no automatic emails or a promised response time. The maintainer can ask Codex to review alpha feedback through the QQ service’s authenticated Render Shell, or use authenticated tooling inside Render’s private network. The hosted Render Postgres connector cannot query this database because its external IP allowlist is intentionally empty; do not expose the database to make reporting easier. No unauthenticated or general-user endpoint lists other writers’ reports.
 
-Read the inbox without joining account/contact details unless needed:
+Read the inbox without joining account/contact details unless needed. In the **Quantum Quill web service → Shell**, the installed `pg` package can use `process.env.DATABASE_URL` without printing credentials. For example:
+
+```sh
+node --input-type=module -e 'import pg from "pg"; const c=new pg.Client({connectionString:process.env.DATABASE_URL}); await c.connect(); console.log(JSON.stringify((await c.query("SELECT id, category, summary, details, area, device, allow_contact, status, created_at FROM feedback_reports ORDER BY created_at DESC LIMIT 100")).rows,null,2)); await c.end();'
+```
+
+Equivalent SQL:
 
 ```sql
 SELECT id, category, summary, details, area, device, allow_contact, status, created_at

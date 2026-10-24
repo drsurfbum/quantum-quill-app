@@ -1,8 +1,15 @@
 # Hosted alpha preparation — October 24, 2026
 
-Status: launch authorized on October 24 after the earlier hold. The user approved the prepared paid setup in **My Workspace** and open registration. Render’s reviewed total is **$13.55/month** in base charges, plus possible usage overages. Initial deployment has started; verify the final live app before advertising its URL. SDH Studio is outside this deployment’s scope.
+Status: **live and verified October 24, 2026** at https://quantum-quill-alpha.onrender.com. The user approved open registration and the prepared paid setup in **My Workspace**, superseding the earlier hold. Render’s reviewed total is **$13.55/month** in base charges, plus possible usage overages. SDH Studio is unchanged.
 
-## Proposed isolated deployment
+- Web service: `srv-dbeb5kfb9u1s7393ubm0`; PostgreSQL: `dpg-dbeb4vvb9u1s7393s0fg-a`; Blueprint: `exs-dbeb4ja9lscs73aij060`.
+- Released app commit: `f0b8bba0c939b477609e2abf44caedaa79e919b8`; verified live deploy: `dep-dbeb9trncjis73dmkef0`.
+- Region Oregon, one 512 MB app instance, PostgreSQL 16 / 256 MB / 1 GB, and a 1 GB upload disk. Storage autoscaling, automatic service deploys, Blueprint auto-sync, and database public access are off.
+- Live synthetic checks passed: HTTPS registration/login and secure cookies, scene save/reload, stale-write rejection, two-account isolation, image ownership, HTML export, private feedback/retry/history, and retained sessions/writing/uploads across the feedback deploy.
+- Local accounts and recovered writing stay local. Testers, including the owner, register new hosted accounts. Synthetic verification accounts contain only sample content.
+
+
+## Deployment configuration
 
 `render.yaml` describes a new `quantum-quill-alpha` web service and `quantum-quill-alpha-db`, with a 1 GB upload disk. It does not reference an SDH service, database, shared environment group, local recovery database, or private manuscript. The alpha starts with an empty database; new writers create their own accounts and projects.
 
@@ -20,7 +27,7 @@ Source: [Render pricing](https://render.com/pricing). This is an estimate, not a
 4. Create a Blueprint from the private app repository, selecting **codex/writing-first-layout** as its source branch. Select `render.yaml`. Connect GitHub only if its existing integration cannot access this repository; never make the source public to work around access.
 5. Keep service auto-deploy **off**, and turn off automatic Blueprint sync in the Dashboard. A feature backup push must not release unreviewed changes or alter infrastructure.
 6. Let Render generate a fresh session secret and supply the new database's internal connection string. No credentials belong in Git or public documentation.
-7. Wait for the specific deploy to reach `live`, then verify HTTPS registration/login, secure session cookies, saves/reload, two-account isolation, uploads, export, and restart persistence.
+7. With auto-deploy off, a Blueprint configuration sync can reuse the previous build. Explicitly deploy the reviewed latest commit when releasing code, and verify the deploy’s commit ID (the initial feedback sync reused an older build and safely failed before startup because its new migration file was absent). Wait for the specific deploy to reach `live`, then verify HTTPS registration/login, secure session cookies, saves/reload, two-account isolation, uploads, export, and restart persistence.
 8. Add the verified URL to both READMEs and the public roadmap. Share the app URL for testing; the public roadmap is an introduction, not the app.
 
 The app binds to Render's `PORT` on `0.0.0.0`, uses database-backed sessions, and reports database readiness at `/healthz`. Only `/var/data` is persistent; `UPLOAD_DIR=/var/data/uploads` includes the `.access` ownership index. Never expose uploads through a public static-file mount. A persistent disk means one instance and brief downtime on redeploy; browser recovery remains active during failed saves.
@@ -37,7 +44,7 @@ The reviewed schema snapshot is `deployment/alpha-schema.sql`. `npm run db:init:
 
 ## Verification
 
-`npm run check`, the writing-protection test suite, and `npm run build` pass locally. The compiled registration screen renders with the production CSP and no browser console warnings/errors. The new request tests cover deeply nested/oversized collections, JSON-encoded legacy payloads, large prose, rejected compression, and production headers.
+`npm run check`, all 387 tests across 38 suites, and `npm run build` pass locally. The feedback browser walkthrough verifies draft recovery after reload, successful receipt, and unchanged scene content. The compiled registration screen renders with the production CSP and no browser console warnings/errors. The new request tests cover deeply nested/oversized collections, JSON-encoded legacy payloads, large prose, rejected compression, and production headers.
 
 `tests/hosted-alpha.mjs` exercises the actual compiled production server against random disposable databases. It checks concurrent/idempotent initialization, refusal of existing data, open registration, proxy/secure cookie behavior, scenes and Story Bible context, stale-write rejection, account and image isolation, export, restart persistence, and a paired database/upload restore. It compares all restored table fingerprints, including private feedback and its migration ledger and the upload access metadata. It does not read a recovered-data backup.
 

@@ -8,7 +8,7 @@ Quantum Quill brings your manuscript, scene plans, characters, places, and resea
 
 ![Quantum Quill's writing workspace with scene navigation, prose, and Story Bible context](docs/images/writing-workspace.jpg)
 
-**Status: early alpha.** The hosted alpha is being launched. A tester URL will be added after live verification. The roadmap and design study are previews, not a hosted copy of the writing app. Screenshots use a fictional demonstration project, *The Lantern Coast*.
+**Status: open alpha.** [Try Quantum Quill](https://quantum-quill-alpha.onrender.com) and register a new account. The hosted alpha starts fresh; local accounts and private manuscripts were not copied. Screenshots below use a fictional demonstration project, *The Lantern Coast*. The roadmap and design study remain separate previews.
 
 ## Plan as much—or as little—as you need
 
@@ -42,7 +42,7 @@ Draft recovery is a safety net, not a complete offline application or a substitu
 
 ## Help test the alpha
 
-When the hosted link is available, anyone with it can register their own account. Begin with a sample story:
+[Open the alpha](https://quantum-quill-alpha.onrender.com), choose **Register**, and create an account. Begin with a sample story:
 
 1. Create a project and add a character and a location to its Story Bible.
 2. Plan a scene—or go straight to Write—and draft a few paragraphs.
