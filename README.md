@@ -8,7 +8,7 @@ Quantum Quill brings your manuscript, scene plans, characters, places, and resea
 
 ![Quantum Quill's writing workspace with scene navigation, prose, and Story Bible context](docs/images/writing-workspace.jpg)
 
-**Status: early alpha.** The local app works; the separate hosted alpha is being prepared. A tester URL will be added after deployment and live verification. The roadmap and design study are previews, not a hosted copy of the writing app. Screenshots use a fictional demonstration project, *The Lantern Coast*.
+**Status: early alpha.** The local app works; the separate hosted alpha is prepared but has not launched. A tester URL will be added after hosting is activated and verified. The roadmap and design study are previews, not a hosted copy of the writing app. Screenshots use a fictional demonstration project, *The Lantern Coast*.
 
 ## Plan as much—or as little—as you need
 

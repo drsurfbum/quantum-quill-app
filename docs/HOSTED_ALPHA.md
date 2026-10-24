@@ -1,6 +1,6 @@
 # Hosted alpha preparation — October 24, 2026
 
-Status: deployment preparation, not a live release. The user requested a shareable testing link and chose open registration. Workspace confirmation, the final hosting charge, and live verification are still pending. Do not advertise a guessed Render hostname.
+Status: prepared and held at the user’s request, not a live release. Open registration and Render’s **My Workspace** are confirmed. On October 24 the user chose **“Keep it ready; don’t add charges yet.”** Do not create paid resources or deploy until the user authorizes launch and its recurring cost. No QQ resources or charges have been added. Do not advertise a guessed Render hostname.
 
 ## Proposed isolated deployment
 
@@ -14,7 +14,7 @@ Source: [Render pricing](https://render.com/pricing). This is an estimate, not a
 
 ## Release workflow
 
-1. Confirm the workspace and ensure the new resource names do not collide with existing resources.
+1. Use the confirmed **My Workspace** and ensure the new resource names do not collide with existing resources. Leave SDH Studio unchanged.
 2. Review the Blueprint, validate with `render blueprints validate render.yaml`, and approve the actual recurring charge.
 3. Push the checked implementation to `codex/writing-first-layout`. Keep `main`, history, and existing feature ownership intact.
 4. Create a Blueprint from the private app repository, selecting **codex/writing-first-layout** as its source branch. Select `render.yaml`. Connect GitHub only if its existing integration cannot access this repository; never make the source public to work around access.
