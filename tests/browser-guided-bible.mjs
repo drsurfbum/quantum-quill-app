@@ -48,7 +48,7 @@ try {
   };
   const group = key => page.locator(`[data-bible-group="${key}"] > h3 > button`);
   const openGroup = async key => { if (await group(key).getAttribute('aria-expanded') === 'false') await group(key).click(); };
-  const screenshot = async name => page.screenshot({ type: 'jpeg', quality: 85, path: `${artifacts}/${name}.jpg` });
+  const screenshot = async name => page.screenshot({ animations: 'disabled', type: 'jpeg', quality: 85, path: `${artifacts}/${name}.jpg` });
   const cases = [
     ['characters','Identity & role','basicInfo','#age','metadata','age'],
     ['groups_races','Group at a glance','basicInfo','#tagline','metadata','tagline'],
@@ -100,6 +100,7 @@ try {
   await page.getByRole('tab', { name: 'Develop', exact: true }).click();
   await openGroup('personality');
   await page.locator('#characters-motivations-help').getByText('Show an example', { exact: true }).click();
+  await screenshot('07-field-help');
   const before = writes;
   await page.getByRole('button', { name: 'Hide guidance', exact: true }).click();
   await page.getByRole('button', { name: 'Show guidance', exact: true }).click();
@@ -171,7 +172,7 @@ try {
   await writeFile(`${artifacts}/receipt.json`, JSON.stringify({ fixture: 'The Lantern Coast; in-memory synthetic only', checks, consoleErrors: errors, browser: await browser.version(), viewport: [1440,1000], compactViewport: [390,844] }, null, 2));
   console.log('QQ14_RECEIPT:' + await readFile(`${artifacts}/receipt.json`, 'utf8'));
   // Synthetic evidence only; allow review through GitHub without a local executor.
-  for (const name of ['01-choose-a-type','02-develop-character','05-compact-develop']) console.log(`QQ14_IMAGE:${name}:${(await readFile(`${artifacts}/${name}.jpg`)).toString('base64')}`);
+  for (const name of ['01-choose-a-type','02-develop-character','05-compact-develop','07-field-help']) console.log(`QQ14_IMAGE:${name}:${(await readFile(`${artifacts}/${name}.jpg`)).toString('base64')}`);
 } catch (error) {
   if (page) console.error('Synthetic browser failure at', page.url(), await page.locator('body').innerText().catch(()=>''));
   if (page) await page.screenshot({ path: `${artifacts}/failure.png` }).catch(() => {});
