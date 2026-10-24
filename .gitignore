@@ -85,3 +85,6 @@ recovery/
 !migrations/0004_wizards_and_scenes.sql
 !migrations/0005_scene_story_beats.sql
 !migrations/0006_scene_bible_context.sql
+
+# Schema-only bootstrap, never a data dump.
+!deployment/alpha-schema.sql
