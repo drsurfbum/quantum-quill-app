@@ -1,5 +1,11 @@
 # Hosted alpha preparation — October 24, 2026
 
+## Current release update — October 26, 2026
+
+The first-use interface tour is live at commit `6ecad66de57df6b993a8bbbd06688809d43daf67`, Render deploy `dep-dbfn0uavcj2c738obnt0`. Exact-release CI and read-only live verification passed. The owner session and the inspected scene's prose/formatting survived the rollout unchanged. No schema, dependency, service configuration, permission or hosting-cost changes. Auto-deploy remains off. The separate QQ-14 guided Story Bible implementation is not part of this release. See [interface tour release and verification](INTERFACE_TOUR.md).
+
+The October 24 launch record below is retained as historical evidence; the current tour release supersedes its app commit/deploy IDs.
+
 Status: **live and verified October 24, 2026** at https://quantum-quill-alpha.onrender.com. The user approved open registration and the prepared paid setup in **My Workspace**, superseding the earlier hold. Render’s reviewed total is **$13.55/month** in base charges, plus possible usage overages. SDH Studio is unchanged.
 
 - Web service: `srv-dbeb5kfb9u1s7393ubm0`; PostgreSQL: `dpg-dbeb4vvb9u1s7393s0fg-a`; Blueprint: `exs-dbeb4ja9lscs73aij060`.

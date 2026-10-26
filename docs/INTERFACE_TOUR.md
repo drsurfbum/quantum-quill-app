@@ -1,6 +1,14 @@
 # First-use interface tour
 
-Validated October 26, 2026 on `codex/first-use-tour`, isolated from guided Story Bible work. This is an interface introduction, separate from the New Project, Blueprint and guided element-creation workflows. It is not merged or deployed.
+Initially validated October 26, 2026 on `codex/first-use-tour`, isolated from guided Story Bible work. This is an interface introduction, separate from the New Project, Blueprint and guided element-creation workflows.
+
+## Live alpha release — October 26, 2026
+
+Released at <https://quantum-quill-alpha.onrender.com> as `6ecad66de57df6b993a8bbbd06688809d43daf67` on `codex/writing-first-layout`. The user explicitly approved this integration and deployment. Only the tour commit was cherry-picked; its complete tree matches tested feature commit `d6fb8f6`. Main and the separate QQ-14 branch remain unchanged.
+
+Render deploy `dep-dbfn0uavcj2c738obnt0` became live at 15:25 UTC. GitHub checks [40347481558](https://github.com/drsurfbum/quantum-quill-app/actions/runs/40347481558) passed, including the production PostgreSQL/upload restore rehearsal. Live checks verified health, the exact tested JavaScript bundle, anonymous authentication boundaries, the existing authenticated session, tour navigation/completion/reload/replay/skip, and unchanged rendered prose/formatting in the open scene. Browser and application error checks were clear. No live writing was edited and no hosted synthetic records were created. Full save/conflict/account-isolation/restore testing used synthetic fixtures and CI; live checks were read-only except for browser tour preferences.
+
+Server code, schema, dependencies, deployment configuration, database and upload disk were unchanged by this release. Automatic deploys remain off. For a code-only rollback, redeploy prior verified release `7a3f09d5193eb57a3a8e5c5d4f5786568af1ad30` while retaining current writing, uploads and session configuration. Do not restore an older database to roll back this UI change.
 
 ## Experience
 
