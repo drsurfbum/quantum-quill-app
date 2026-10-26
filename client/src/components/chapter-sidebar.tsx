@@ -214,10 +214,10 @@ export default function ChapterSidebar({ projectId, selectedChapterId, isVisible
   if (!isVisible) return null;
   return (
     <>
-      <aside aria-label="Manuscript" className="manuscript-binder shrink-0 flex flex-col min-h-0 border-r bg-muted/20">
+      <aside data-tour="manuscript" aria-label="Manuscript" className="manuscript-binder shrink-0 flex flex-col min-h-0 border-r bg-background">
         <div className="h-16 px-3 flex items-center gap-1 shrink-0 border-b"><h3 className="font-semibold text-sm mr-auto">Manuscript</h3>
           <DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Add chapter" disabled={isCreating}><Plus className="h-4 w-4" /></Button></DropdownMenuTrigger><DropdownMenuContent><DropdownMenuItem onSelect={()=>handleCreateChapter("chapter")}>New chapter · write directly</DropdownMenuItem><DropdownMenuItem onSelect={()=>handleCreateChapter("scenes")}>New scene chapter</DropdownMenuItem></DropdownMenuContent></DropdownMenu>
-          <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Close manuscript" onClick={onClose}><X className="h-4 w-4"/></Button>
+          <Button data-tour="manuscript-close" variant="ghost" size="icon" className="h-8 w-8" aria-label="Close manuscript" onClick={onClose}><X className="h-4 w-4"/></Button>
         </div>
         <div className="p-2 border-b">{projectId && <ManuscriptOrganizer projectId={Number(projectId)} />}</div>
         <div className="flex-1 min-h-0 overflow-y-auto px-2 py-3 space-y-1">

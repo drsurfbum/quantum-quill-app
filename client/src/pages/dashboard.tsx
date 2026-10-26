@@ -46,7 +46,7 @@ export default function Dashboard() {
               <p className="text-muted-foreground">Manage your writing projects</p>
             </div>
             <Button 
-              onClick={handleCreateProject} 
+              data-tour="new-project" onClick={handleCreateProject}
 
               className="w-full sm:w-auto"
             >
@@ -56,7 +56,7 @@ export default function Dashboard() {
           </div>
 
           <div className="grid gap-6">
-            <div className="border rounded-lg p-6 bg-card">
+            <div data-tour="projects" tabIndex={-1} className="border rounded-lg p-6 bg-card">
               <h2 className="text-xl font-semibold mb-4">Your Projects</h2>
               {isLoading ? (
                 <div className="flex justify-center py-10">
@@ -71,7 +71,7 @@ export default function Dashboard() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {projects.map((project) => (
                     <div key={project.id} className="border rounded-lg overflow-hidden bg-card shadow-sm hover:shadow transition-shadow">
-                      <Link href={`/project/${project.id}`}>
+                      <Link data-tour-project href={`/project/${project.id}`}>
                         <div className="p-4 cursor-pointer">
                           <h3 className="font-medium mb-1 truncate">{project.title}</h3>
                           <p className="text-sm text-muted-foreground mb-4 line-clamp-2">

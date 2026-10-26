@@ -1,3 +1,4 @@
+import { replayTour } from "./tour/tour-provider";
 import { useAuth } from "@/hooks/use-auth";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -49,6 +50,7 @@ export default function UserProfile() {
             </div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
+          <DropdownMenuItem onSelect={()=>requestAnimationFrame(replayTour)}>Replay tour</DropdownMenuItem>
           <DropdownMenuItem onClick={handleLogout}>
             <LogOut className="w-4 h-4 mr-2" />
             <span>Log out</span>
