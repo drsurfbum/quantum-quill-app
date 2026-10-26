@@ -1,3 +1,4 @@
+import HelpMenu from "./tour/help-menu";
 import { FeedbackButton } from "./feedback-dialog";
 import { FeedbackInboxLink } from "./feedback-inbox-link";
 import { Link, useLocation } from "wouter";
@@ -218,7 +219,7 @@ export default function SidebarNavigation({ onCollapsedChange }: { onCollapsedCh
           </>
         )}
         <div className="flex flex-1 flex-col justify-end items-center gap-2 pb-1">
-          <FeedbackButton compact /><FeedbackInboxLink compact /><RoadmapLink compact />
+          <HelpMenu compact /><FeedbackButton compact /><FeedbackInboxLink compact /><RoadmapLink compact />
         </div>
       </div>
     );
@@ -268,7 +269,7 @@ export default function SidebarNavigation({ onCollapsedChange }: { onCollapsedCh
           </div>
         </ScrollArea>
         <div className="px-4 py-2 flex items-center gap-2">
-          <FeedbackButton /><FeedbackInboxLink compact /><RoadmapLink />
+          <HelpMenu /><FeedbackButton /><FeedbackInboxLink compact /><RoadmapLink />
         </div>
         <UserProfile />
       </div>

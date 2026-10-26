@@ -1,0 +1,33 @@
+// Disposable interface-tour fixture. No database, environment files or private data.
+import express from 'express';
+import session from 'express-session';
+import {mkdtempSync} from 'node:fs';
+import {tmpdir} from 'node:os';
+import path from 'node:path';
+import {randomBytes, randomUUID} from 'node:crypto';
+import {createApp} from '../server/app';
+import {MemStorage} from '../server/storage';
+import {hashPassword} from '../server/auth';
+import {plotTemplates} from '../server/data/plot-templates';
+
+const storage=new MemStorage();
+(storage.sessionStore as session.Store & {stopInterval?:()=>void}).stopInterval?.();
+storage.sessionStore=new session.MemoryStore();
+const password=await hashPassword('synthetic-tour-only');
+const writer=await storage.createUser({username:'tour-writer',email:'tour-writer@example.test',password});
+await storage.createUser({username:'tour-new',email:'tour-new@example.test',password});
+const project=await storage.createProject({userId:writer.id,title:'The Lantern Coast',description:'An original synthetic story for interface testing.',settings:{}});
+const chapter=await storage.createChapter({projectId:project.id,title:'A light on the water',writingMode:'scenes',order:0});
+const entry=await storage.createStoryBibleEntry({projectId:project.id,title:'Mara Vale',entryType:'characters',content:'A navigator who remembers the islands missing from every chart.',metadata:{age:'29',species:'Human'},tags:['navigator'],priority:1});
+await storage.createScene({projectId:project.id,chapterId:chapter.id,title:'The missing chart',order:0,summary:'Mara finds the empty frame.',storyBeats:[{id:randomUUID(),text:'Discover the missing chart.'}],content:`<p><span data-qq-entry="${entry.id}">Mara Vale</span> set her lantern beside the empty frame. Rain tapped the blue glass overhead.</p><p>Beyond the window, the harbor was disappearing into fog.</p>`});
+await storage.createProject({userId:writer.id,title:'Empty manuscript',description:'No chapters, scenes or Bible entries.',settings:{}});
+const empty=await storage.createProject({userId:writer.id,title:'Empty scenes',description:'A scene chapter with no scenes.',settings:{}});
+await storage.createChapter({projectId:empty.id,title:'An unwritten chapter',writingMode:'scenes',order:0});
+for(const template of plotTemplates)await storage.createPlotStructureTemplate(template);
+const template=(await storage.getAllPlotStructureTemplates())[0];
+const structure=await storage.createPlotStructure({projectId:project.id,templateId:template.id,name:'The missing coast',description:'Find the vanished islands.',order:0});
+await storage.createPlotStructureSection({plotStructureId:structure.id,sectionKey:'turning_point',title:'Beyond the breakwater',content:'Mara chooses the uncharted passage.',order:0});
+const app=createApp({storage,secret:randomBytes(32).toString('hex'),uploadDir:mkdtempSync(path.join(tmpdir(),'qq-tour-'))});
+app.use(express.static(path.resolve('dist/public')));
+app.get('*',(_req,res)=>res.sendFile(path.resolve('dist/public/index.html')));
+app.listen(5067,'127.0.0.1',()=>console.log('QQ interface tour preview: http://127.0.0.1:5067 — synthetic data only'));

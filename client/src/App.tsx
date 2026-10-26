@@ -1,3 +1,4 @@
+import { TourProvider } from "@/components/tour/tour-provider";
 import { FeedbackDialog } from "@/components/feedback-dialog";
 import { useEffect, useState } from "react";
 import { DraftRecovery } from "@/components/draft-recovery";
@@ -46,11 +47,13 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <AppStateProvider>
+          <TourProvider>
           <RecoverableRouter />
           <Toaster />
           <FeedbackDialog />
           <PendingSaves />
           <DraftRecovery />
+        </TourProvider>
         </AppStateProvider>
       </AuthProvider>
     </QueryClientProvider>

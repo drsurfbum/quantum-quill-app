@@ -1,3 +1,4 @@
+import { useInterfaceTour } from "@/components/tour/tour-provider";
 import WorkspaceHeader from "@/components/workspace-header";
 import WritingDocument from "@/components/writing-document";
 import { useEffect, useState, useRef } from "react";
@@ -11,6 +12,10 @@ import { PanelLeft } from "lucide-react";
 
 export default function Write() {
   const { id } = useParams();
+  const { active: touring } = useInterfaceTour();
+  // A tour visit is read-only, including when it exits on an empty manuscript.
+  const tourVisit = useRef(touring);
+  if (touring) tourVisit.current = true;
   const [, navigate] = useLocation();
   const searchParams = new URLSearchParams(useSearch());
   const chapterId = searchParams.get("chapter");
@@ -38,7 +43,7 @@ export default function Write() {
 
   // If no chapters exist, create one
   useEffect(() => {
-    if (chapters.length === 0 && chaptersLoaded && !isCreatingChapter && id && initializedProject.current !== id) {
+    if (!tourVisit.current && chapters.length === 0 && chaptersLoaded && !isCreatingChapter && id && initializedProject.current !== id) {
       initializedProject.current = id;
       createChapter(
         {
@@ -79,13 +84,13 @@ export default function Write() {
   // Find selected chapter
   const selectedChapter = chapters.find(c => c.id === Number(selectedChapterId || '0'));
 
-  const controls = <Button variant="ghost" size="sm" className="shrink-0 px-2" aria-label={isChapterSidebarVisible ? "Hide manuscript" : "Show manuscript"} aria-expanded={isChapterSidebarVisible} onClick={()=>setIsChapterSidebarVisible(open=>!open)}><PanelLeft className="h-4 w-4"/><span className="hidden lg:inline ml-2">Manuscript</span></Button>;
+  const controls = <Button variant="ghost" size="sm" className="shrink-0 px-2" data-tour="manuscript-toggle" aria-label={isChapterSidebarVisible ? "Hide manuscript" : "Show manuscript"} aria-expanded={isChapterSidebarVisible} onClick={()=>setIsChapterSidebarVisible(open=>!open)}><PanelLeft className="h-4 w-4"/><span className="hidden lg:inline ml-2">Manuscript</span></Button>;
   return <div className="h-dvh flex flex-col overflow-hidden bg-background [color-scheme:light] dark:[color-scheme:dark]">
     {project ? <WorkspaceHeader project={project} /> : <div className="h-16 border-b p-4">{projectError ? "Could not load this project. Return to Projects or reload to retry." : "Loading project…"}</div>}
     <main className="relative flex flex-1 min-h-0 min-w-0 overflow-hidden">
       <ChapterSidebar projectId={id || ''} selectedChapterId={selectedChapter?.id} isVisible={isChapterSidebarVisible} onChapterSelect={handleChapterSelect} onClose={()=>setIsChapterSidebarVisible(false)} />
       <div className="flex flex-col flex-1 min-w-0 min-h-0">
-        {chaptersError ? <p role="alert" className="p-6">Could not load your manuscript. Reload to retry; saved drafts are kept.</p> : isLoadingChapters ? <div className="p-6">Loading manuscript…</div> : !selectedChapter ? <div className="p-6 space-y-3">{controls}<p>{chapterId ? "This chapter is unavailable. Choose a chapter from the manuscript list." : "Creating your first chapter…"}</p></div> : selectedChapter.writingMode === "scenes" ? <SceneWorkspace key={selectedChapter.id} chapter={selectedChapter} controls={controls} /> : <WritingDocument key={selectedChapter.id} chapter={selectedChapter} controls={controls} />}
+        {chaptersError ? <p role="alert" className="p-6">Could not load your manuscript. Reload to retry; saved drafts are kept.</p> : isLoadingChapters ? <div className="p-6">Loading manuscript…</div> : !selectedChapter ? <div className="p-6 space-y-3">{controls}<p>{chapterId ? "This chapter is unavailable. Choose a chapter from the manuscript list." : tourVisit.current ? "No chapters yet. Use the Manuscript panel’s + control to add a chapter when you’re ready." : "Creating your first chapter…"}</p></div> : selectedChapter.writingMode === "scenes" ? <SceneWorkspace key={selectedChapter.id} chapter={selectedChapter} controls={controls} /> : <WritingDocument key={selectedChapter.id} chapter={selectedChapter} controls={controls} />}
       </div>
     </main>
   </div>;
