@@ -1,5 +1,15 @@
 # Hosted alpha preparation — October 24, 2026
 
+## Custom domains — October 26, 2026
+
+Primary alpha address: **https://quantquill.io**. Render verified both the root and `www.quantquill.io`, issued their TLS certificates, and redirects `www` to the root. Both use the existing QQ service; no app deploy, database change, new resource or permission change was needed. The pair uses one included domain slot: the workspace now shows **2 / 2 included**, with no additional domain charge.
+
+Porkbun DNS for `quantquill.io` is a root ALIAS and a `www` CNAME, both targeting `quantum-quill-alpha.onrender.com`, TTL 600. These replace only the previous parking ALIAS/wildcard CNAME. The short domain `qquill.io` uses Porkbun's free 302 forwarding to `https://quantquill.io`, with wildcard forwarding and requested URI path preservation enabled. Porkbun automatically replaced its parking records with a root ALIAS and wildcard CNAME to `uixie.porkbun.com`, TTL 600. Its certificate covers the root and wildcard and renews automatically. HTTPS was verified after the certificate finished reaching all three published forwarding servers.
+
+Keep https://quantum-quill-alpha.onrender.com enabled. It serves the same accounts and projects, and remains available for existing sessions and origin-scoped browser draft recovery. Writers sign in once at the new address; cookies, draft recovery and tour preferences do not automatically transfer between browser origins. No browser data was copied or cleared.
+
+Verification: the new main address loads the real login page with no console warnings/errors; HTTPS health is 200; HTTP upgrades to HTTPS; `www` redirects to the primary; signed-out user/admin requests remain 401. The short HTTP/HTTPS redirects, including `www.qquill.io`, preserve paths and query strings. A real browser followed the short HTTPS URL into the QQ login page successfully. The original Render health endpoint remains 200. Original record values are retained in the task's `verification/custom-domains/` evidence for rollback.
+
 ## Current release update — October 26, 2026
 
 The first-use interface tour is live at commit `6ecad66de57df6b993a8bbbd06688809d43daf67`, Render deploy `dep-dbfn0uavcj2c738obnt0`. Exact-release CI and read-only live verification passed. The owner session and the inspected scene's prose/formatting survived the rollout unchanged. No schema, dependency, service configuration, permission or hosting-cost changes. Auto-deploy remains off. The separate QQ-14 guided Story Bible implementation is not part of this release. See [interface tour release and verification](INTERFACE_TOUR.md).
