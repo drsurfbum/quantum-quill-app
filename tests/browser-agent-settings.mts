@@ -41,9 +41,9 @@ try {
  await page.getByRole('button',{name:'Create key',exact:true}).click();await page.getByLabel('New key — store privately now').waitFor();assert.equal(await page.getByLabel('New key — store privately now').getAttribute('type'),'password');
  await page.getByLabel('New key — store privately now').scrollIntoViewIfNeeded();await page.screenshot({animations:'disabled',path:out+'/03-masked-key-management.png'});
  // The copy template must not contain the usable key.
- await page.getByText('Local client setup',{exact:true}).click();const config=await page.getByLabel('Client configuration without secret').innerText();assert(!/qqmcp_[0-9]+_/.test(config));
+ await page.getByLabel('Assistant client').selectOption('codex');await page.getByText('Show configuration',{exact:true}).click();const config=await page.getByLabel('Client configuration without secret').innerText();assert(!/qqmcp_[0-9]+_/.test(config));
  await page.evaluate("Object.defineProperty(navigator,'clipboard',{value:{writeText:()=>Promise.reject(new Error('test denial'))},configurable:true})");
- await page.getByRole('button',{name:'Copy setup template'}).click();await page.getByRole('alert').filter({hasText:'Clipboard access failed'}).waitFor();
+ await page.getByRole('button',{name:'Copy setup'}).click();await page.getByRole('alert').filter({hasText:'Clipboard access failed'}).waitFor();
  await page.getByRole('button',{name:'Close',exact:true}).last().click();await page.getByRole('button',{name:'Settings',exact:true}).first().click();await page.getByRole('button',{name:'Replace key',exact:true}).waitFor();assert.equal(await page.getByLabel('New key — store privately now').count(),0);
  await page.getByRole('tab',{name:'Appearance',exact:true}).click();
  // Exercise the app's native theme switch.

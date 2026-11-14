@@ -51,8 +51,8 @@ test('disabled defaults, settings conflicts and account ownership',async()=>{
 test('actual MCP capabilities and scoped read round trip',async()=>{
   const {client,transport,stderr}=await connect(),pid=transport.pid!;
   try{
-    assert.deepEqual((await client.listTools()).tools.map(t=>t.name).sort(),Object.keys(agentTools).sort());
-    assert(client.getServerCapabilities()?.tools);assert(!client.getServerCapabilities()?.resources);
+    assert.deepEqual((await client.listTools()).tools.map(t=>t.name).sort(),[...Object.keys(agentTools),'qq_get_guide'].sort());
+    assert(client.getServerCapabilities()?.tools);assert(client.getServerCapabilities()?.resources);
     const projects=data(await call(client,'qq_list_projects'));assert.deepEqual(projects.items.map((p:any)=>p.id),[project.id]);
     assert.equal(data(await call(client,'qq_get_project',{projectId:project.id})).title,project.title);
     const list=data(await call(client,'qq_list_outline',{projectId:project.id,limit:1}));assert(!('content' in list.items[0]));

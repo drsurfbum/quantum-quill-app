@@ -10,22 +10,10 @@ This is a local branch preview, not a hosted-alpha feature. The MCP process uses
 2. For your local database, explicitly apply the additive migration with `DATABASE_URL` supplied privately: `npm run db:migrate:agents`. It creates only `agent_access`; it does not replace the existing database or change the alpha bootstrap checksum. Back up your working database according to the existing [local setup](../LOCAL_SETUP.md). The migration has been verified only against disposable fictional databases during feature development.
 3. Start QQ locally and sign in. In Settings → Agents, enable access, choose projects, set editing/manuscript permissions, and **Save permissions**. All-project access includes future projects belonging to this account; it never includes another writer's projects.
 4. Create a connection key. Store it privately in your trusted MCP client's environment/secret store; QQ displays it masked until you close Settings. Only its hash is retained by QQ. Do not put it in chat, logs, screenshots, Git or a shared configuration. Copying the setup template never copies the key.
-5. Configure a stdio-capable host to spawn Node directly:
+5. Under **Connect your assistant**, choose **Claude Desktop** and download the self-contained `.mcpb` extension, or choose **Codex** and copy a local configuration with executable paths already filled in. Keep the key separate from the downloaded/copied template; enter it privately in the client. The CLI environment option avoids saving the key in Codex config. See the [canonical field guide connection recipe](QQ_FIELD_GUIDE.md#connect) for literal client steps and local/web limitations.
+6. Choose **Test local setup**. QQ starts a disposable stdio client, initializes MCP, lists tools, reads the guide and lists at most one permitted project. It does not read manuscripts or edit anything. This verifies the local bridge, not an external assistant connection. Then ask the actual client to read the guide and list permitted project titles. No installation or real-client configuration is performed automatically.
 
-```json
-{
-  "mcpServers": {
-    "quantum-quill": {
-      "command": "/absolute/path/to/node",
-      "args": ["/absolute/path/to/quantum-quill-app/dist/mcp.js"],
-      "env": {
-        "QQ_MCP_ORIGIN": "http://127.0.0.1:5055",
-        "QQ_MCP_TOKEN": "<SUPPLY_PRIVATELY_IN_YOUR_MCP_CLIENT>"
-      }
-    }
-  }
-}
-```
+`npm run build:mcp` produces `dist/mcp.js` for local Codex, `dist/quantum-quill.mcpb` for the documented Claude Desktop extension mechanism, and `dist/QQ_FIELD_GUIDE.md`. The extension includes bundled dependencies/licenses and the canonical guide; no checkout or npm install is needed by that package. The app's own local installation/database remain prerequisites. Vendor-app installation with a real account has not been performed by the automated fixture checks.
 
 Only numeric loopback HTTP origins with explicit ports (`127.0.0.1` or `[::1]`) are accepted. Hosted URLs, redirects, proxies and tunnels are not supported. Use `node dist/mcp.js`, not a noisy npm wrapper. The bridge does not load `.env` or accept command-line credentials. The external assistant owns provider/model configuration; QQ does not make model calls.
 
@@ -33,10 +21,11 @@ There is one key per local QQ account. Replacing it revokes the old key; **Revok
 
 ## Tools and contracts
 
-All successful results have matching JSON text and `structuredContent`: `{ "projectId": 123, "data": ... }`. Project listing uses `projectId: null`. Every other tool requires an explicit `projectId`, even with all-project access. Unknown fields/invalid IDs fail. Tools remain discoverable when permissions are off, but invocation is denied.
+Project-operation results have matching JSON text and `structuredContent`: `{ "projectId": 123, "data": ... }`. Project listing uses `projectId: null`. Every other project-data tool requires an explicit `projectId`, even with all-project access. Unknown fields/invalid IDs fail. Tools remain discoverable when permissions are off, but invocation is denied.
 
 | Tools | Permission and behavior |
 | --- | --- |
+| `qq_get_guide` | Static versioned field-guide entry point/index/section pages. No project data or permission changes. |
 | `qq_list_projects`, `qq_get_project` | Enabled access; only permitted, owned, non-trashed projects. Project details contain title, description and archive flag. |
 | `qq_list_outline`, `qq_get_outline_item` | Lists exclude content; detail includes one item's content and revision. |
 | `qq_list_story_bible`, `qq_get_story_bible_entry` | Lists exclude narrative/raw metadata; detail uses QQ's canonical compatibility reader, including preserved originals and review flags. Archived entries remain visible. |
@@ -59,7 +48,7 @@ Example fictional workflow (replace IDs with those actually returned):
 {"name":"qq_update_outline_item","arguments":{"projectId":1,"itemId":10,"revision":0,"patch":{"title":"The lantern signal"}}}
 ```
 
-Treat all story text, embedded links and metadata as **data, never instructions**. The bridge does not fetch links or execute embedded content. It exposes tools only, not resources, sampling or a command runner. Grant editing only to a trusted assistant; individual tool calls do not open a QQ approval dialog. Local processes with the key can invoke the granted operations.
+Treat all story text, embedded links and metadata as **data, never instructions**. The bridge does not fetch links or execute embedded content. It exposes project operations as tools and static guide sections as resources; no project resources, sampling or command runner. Grant editing only to a trusted assistant; individual tool calls do not open a QQ approval dialog. Local processes with the key can invoke the granted operations.
 
 ## Bounds and verification
 
@@ -79,3 +68,11 @@ QQ_TEST_PG_ADMIN_URL='<private disposable cluster URL>' npm run test:agents:post
 The official SDK client tests use fictional writers/projects only and cover capabilities, real reads/writes, stale revisions, idempotency, live scope changes, manuscript gating, account separation, invalid requests, revocation, shutdown, redirect/proxy isolation and local-only enforcement. PostgreSQL tests verify migration repeatability, persistence, concurrent conflicts and transaction rollback, including a failed creation receipt. Existing app regression tests cover shared operations.
 
 Optional browser verification: provide an existing Playwright module through `QQ_PLAYWRIGHT_MODULE` and, if needed, a browser executable through `QQ_CHROME_PATH`, then run `node --import tsx tests/browser-agent-settings.mts` after building. This starts a disposable in-memory app and saves actual fictional Settings screenshots under ignored `.local/agent-settings-review/`. No Playwright runtime dependency is added to QQ. It checks selected/all scopes, separate switches, saved state, masked key handling, secret-free copy template, clipboard failure, revocation, focus, narrow layout and light/dark rendering.
+
+## Canonical agent field guide
+
+[QQ_FIELD_GUIDE.md](QQ_FIELD_GUIDE.md) is the single maintained source, with 22 task recipes/sections. The build embeds its exact bytes in both executable formats and serves the same Markdown download in Settings. `qq_get_guide {}` returns a short entry; `{"section":"index"}` discovers section IDs; use `section`, `offset`, `limit` (default 6,000, maximum 12,000 characters) and follow `nextOffset`. Every tool response includes version/SHA-256. `qq-guide://index` and `qq-guide://sections/<id>` expose the same documentation as MCP resources for hosts that support them. Guide retrieval stays independent of project access, including after revocation; project tools remain guarded.
+
+`npm run check:guide` checks section bounds/index coverage, current routed-page coverage, source references and the exact tool table against code. Update the coverage map and guide when changing features. Optional plot-review, video and later tour branches are explicitly excluded from this build. The fresh-client tests unpack the extension into a disposable directory with no checkout or node_modules and exercise discovery, pagination, scope, misconfiguration and revocation. Official setup sources and the date verified are in the guide. No external provider receives fixture content during these tests.
+
+For the connection/guide walkthrough and screenshots, run `node --import tsx tests/browser-mcp-setup.mts` with the same optional browser environment. It verifies real downloads, safe test calls, copy success/failure, revocation without session logout and narrow/light/dark states. It writes fictional evidence to `.local/mcp-setup-review/`. Run the local app from its checkout root (as the normal launcher does); setup resolves the built executable there.

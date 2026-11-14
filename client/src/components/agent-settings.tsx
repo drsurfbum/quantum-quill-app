@@ -1,5 +1,6 @@
+import { AgentConnectionSetup } from './agent-connection-setup';
 import { useEffect, useState } from 'react';
-import { Settings, Shield, Copy, KeyRound } from 'lucide-react';
+import { Settings, Shield, KeyRound } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { apiRequest, ApiError } from '@/lib/queryClient';
 import type { AgentSettings } from '@shared/agent-access';
@@ -44,7 +45,7 @@ function SettingsForAccount({userId}:{userId:number}){
     }catch(e){setError(e instanceof Error?e.message:'Could not change the key.');}finally{setBusy(false);}
   }
   async function copy(text:string,label:string){try{await navigator.clipboard.writeText(text);setNotice(`${label} copied.`);}catch{setError('Clipboard access failed. Select and copy the text manually.');}}
-  const snippet=JSON.stringify({mcpServers:{'quantum-quill':{command:'/absolute/path/to/node',args:['/absolute/path/to/quantum-quill-app/dist/mcp.js'],env:{QQ_MCP_ORIGIN:window.location.origin,QQ_MCP_TOKEN:'<SET_PRIVATELY_IN_YOUR_MCP_CLIENT>'}}}},null,2);
+
   return <Dialog open={open} onOpenChange={next=>{if(!busy)setOpen(next);}}><DialogContent className="max-w-4xl w-[calc(100%-1rem)] h-[min(90dvh,850px)] flex flex-col p-0 gap-0 overflow-hidden">
     <DialogHeader className="px-6 pt-6 pb-4 border-b"><DialogTitle className="font-serif text-2xl">Settings</DialogTitle><DialogDescription>Control how external assistants can work with your writing.</DialogDescription></DialogHeader>
     <Tabs defaultValue="agents" orientation="vertical" className="flex flex-col sm:flex-row min-h-0 flex-1">
@@ -74,7 +75,7 @@ function SettingsForAccount({userId}:{userId:number}){
             {dirty&&<p className="text-xs text-muted-foreground">Save permissions before creating or replacing a key.</p>}
             {key&&<div className="space-y-2"><Label htmlFor="new-agent-key">New key — store privately now</Label><div className="flex gap-2"><Input id="new-agent-key" type="password" readOnly value={key} autoComplete="off"/><Button variant="outline" onClick={()=>void copy(key,'Key')}>Copy key</Button></div></div>}
           </section>
-          <details className="border-t pt-4"><summary className="cursor-pointer font-medium">Local client setup</summary><p className="text-sm text-muted-foreground my-3">Build with <code>npm run build:mcp</code>. Adjust the executable paths below and supply your private key separately. There is no hosted MCP endpoint. The assistant chooses its provider and model in its own settings.</p><pre className="text-xs bg-muted/40 border rounded p-3 overflow-x-auto" tabIndex={0} aria-label="Client configuration without secret">{snippet}</pre><Button variant="outline" size="sm" className="mt-2" onClick={()=>void copy(snippet,'Setup template')}><Copy className="h-4 w-4 mr-2"/>Copy setup template</Button></details>
+          <AgentConnectionSetup newKey={key} dirty={dirty}/>
           <p className="text-xs text-muted-foreground">Connection activity is not reported to this screen. Enabled permissions or an existing key do not mean an assistant is connected. Changes take effect when saved; an operation already in progress may finish first.</p>
         </>}
         {notice&&<p role="status" className="text-sm rounded border p-3">{notice}</p>}

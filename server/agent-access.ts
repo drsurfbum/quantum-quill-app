@@ -1,3 +1,4 @@
+import { registerAgentSetupRoutes } from "./agent-setup";
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import type { Express, Request, RequestHandler } from "express";
 import { z } from "zod";
@@ -16,6 +17,7 @@ export function registerAgentRoutes(app: Express, storage: IStorage, production:
     if(production || !["127.0.0.1","::1","::ffff:127.0.0.1"].includes(req.socket.remoteAddress || ""))return next(Object.assign(new Error("Agent access is available only in the local QQ app."),{status:403,code:"LOCAL_ONLY"}));
     next();
   };
+  registerAgentSetupRoutes(app,storage,local);
   app.get('/api/agent-settings',local,requireUser,handler(async(req,res)=>res.json(publicAgentSettings(await storage.getAgentAccess(req.user!.id)))));
   app.put('/api/agent-settings',local,requireUser,handler(async(req,res)=>{
     const input=saveAgentSettingsSchema.parse(req.body),owner=req.user!.id;

@@ -96,3 +96,5 @@ Completed features are checked, committed, and pushed to their feature branches.
 ## Local writing-assistant access
 
 An opt-in [local MCP preview](docs/MCP.md) lets a trusted assistant read and edit permitted projects through supported QQ operations. Settings → Agents controls selected/all projects, editing, separate manuscript access and a revocable connection key. Permissions apply to subsequent calls without restarting the client; edits require current revisions. It runs over stdio and does not enable MCP on the hosted alpha.
+
+The [QQ field guide](docs/QQ_FIELD_GUIDE.md) provides writer and agent recipes. Local Settings includes a Claude Desktop extension download, ready-to-copy Codex setup, and a real local MCP test. Newly connected agents discover the guide through `qq_get_guide` without a repository checkout.
