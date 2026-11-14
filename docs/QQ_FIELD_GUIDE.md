@@ -1,7 +1,7 @@
 # Quantum Quill field guide
 
 Guide version: 1.1.0
-Verified baseline: release `301d05c` plus local MCP 0.1.0 (permissions, setup and guide); November 14, 2026.
+Verified baseline: release `65483de` plus local MCP 0.1.0 (permissions, setup and guide); November 14, 2026.
 Audience: writers and their explicitly authorized assistants. Examples are fictional.
 
 This is the canonical Markdown source. The local MCP executable and desktop bundle embed the same bytes at build time. It describes this feature build, not every historical branch or the live hosted alpha. Start with the index; retrieve only sections needed for the current task.
@@ -71,7 +71,7 @@ Claude's extension manifest marks the key sensitive. Its documented extension me
 
 ### Codex local desktop/CLI
 
-The installed Codex 0.167.0-alpha.4.1 app-server passed a fresh isolated connection, bounded guide retrieval, scoped reads, permission changes, revision-checked edits and revocation without a model turn. This verifies its MCP client engine; interactive chat/IDE approval presentation and other client versions are not certified.
+The installed Codex 0.169.0-alpha.11.1 app-server passed a fresh isolated connection, bounded guide retrieval, scoped reads, permission changes, revision-checked edits and revocation without a model turn. This verifies its MCP client engine; interactive chat/IDE approval presentation and other client versions are not certified.
 
 Choose **Codex · local app, CLI or IDE**, then **Copy setup**. Open your private `~/.codex/config.toml` (or its configured equivalent), and add the supplied `mcp_servers.quantum_quill` entry. If that entry already exists, edit it; do not duplicate the table or replace the rest of your configuration. The copy includes the actual local executable paths and a **key placeholder only**. Replace the placeholder privately with the QQ key. The local config then contains a credential: keep it out of Git and shared screenshots. QQ never writes or installs this config for you.
 
@@ -137,7 +137,7 @@ After creation, the selected destination opens. From the project header use **Ov
 4. For example, write “Mira sees a second signal” as an inciting-event note and “She chooses to investigate” as a turning point. These notes stay planning text. You can write before completing the template.
 5. Return to the manager to switch among existing structures. Deletion is an explicit destructive UI action and may be blocked by linked scenes. Do not delete a structure to resolve a save conflict.
 
-Choose a structure for the story you are telling, not as a requirement to fill every beat. The server's current catalog is authoritative. This build does not include the separately developed plot-structure video UI. No video playback/help feature from that branch should be promised here.
+Choose a structure for the story you are telling, not as a requirement to fill every beat. The server's current catalog is authoritative. Each standard template card offers **Watch video** with teacher, duration and fit guidance. Choose it to open the video dialog without applying the template. Use **Back to templates** or Escape to return; **Watch on YouTube** is the separate-tab fallback when embedding fails. Viewing is optional and never applies a structure. The player contacts YouTube only after you open it; availability varies. Custom templates can have no verified guide.
 
 **MCP:** there are no plot-template, plot-structure or plot-section tools in this build. `qq_list_outline` reads the separate outline-note records, not Storyboard plot points. An assistant may explain the process from this guide, but must ask the writer to perform Storyboard changes through the UI.
 
@@ -434,7 +434,7 @@ IDs above are illustrative, never defaults. Successful project responses contain
 
 Available in this baseline: project setup/navigation; Storyboard templates/sections; Blueprint scene planning; scene outline and separate outline notes; continuous/scene-mode writing; formatting/styles/search; manuscript organization; seven-type guided Story Bible; typed relationships/backlinks; scene references and current-scene connection scanning; durable draft/conflict review; real export/print preview; private feedback; local MCP permissions and bounded writes; this client setup/guide.
 
-**Not bundled here:** the separately committed plot-review branch (`39edbdd`) adds five `qq_review_*` tools and a manually invoked review prompt. If installed later, it uses the connected assistant as reasoning layer, verifies evidence references and does not auto-edit. This build exposes none of those tools. Plot-structure video work is also separate. Neither feature is a prerequisite for connection. The release baseline’s Help and interface tour are included. The separate iPad/Android installation guide is not included here. Do not advertise optional controls/tools merely because this guide mentions their status.
+**Not bundled here:** the separately committed plot-review branch (`39edbdd`) adds five `qq_review_*` tools and a manually invoked review prompt. If installed later, it uses the connected assistant as reasoning layer, verifies evidence references and does not auto-edit. This build exposes none of those tools. Plot-structure video guides are included in the reviewed release baseline and are UI-only; they do not add MCP tools. Plot review is not a prerequisite for connection. The release baseline’s Help and interface tour are included. The separate iPad/Android installation guide is not included here. Do not advertise optional controls/tools merely because this guide mentions their status.
 
 **Unsupported/unverified:** generic manuscript/file import or restore UI; automatic chapter-to-scenes conversion; full version history/tracked changes; shared realtime coauthoring; general project-wide semantic search or scanner; independent graph visualization/timeline/calendar inference; automatic world-rule/plot-hole judgments; model/provider/chat/token-usage UI in QQ; hosted/public MCP, remote OAuth, tunnels or cloud-to-Mac bridges; filesystem/shell tools; one-click Codex import; live client-presence indicators; automatic extension updates. Historical/unused components or backend fields do not prove a writer-facing feature is routed.
 

@@ -36,7 +36,9 @@
     ],
     "storyboard": [
       "client/src/pages/storyboard.tsx",
-      "client/src/components/plot-structure/template-selector.tsx"
+      "client/src/components/plot-structure/template-selector.tsx",
+      "client/src/components/plot-structure/structure-guide.tsx",
+      "client/src/lib/plot-structure-guides.ts"
     ],
     "blueprint": [
       "client/src/components/blueprint-wizard.tsx"
@@ -111,7 +113,6 @@
   },
   "optionalNotIncluded": [
     "plot-hole review tools (39edbdd)",
-    "plot video changes",
     "iPad/Android Home Screen guide"
   ],
   "unsupported": [
