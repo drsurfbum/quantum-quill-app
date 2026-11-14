@@ -14,7 +14,7 @@ export default function StructureGuide({ templateType, name }: { templateType: s
         target="_blank"
         rel="noopener noreferrer"
         onClick={event => event.stopPropagation()}
-        className="inline-flex items-center gap-1 rounded-sm text-primary underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        className="inline-flex items-center gap-1 rounded-sm text-foreground underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         aria-label={`Watch ${name} guide on YouTube (opens in a new tab): ${guide.title}`}
       >
         Watch on YouTube <ExternalLink className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
