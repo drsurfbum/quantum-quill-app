@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useLocation } from "wouter";
+import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -79,7 +79,8 @@ export default function AuthPage() {
             <h1 className="text-3xl font-bold mb-2">Quantum Quill</h1>
             <p className="text-muted-foreground">A world beside your writing.</p>
             <p className="mt-3 text-sm text-muted-foreground">Alpha preview · Start with a sample story and keep exports of writing you want to keep.</p>
-            <div className="mt-2 flex gap-4 text-sm">
+            <div className="mt-2 flex flex-wrap gap-4 text-sm">
+              <Link className="underline underline-offset-4" href="/help/install">Add QQ to your Home Screen</Link>
               <a className="underline underline-offset-4" href="https://drsurfbum.github.io/quantum-quill-roadmap/" target="_blank" rel="noopener noreferrer">Roadmap</a>
               <a className="underline underline-offset-4" href="https://github.com/drsurfbum/quantum-quill-roadmap/issues" target="_blank" rel="noopener noreferrer">Share feedback</a>
             </div>

@@ -11,6 +11,7 @@ import { AuthProvider } from "@/hooks/use-auth";
 import { ProtectedRoute } from "@/lib/protected-route";
 import { AppStateProvider } from "@/contexts/app-state-context";
 
+import HomeScreenGuidePage from "@/pages/home-screen-guide";
 import NotFound from "@/pages/not-found";
 import FeedbackInboxPage from "@/pages/feedback-inbox";
 import Dashboard from "@/pages/dashboard";
@@ -24,6 +25,7 @@ import AuthPage from "@/pages/auth-page";
 function Router() {
   return (
     <Switch>
+      <Route path="/help/install" component={HomeScreenGuidePage} />
       <ProtectedRoute path="/admin/feedback" component={FeedbackInboxPage} />
       <ProtectedRoute path="/" component={Dashboard} />
       <ProtectedRoute path="/project/:id" component={Project} />
