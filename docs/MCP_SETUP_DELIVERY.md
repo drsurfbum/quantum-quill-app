@@ -1,6 +1,6 @@
 # Local MCP setup and field-guide delivery
 
-Status: implemented and validated locally on November 14, 2026. Branch `codex/mcp-simple-setup-guide`, based only on writable Settings `fb4bea8`. The optional plot-review branch `39edbdd`, plot-video changes and later hosted tour are not merged here. Public GitHub publication remains on hold; no push, PR, merge or deployment accompanies this feature. Public roadmap publication is likewise deferred.
+Historical local delivery record, November 14, 2026. The reconciled release candidate and current readiness status are documented in [MCP 0.1.0](MCP_RELEASE_0_1_0.md). The following describes the earlier isolated setup branch. Branch `codex/mcp-simple-setup-guide`, based only on writable Settings `fb4bea8`. The optional plot-review branch `39edbdd`, plot-video changes and later hosted tour are not merged here. Public GitHub publication remains on hold; no push, PR, merge or deployment accompanies this feature. Public roadmap publication is likewise deferred.
 
 ## What a writer does
 

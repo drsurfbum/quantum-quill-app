@@ -1,5 +1,5 @@
 {
-  "guideVersion": "1.0.0",
+  "guideVersion": "1.1.0",
   "routes": {
     "/admin/feedback": "feedback",
     "/": "projects",
@@ -86,7 +86,9 @@
     "feedback": [
       "client/src/components/feedback-dialog.tsx",
       "client/src/pages/feedback-inbox.tsx",
-      "client/src/components/ui/theme-toggle.tsx"
+      "client/src/components/ui/theme-toggle.tsx",
+      "client/src/components/tour/help-menu.tsx",
+      "client/src/components/tour/tour-provider.tsx"
     ],
     "mcp": [
       "shared/agent-tools.ts",
@@ -110,7 +112,7 @@
   "optionalNotIncluded": [
     "plot-hole review tools (39edbdd)",
     "plot video changes",
-    "hosted first-use tour"
+    "iPad/Android Home Screen guide"
   ],
   "unsupported": [
     "generic manuscript import",

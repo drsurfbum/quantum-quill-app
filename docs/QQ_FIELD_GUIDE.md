@@ -1,7 +1,7 @@
 # Quantum Quill field guide
 
-Guide version: 1.0.0
-Verified baseline: writable local MCP Settings (`fb4bea8`) plus simple setup/guide; November 14, 2026.
+Guide version: 1.1.0
+Verified baseline: release `301d05c` plus local MCP 0.1.0 (permissions, setup and guide); November 14, 2026.
 Audience: writers and their explicitly authorized assistants. Examples are fictional.
 
 This is the canonical Markdown source. The local MCP executable and desktop bundle embed the same bytes at build time. It describes this feature build, not every historical branch or the live hosted alpha. Start with the index; retrieve only sections needed for the current task.
@@ -61,13 +61,17 @@ The section tool accepts `section`, optional `offset` (default 0), and `limit` (
 3. Choose **Create key**. Copy it only into the chosen client's private setup field/configuration, never into chat. QQ displays it masked until Settings closes; it retains a hash, not the original key. A replacement revokes the previous key.
 4. Under **Connect your assistant**, select a client and follow its short instructions. **Test local setup** performs a real stdio initialization, discovers tools, reads this guide and calls `qq_list_projects` with limit 1. It tests the local bridge with the supplied key; it cannot verify that another app is connected. No manuscript or mutation is part of this test.
 
-### Claude Desktop on this Mac
+### Claude Desktop on this Mac (preview)
+
+**Verification boundary:** the package and its MCP behavior are tested, but installation and tool calls inside Claude Desktop are not yet verified. Use a disposable test profile/account and fictional QQ data for acceptance; never assume a successful download means connected.
 
 Choose **Claude Desktop**, then **Download Claude extension**. Open the downloaded `.mcpb` in Claude Desktop and review the installation dialog. If file opening does not invoke it, use Claude Desktop **Settings → Desktop app → Manage** beside Extensions, then **Advanced settings → Install Extension…** (older layouts use Settings → Extensions). Choose the downloaded file. Enter the local QQ address shown in Settings and paste the key into **Private QQ connection key**. The package includes the executable, dependencies and guide; no repository path or separate npm install is needed in the client.
 
 Claude's extension manifest marks the key sensitive. Its documented extension mechanism uses operating-system secure storage. QQ does not inspect that storage. Organization policy may block custom extensions; respect that policy. Restart Claude if its tools do not appear. In a new conversation, check the local connection/tool list and request the safe test below. This bundle targets macOS; Windows/Linux host installation has not been validated here.
 
 ### Codex local desktop/CLI
+
+The installed Codex 0.167.0-alpha.4.1 app-server passed a fresh isolated connection, bounded guide retrieval, scoped reads, permission changes, revision-checked edits and revocation without a model turn. This verifies its MCP client engine; interactive chat/IDE approval presentation and other client versions are not certified.
 
 Choose **Codex · local app, CLI or IDE**, then **Copy setup**. Open your private `~/.codex/config.toml` (or its configured equivalent), and add the supplied `mcp_servers.quantum_quill` entry. If that entry already exists, edit it; do not duplicate the table or replace the rest of your configuration. The copy includes the actual local executable paths and a **key placeholder only**. Replace the placeholder privately with the QQ key. The local config then contains a credential: keep it out of Git and shared screenshots. QQ never writes or installs this config for you.
 
@@ -354,7 +358,7 @@ Choose **Send feedback** to submit, or **Keep for later** to retain the draft. A
 
 **Appearance:** use the header's theme switch or **Settings → Appearance** for light/dark. Theme state is a browser preference; no cross-device synchronization is promised. Narrow layouts may hide text labels, collapse the project menu or scroll workspace tabs. Keyboard focus remains within an open Settings modal; use Close to return to the workspace.
 
-The **Roadmap** link opens an external roadmap page. A roadmap item or another branch's screenshot is not evidence that the feature is in this build. The Dashboard Recent Activity placeholder is not a connection/activity monitor. This branch does not include the later hosted tour's Help/Replay-tour controls.
+The **Roadmap** link opens an external roadmap page. A roadmap item or another branch's screenshot is not evidence that the feature is in this build. The Dashboard Recent Activity placeholder is not a connection/activity monitor. The shared **Help → Replay tour** control restarts the interface tour. On first use, choose **Start tour** or **Skip for now**. Follow the highlighted controls, use **Next** where offered, or **Skip tour** to leave; it does not create or rewrite story content. The profile menu also offers **Replay tour**.
 
 **MCP:** no feedback submission/admin, theme, navigation, analytics, account or activity-monitor tools are exposed. The connection controls actual authorization; it does not report client session presence or provider token usage. Configure provider/model and billing in the external assistant, not in QQ's Agent settings.
 
@@ -430,7 +434,7 @@ IDs above are illustrative, never defaults. Successful project responses contain
 
 Available in this baseline: project setup/navigation; Storyboard templates/sections; Blueprint scene planning; scene outline and separate outline notes; continuous/scene-mode writing; formatting/styles/search; manuscript organization; seven-type guided Story Bible; typed relationships/backlinks; scene references and current-scene connection scanning; durable draft/conflict review; real export/print preview; private feedback; local MCP permissions and bounded writes; this client setup/guide.
 
-**Not bundled here:** the separately committed plot-review branch (`39edbdd`) adds five `qq_review_*` tools and a manually invoked review prompt. If installed later, it uses the connected assistant as reasoning layer, verifies evidence references and does not auto-edit. This build exposes none of those tools. Plot-structure video work is also separate. Neither feature is a prerequisite for connection. The later hosted guided tour is not in this base checkout. Do not advertise those controls/tools merely because this guide mentions their status.
+**Not bundled here:** the separately committed plot-review branch (`39edbdd`) adds five `qq_review_*` tools and a manually invoked review prompt. If installed later, it uses the connected assistant as reasoning layer, verifies evidence references and does not auto-edit. This build exposes none of those tools. Plot-structure video work is also separate. Neither feature is a prerequisite for connection. The release baseline’s Help and interface tour are included. The separate iPad/Android installation guide is not included here. Do not advertise optional controls/tools merely because this guide mentions their status.
 
 **Unsupported/unverified:** generic manuscript/file import or restore UI; automatic chapter-to-scenes conversion; full version history/tracked changes; shared realtime coauthoring; general project-wide semantic search or scanner; independent graph visualization/timeline/calendar inference; automatic world-rule/plot-hole judgments; model/provider/chat/token-usage UI in QQ; hosted/public MCP, remote OAuth, tunnels or cloud-to-Mac bridges; filesystem/shell tools; one-click Codex import; live client-presence indicators; automatic extension updates. Historical/unused components or backend fields do not prove a writer-facing feature is routed.
 

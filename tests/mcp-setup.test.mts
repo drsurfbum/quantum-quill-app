@@ -38,7 +38,7 @@ test('setup downloads are local/session protected and configurations contain no 
 test('portable extension has canonical docs and dependency licenses, no secrets or machine paths',async()=>{
  const r=await request('/bundle');assert.equal(r.status,200);assert(r.headers.get('content-disposition')?.includes('quantum-quill.mcpb'));
  const zip=await JSZip.loadAsync(await r.arrayBuffer());const manifest=JSON.parse(await zip.file('manifest.json')!.async('string'));
- assert.equal(manifest.manifest_version,'0.3');assert.equal(manifest.user_config.key.sensitive,true);assert.equal(manifest.server.type,'node');assert.equal(manifest.server.entry_point,'server/index.cjs');assert(manifest.tools_generated);
+ assert.equal(manifest.version,'0.1.0');assert.equal(manifest.manifest_version,'0.3');assert.equal(manifest.user_config.key.sensitive,true);assert.equal(manifest.server.type,'node');assert.equal(manifest.server.entry_point,'server/index.cjs');assert(manifest.tools_generated);
  assert.equal(await zip.file('QQ_FIELD_GUIDE.md')!.async('string'),guideMarkdown);
  assert((await zip.file('THIRD_PARTY_NOTICES.txt')!.async('string')).includes('@modelcontextprotocol/sdk'));
  assert(Object.keys(zip.files).some(n=>n.startsWith('licenses/@modelcontextprotocol_sdk/')));
@@ -50,7 +50,7 @@ test('portable extension has canonical docs and dependency licenses, no secrets 
 });
 test('fresh real client discovers the guide and bounded recipes without a checkout',async()=>{
  const transport=new StdioClientTransport({command:process.execPath,args:[join(extracted,'server/index.cjs')],cwd:extracted,env:{QQ_MCP_ORIGIN:origin,QQ_MCP_TOKEN:key},stderr:'pipe'});let logs='';transport.stderr?.on('data',b=>logs+=b);
- const client=new Client({name:'fresh-guide-fixture-client',version:'1'});await client.connect(transport);const pid=transport.pid!;
+ const client=new Client({name:'fresh-guide-fixture-client',version:'1'});await client.connect(transport);const pid=transport.pid!;assert.equal(client.getServerVersion()?.version,'0.1.0');
  try{
   const tools=await client.listTools();assert.equal(tools.tools.length,19);assert(tools.tools.some(t=>t.name==='qq_get_guide'));assert(client.getInstructions()?.includes('qq_get_guide'));
   const start=content(await client.callTool({name:'qq_get_guide',arguments:{}}));assert(start.markdown.length<2200);assert.equal(start.sha256,guideHash);assert.equal(start.nextOffset,null);assert(!start.markdown.includes(foreign.title));
