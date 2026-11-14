@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { apiRequest, currentAccount, queryClient } from "@/lib/queryClient";
 import { useStoryBibleEntries } from "@/hooks/use-story-bible";
 import { flushPendingSaves } from "@/hooks/use-autosave";
+import { biblePickerChoices, type BibleSelectionCounts } from "@/lib/bible-picker";
 import { bibleEntryArchived } from "@/lib/story-bible-data";
 import { relationshipInput, availableRelationshipTypes, relationshipDefinition, targetTypes, type Relationship, type RelationshipInput, type RelationshipType } from "@shared/relationships";
 import type { StoryBibleEntry } from "@shared/schema";
@@ -32,25 +33,49 @@ export function RelationshipTarget({ entry }: { entry?: StoryBibleEntry }) {
   }}>{entry.title}{bibleEntryArchived(entry) && <span className="ml-2 text-xs text-muted-foreground">Archived</span>}</button>{error && <p role="alert" className="text-sm text-destructive">{error}</p>}</> : <span className="text-muted-foreground">Unavailable entry</span>;
 }
 
-/** The same searchable target picker is used for every relationship kind. */
-export function EntryPicker({ entries, sourceId, types, value, onChange, onStub, initialSearch = "", onChoose }: { entries: StoryBibleEntry[]; sourceId?: number; types: readonly string[]; value: number; onChange: (id: number) => void; onStub?: (title: string) => void; initialSearch?: string; onChoose?: (id:number) => void }) {
+/** Keep DOM focus/caret in the field; options use virtual keyboard focus. */
+export function EntryPicker({ entries, sourceId, types, value, onChange, onStub, initialSearch = "", onChoose, projectId, counts, includeArchived = false, fillHeight = false, ranked = false }: { entries: StoryBibleEntry[]; sourceId?: number; types: readonly string[]; value: number; onChange: (id: number) => void; onStub?: (title: string) => void; initialSearch?: string; onChoose?: (id:number) => void; projectId?: number; counts?: BibleSelectionCounts; includeArchived?: boolean; fillHeight?: boolean; ranked?: boolean }) {
   const [search, setSearch] = useState(initialSearch);
   const [active, setActive] = useState(0);
+  const input = useRef<HTMLInputElement>(null);
+  const list = useRef<HTMLDivElement>(null);
   const listId = useId();
-  const choices = entries.filter(entry => entry.id !== sourceId && types.includes(entry.entryType) && !bibleEntryArchived(entry) && entry.title.toLocaleLowerCase().includes(search.toLocaleLowerCase()));
-  const selected = entries.find(entry => entry.id === value);
-  return <div className="space-y-2 rounded-md border p-3">
-    <Input aria-label="Search entries" placeholder="Search by entry name…" role="combobox" aria-expanded="true" aria-controls={listId} aria-activedescendant={choices[active] ? `${listId}-${choices[active].id}` : undefined} value={search} onChange={event => {setSearch(event.target.value);setActive(0);}} onKeyDown={event=>{
-      if (event.key === "ArrowDown" || event.key === "ArrowUp") { event.preventDefault(); const next = Math.max(0,Math.min(choices.length-1,active+(event.key === "ArrowDown" ? 1 : -1)));setActive(next);document.getElementById(`${listId}-${choices[next]?.id}`)?.scrollIntoView?.({block:"nearest"}); }
-      if (event.key === "Enter" && choices[active]) {event.preventDefault(); (onChoose || onChange)(choices[active].id);}
+  const choices = biblePickerChoices(entries, {query: search, types, sourceId, projectId, counts, includeArchived, ranked});
+  const activeIndex = Math.min(active, choices.length - 1);
+  const selected = entries.find(entry => entry.id === value && (projectId === undefined || entry.projectId === projectId));
+  function activate(index: number) {
+    const next = Math.max(0, Math.min(choices.length - 1, index));
+    setActive(next);
+    // Scroll just the list, never the dialog/document containing the typing caret.
+    const option = list.current?.children[next] as HTMLElement | undefined;
+    if (!option || !list.current) return;
+    const outer = list.current.getBoundingClientRect(), inner = option.getBoundingClientRect();
+    if (inner.top < outer.top) list.current.scrollTop -= outer.top - inner.top;
+    else if (inner.bottom > outer.bottom) list.current.scrollTop += inner.bottom - outer.bottom;
+  }
+  function choose(id: number) {
+    input.current?.focus({preventScroll: true});
+    (onChoose || onChange)(id);
+  }
+  return <div className={`bible-entry-picker rounded-md border p-3 ${fillHeight ? "flex min-h-0 flex-1 flex-col gap-2 overflow-hidden" : "space-y-2"}`}>
+    <Input ref={input} className="shrink-0 text-base" aria-label="Search entries" placeholder="Search by entry name…" role="combobox" aria-autocomplete="list" aria-haspopup="listbox" autoComplete="off" spellCheck={false} aria-expanded="true" aria-controls={listId} aria-describedby={`${listId}-help`} aria-activedescendant={choices[activeIndex] ? `${listId}-${choices[activeIndex].id}` : undefined} value={search} onChange={event => {setSearch(event.target.value);setActive(0);if(list.current)list.current.scrollTop=0;}} onKeyDown={event=>{
+      if (event.nativeEvent.isComposing) return;
+      if (["ArrowDown", "ArrowUp", "PageDown", "PageUp"].includes(event.key)) {
+        event.preventDefault();
+        const page = Math.max(1, Math.floor((list.current?.clientHeight || 160) / 44));
+        activate(activeIndex + (event.key === "ArrowDown" ? 1 : event.key === "ArrowUp" ? -1 : event.key === "PageDown" ? page : -page));
+      }
+      if ((event.ctrlKey || event.metaKey) && (event.key === "Home" || event.key === "End")) {event.preventDefault();activate(event.key === "Home" ? 0 : choices.length - 1);}
+      if (event.key === "Enter" && choices[activeIndex]) {event.preventDefault();choose(choices[activeIndex].id);}
+      // Escape bubbles to the owning dialog; ordinary Home/End keep editing the text.
     }} />
-    {selected && <p className="text-sm">Selected: <strong>{selected.title}</strong></p>}
-    <div id={listId} role="listbox" aria-label="Matching entries" className="max-h-40 overflow-y-auto space-y-1">
-      {choices.map((entry,index) => <button id={`${listId}-${entry.id}`} role="option" aria-selected={index === active} key={entry.id} type="button" aria-pressed={entry.id === value} className={`block w-full rounded px-2 py-2 text-left text-sm hover:bg-accent ${entry.id === value || index === active ? "bg-accent text-accent-foreground" : ""}`} onMouseEnter={()=>setActive(index)} onClick={() => (onChoose || onChange)(entry.id)}>{entry.title}<span className="ml-2 text-xs text-muted-foreground">{nameOfType(entry.entryType)}</span></button>)}
-      {!choices.length && <p className="text-sm text-muted-foreground">No active entries match this search.</p>}
+    {selected && <p className="shrink-0 text-sm">Selected: <strong>{selected.title}</strong></p>}
+    <div ref={list} id={listId} role="listbox" tabIndex={-1} aria-label="Matching entries" className={`bible-picker-options space-y-1 ${fillHeight ? "min-h-0 flex-1" : "max-h-40"}`}>
+      {choices.map((entry,index) => <button id={`${listId}-${entry.id}`} role="option" aria-selected={index === activeIndex} tabIndex={-1} key={entry.id} type="button" className={`block min-h-11 w-full rounded px-2 py-2 text-left text-sm break-words hover:bg-accent ${entry.id === value || index === activeIndex ? "bg-accent text-accent-foreground" : ""}`} onMouseDown={event=>event.preventDefault()} onClick={() => choose(entry.id)}>{entry.title}<span className="ml-2 text-xs text-muted-foreground">{nameOfType(entry.entryType)}{(entry.priority || 0) > 0 ? " · Starred" : ""}{bibleEntryArchived(entry) ? " · Archived" : ""}</span></button>)}
+      {!choices.length && <p className="text-sm text-muted-foreground">{includeArchived ? "No entries match this search." : "No active entries match this search."}</p>}
     </div>
     {onStub && <Button type="button" size="sm" variant="outline" onClick={() => onStub(search.trim())}>Create a new stub…</Button>}
-    <p className="text-xs text-muted-foreground">Archived entries stay linked, but cannot be added as new targets.</p>
+    <p id={`${listId}-help`} className="shrink-0 text-xs text-muted-foreground">{includeArchived ? `${choices.length} ${search.trim() ? "matches" : "entries"} · Scroll or use ↑ ↓ to browse. ${search.trim() ? "Best matches first." : "Starred, then most opened here."}` : "Archived entries stay linked, but cannot be added as new targets."}</p>
   </div>;
 }
 

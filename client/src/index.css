@@ -137,3 +137,7 @@
   .bible-library { display: block; overflow-y: auto; scrollbar-gutter: stable; }
   .bible-library > div:last-child { overflow-y: visible; }
 }
+
+/* Native scrolling remains available to touch, wheels and virtual option focus. */
+.bible-picker-options { overflow-y: auto; overscroll-behavior-y: contain; scrollbar-width: none; }
+.bible-picker-options::-webkit-scrollbar { display: none; }

@@ -86,4 +86,6 @@ await storage.putSceneContext({sceneId:sceneRows[1].id,projectId:project.id,revi
 const app = createApp({storage,secret:randomBytes(32).toString("hex"),uploadDir:mkdtempSync(path.join(tmpdir(),"qq-showcase-uploads-"))});
 app.use(express.static(path.resolve("dist/public")));
 app.get("*",(_req,res)=>res.sendFile(path.resolve("dist/public/index.html")));
-app.listen(5063,"127.0.0.1",()=>console.log(`Quantum Quill showcase: http://127.0.0.1:5063/project/${project.id}/write?chapter=${chapters[0].id}&scene=${sceneRows[1].id} (PID ${process.pid}). Synthetic data only.`));
+const port = Number(process.env.QQ_SHOWCASE_PORT || 5063);
+if (!Number.isInteger(port) || port < 1024 || port > 65535) throw new Error("Invalid QQ_SHOWCASE_PORT");
+app.listen(port,"127.0.0.1",()=>console.log(`Quantum Quill showcase: http://127.0.0.1:${port}/project/${project.id}/write?chapter=${chapters[0].id}&scene=${sceneRows[1].id} (PID ${process.pid}). Synthetic data only.`));
