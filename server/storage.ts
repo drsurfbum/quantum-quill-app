@@ -167,9 +167,12 @@ export class MemStorage implements IStorage {
     const result = { ...scene, ...patch, revision: scene.revision + 1, updatedAt: new Date() };
     this.scenesMap.set(id, result); return result;
   }
-  // Creation callbacks only insert rows. Roll back their inserts, not unrelated projects.
+  // Roll back created rows, copied contexts and structural order together, never unrelated projects.
   async withCreationTransaction<T>(scope: number, work: (storage: IStorage) => Promise<T>): Promise<T> {
     return this.withProjectLock(scope, async storage => {
+      const beforeChapters = new Map([...this.chaptersMap].filter(([,row]) => row.projectId === scope));
+      const beforeScenes = new Map([...this.scenesMap].filter(([,row]) => row.projectId === scope));
+      const beforeContexts = new Map([...this.sceneContexts].filter(([,row]) => row.projectId === scope));
       const inserted = { projects: [] as number[], chapters: [] as number[], scenes: [] as number[], requests: [] as string[] };
       const scoped = new Proxy(storage, {
         get(target, key) {
@@ -181,6 +184,10 @@ export class MemStorage implements IStorage {
         },
       });
       try { return await work(scoped); } catch (error) {
+        for (const [id,row] of this.sceneContexts) if (row.projectId === scope) this.sceneContexts.delete(id);
+        beforeContexts.forEach((row,id) => this.sceneContexts.set(id,row));
+        beforeChapters.forEach((row,id) => this.chaptersMap.set(id,row));
+        beforeScenes.forEach((row,id) => this.scenesMap.set(id,row));
         inserted.scenes.forEach(id => this.scenesMap.delete(id));
         inserted.chapters.forEach(id => this.chaptersMap.delete(id));
         inserted.projects.forEach(id => this.projectsMap.delete(id));

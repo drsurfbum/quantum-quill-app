@@ -1,3 +1,4 @@
+import { chapterCopySource, duplicateChapter } from "./chapter-copy";
 import { registerFeedbackRoutes } from "./feedback";
 import { validateWritingLinks, writingUses } from "./writing-links";
 import { readSceneContext, saveSceneContext, sceneUses } from "./scene-context";
@@ -261,6 +262,14 @@ export function registerRoutes(app: Express, storage: IStorage, directory = path
     if (children.some(items => items.length)) fail(409, "This project contains writing. Move it to trash instead.");
     await storage.deleteProject(project.id);
     res.status(204).end();
+  }));
+
+  for (const method of ["get", "post"] as const) app[method]("/api/chapters/:id/duplicate", handler(async (req,res) => {
+    const chapter = await storage.getChapter(routeId(req.params.id));
+    if (!chapter) fail(404,"Chapter not found");
+    await projectFor(req,chapter.projectId);
+    if (method === "get") res.json(await chapterCopySource(storage,chapter.projectId,chapter.id));
+    else res.status(201).json(await duplicateChapter(storage,chapter.projectId,chapter.id,req.body));
   }));
 
   const chapter = insertChapterSchema.extend({ projectId: idSchema, title, writingMode: z.enum(["chapter", "scenes"]).optional() }).strict();
