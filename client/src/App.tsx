@@ -1,4 +1,5 @@
 import { TourProvider } from "@/components/tour/tour-provider";
+import { AgentSettingsDialog } from "@/components/agent-settings";
 import { FeedbackDialog } from "@/components/feedback-dialog";
 import { useEffect, useState } from "react";
 import { DraftRecovery } from "@/components/draft-recovery";
@@ -51,6 +52,7 @@ function App() {
           <RecoverableRouter />
           <Toaster />
           <FeedbackDialog />
+          <AgentSettingsDialog />
           <PendingSaves />
           <DraftRecovery />
         </TourProvider>

@@ -20,7 +20,9 @@
     "test:alpha": "node tests/hosted-alpha.mjs",
     "build:mcp": "node scripts/build-mcp.mjs",
     "mcp": "node dist/mcp.js",
-    "test:mcp": "npm run build:mcp && node --import tsx --test tests/mcp.test.mts"
+    "test:mcp": "npm run build:mcp && node --import tsx --test tests/mcp.test.mts",
+    "db:migrate:agents": "tsx scripts/migrate-agent-access.ts",
+    "test:agents:postgres": "node --import tsx tests/postgres-agent-access.ts"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",

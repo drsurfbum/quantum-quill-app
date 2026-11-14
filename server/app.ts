@@ -1,3 +1,4 @@
+import { registerAgentRoutes } from "./agent-access";
 import express, { type ErrorRequestHandler } from "express";
 import { z } from "zod";
 import { MulterError } from "multer";
@@ -54,6 +55,7 @@ export function createApp(options: AppOptions) {
     catch { res.status(503).json({status:"unavailable"}); }
   });
   setupAuth(app, options.storage, options);
+  registerAgentRoutes(app, options.storage, !!options.production);
   registerRoutes(app, options.storage, options.uploadDir);
   app.use("/api", (_req, res) => res.status(404).json({ message: "Not found" }));
   app.use(errorHandler);

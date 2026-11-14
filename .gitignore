@@ -88,3 +88,5 @@ recovery/
 
 # Schema-only bootstrap, never a data dump.
 !deployment/alpha-schema.sql
+
+!migrations/0007_agent_access.sql

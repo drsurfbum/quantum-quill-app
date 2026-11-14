@@ -4,12 +4,11 @@ import { createMcpServer } from "./server";
 
 async function main() {
   const config = readConfig(process.env);
-  delete process.env.QQ_MCP_SESSION_COOKIE;
+  delete process.env.QQ_MCP_TOKEN;
   const reader = new AppReader(config);
-  // Fail closed before advertising tools if the selected account/project is unavailable.
-  await reader.project();
+  // Tool metadata is discoverable; every actual call requires current app permission.
   const server = createMcpServer(reader);
-  const transport = new StdioServerTransport(process.stdin, process.stdout, { maxBufferSize: 16 * 1024 });
+  const transport = new StdioServerTransport(process.stdin, process.stdout, { maxBufferSize: 1024 * 1024 });
   let closing = false;
   const close = async () => {
     if (closing) return;

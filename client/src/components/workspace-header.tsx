@@ -1,4 +1,5 @@
 import HelpMenu from "./tour/help-menu";
+import { SettingsButton } from "./agent-settings";
 import { FeedbackButton } from "./feedback-dialog";
 import { Link, useLocation } from "wouter";
 import { BookOpen, Edit3, Feather, Grid, Home, ListTree } from "lucide-react";
@@ -15,7 +16,7 @@ export default function WorkspaceHeader({project}: {project:Project}) {
       <Link href="/" className="flex items-center gap-2 shrink-0 font-serif font-semibold sm:text-lg" aria-label="Quantum Quill projects"><Feather className="h-5 w-5 text-violet-700 dark:text-violet-300"/><span className="hidden md:inline">Quantum Quill</span></Link>
       <span className="hidden sm:block h-6 border-l" />
       <Link href={base} className="font-medium truncate min-w-0 mr-auto" title={project.title}>{project.title}</Link>
-      <div className="flex items-center shrink-0 gap-1"><HelpMenu /><ThemeToggle /><Button asChild variant="ghost" size="sm" className="hidden sm:inline-flex"><Link href="/">Projects</Link></Button><ExportModal projectId={project.id} projectTitle={project.title} /><div className="hidden sm:block"><ExportModal projectId={project.id} projectTitle={project.title} preview /></div></div>
+      <div className="flex items-center shrink-0 gap-1"><HelpMenu /><ThemeToggle /><SettingsButton /><Button asChild variant="ghost" size="sm" className="hidden sm:inline-flex"><Link href="/">Projects</Link></Button><ExportModal projectId={project.id} projectTitle={project.title} /><div className="hidden sm:block"><ExportModal projectId={project.id} projectTitle={project.title} preview /></div></div>
     </header>
     <div className="flex min-w-0 items-center border-b shrink-0 pr-3">
     <nav aria-label="Project workspace" className="flex min-w-0 flex-1 items-center gap-1 px-3 py-2 overflow-x-auto">

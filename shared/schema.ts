@@ -1,3 +1,4 @@
+import type { AgentPermissions } from "./agent-access";
 import type { SceneBeat } from "./planning";
 import { projectSettingsSchema, type ProjectSettings } from "./planning";
 import { pgTable, text, serial, integer, boolean, jsonb, timestamp, varchar, uniqueIndex, primaryKey, check, index } from "drizzle-orm/pg-core";
@@ -305,3 +306,11 @@ export const feedbackReports = pgTable("feedback_reports", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 }, t => [uniqueIndex("feedback_user_request_unique").on(t.userId,t.requestId), index("feedback_user_created").on(t.userId,t.createdAt)]);
 export type FeedbackReport = typeof feedbackReports.$inferSelect;
+
+// Dedicated revocable MCP grant. No credentials or grants are returned with user records.
+export const agentAccess = pgTable("agent_access", {
+  userId: integer("user_id").primaryKey().references(() => users.id),
+  revision: integer("revision").notNull().default(0),
+  permissions: jsonb("permissions").$type<AgentPermissions>().notNull(),
+  tokenHash: text("token_hash"),
+});
