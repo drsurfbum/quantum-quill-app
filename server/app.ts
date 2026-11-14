@@ -29,7 +29,7 @@ export function createApp(options: AppOptions) {
         "default-src 'self'", "script-src 'self'", "script-src-attr 'none'",
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
         "font-src 'self' data: https://fonts.gstatic.com", "img-src 'self' data: blob: https:",
-        "connect-src 'self'", "frame-src 'self' blob:", "object-src 'none'",
+        "connect-src 'self'", "frame-src 'self' blob: https://www.youtube-nocookie.com", "object-src 'none'",
         "base-uri 'self'", "form-action 'self'", "frame-ancestors 'none'",
       ].join("; "));
     }

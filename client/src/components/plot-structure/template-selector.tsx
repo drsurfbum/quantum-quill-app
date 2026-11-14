@@ -84,7 +84,7 @@ export default function TemplateSelector({
         <DialogHeader>
           <DialogTitle>Select Plot Structure Template</DialogTitle>
           <DialogDescription>
-            Choose a template to structure your story. Read the guidance to compare approaches. Videos are optional and open in a new tab; you can choose without watching.
+            Choose a template to structure your story. Read the guidance to compare approaches, or open a video guide. Watching is optional; you can choose without watching.
           </DialogDescription>
         </DialogHeader>
         

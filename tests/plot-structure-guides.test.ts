@@ -32,23 +32,32 @@ it('covers every shipped template by stable type, preserving the requested Story
   expect(getPlotStructureGuide('custom')).toBeUndefined();
   expect(getPlotStructureGuide('constructor')).toBeUndefined();
 });
-it('offers named native radio controls and optional safe links for all eight choices', async () => {
+it('loads each video only on request and preserves selection when opening or closing it', async () => {
   await mount();
   const radios = [...document.querySelectorAll<HTMLInputElement>('input[type=radio]')];
-  const links = [...document.querySelectorAll<HTMLAnchorElement>('a')];
-  expect(radios).toHaveLength(templates.length); expect(links).toHaveLength(templates.length);
-  templates.forEach((template, index) => {
-    expect(radios[index].labels?.[0].textContent).toBe(template.name);
-    expect(links[index].href).toBe(`https://www.youtube.com/watch?v=${getPlotStructureGuide(template.templateType)!.videoId}`);
-    expect(links[index].target).toBe('_blank'); expect(links[index].rel).toBe('noopener noreferrer');
-    expect(links[index].getAttribute('aria-label')).toContain(template.name);
-    expect(links[index].getAttribute('aria-label')).toContain('new tab');
-  });
+  const watchButtons = [...document.querySelectorAll<HTMLButtonElement>('button[aria-label^="Watch video"]')];
+  expect(radios).toHaveLength(templates.length); expect(watchButtons).toHaveLength(templates.length);
   expect(document.querySelector('iframe, video, img')).toBeNull();
   expect(button('Apply Template').disabled).toBe(true);
-  // Cancel navigation in jsdom, but allow React's click handler to run.
-  links[3].addEventListener('click', event => event.preventDefault());
-  await act(async () => links[3].click());
+  for (const [index, template] of templates.entries()) {
+    expect(radios[index].labels?.[0].textContent).toBe(template.name);
+    expect(watchButtons[index].getAttribute('aria-label')).toContain(template.name);
+    await act(async () => watchButtons[index].click());
+    const frame = document.querySelector('iframe')!;
+    expect(document.querySelectorAll('iframe')).toHaveLength(1);
+    expect(frame.src).toBe(`https://www.youtube-nocookie.com/embed/${getPlotStructureGuide(template.templateType)!.videoId}?rel=0`);
+    expect(frame.title).toContain(template.name);
+    expect(frame.getAttribute('referrerpolicy')).toBe('strict-origin-when-cross-origin');
+    expect(frame.getAttribute('allow')).not.toContain('autoplay');
+    const link = document.querySelector('a')!;
+    expect(link.href).toBe(`https://www.youtube.com/watch?v=${getPlotStructureGuide(template.templateType)!.videoId}`);
+    expect(link.target).toBe('_blank'); expect(link.rel).toBe('noopener noreferrer');
+    expect(link.getAttribute('aria-label')).toContain('new tab');
+    link.addEventListener('click', event => event.preventDefault());
+    await act(async () => link.click());
+    await act(async () => button('Back to structures').click());
+    expect(document.querySelector('iframe')).toBeNull();
+  }
   expect(select).not.toHaveBeenCalled(); expect(close).not.toHaveBeenCalled();
   expect(radios.every(radio => !radio.checked)).toBe(true);
   expect(button('Apply Template').disabled).toBe(true);
@@ -58,10 +67,12 @@ it('applies only the selected template without requiring video playback', async 
   const radios = [...document.querySelectorAll<HTMLInputElement>('input[type=radio]')];
   await act(async () => radios[3].click());
   expect(radios[3].checked).toBe(true);
-  const link = document.querySelectorAll<HTMLAnchorElement>('a')[1];
+  await act(async () => document.querySelectorAll<HTMLButtonElement>('button[aria-label^="Watch video"]')[1].click());
+  const link = document.querySelector<HTMLAnchorElement>('a')!;
   link.addEventListener('click', event => event.preventDefault());
   await act(async () => link.click());
   expect(radios[3].checked).toBe(true); expect(radios[1].checked).toBe(false);
+  await act(async () => button('Back to structures').click());
   await act(async () => button('Apply Template').click());
   expect(select).toHaveBeenCalledTimes(1); expect(select).toHaveBeenCalledWith(templates[3]);
   expect(close).toHaveBeenCalledWith(false);

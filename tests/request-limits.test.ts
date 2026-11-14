@@ -27,5 +27,7 @@ describe("public alpha request bounds", () => {
     expect(response.headers["x-frame-options"]).toBe("DENY");
     expect(response.headers["strict-transport-security"]).toContain("max-age=");
     expect(response.headers["content-security-policy"]).toContain("script-src-attr 'none'");
+    expect(response.headers["content-security-policy"].split("; ").find((rule: string) => rule.startsWith("frame-src")))
+      .toBe("frame-src 'self' blob: https://www.youtube-nocookie.com");
   });
 });
