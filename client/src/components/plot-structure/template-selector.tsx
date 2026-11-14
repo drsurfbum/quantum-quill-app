@@ -9,7 +9,7 @@ import {
   DialogFooter
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import StructureGuide from './structure-guide';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
@@ -84,11 +84,11 @@ export default function TemplateSelector({
         <DialogHeader>
           <DialogTitle>Select Plot Structure Template</DialogTitle>
           <DialogDescription>
-            Choose a template to structure your story. Each template offers a different approach to storytelling.
+            Choose a template to structure your story. Read the guidance to compare approaches, or open a video guide. Watching is optional; you can choose without watching.
           </DialogDescription>
         </DialogHeader>
         
-        <ScrollArea className="flex-grow pr-4">
+        <div className="min-h-0 flex-1 overflow-y-auto pr-4">
           {isLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
               {[1, 2, 3, 4].map((i) => (
@@ -108,7 +108,8 @@ export default function TemplateSelector({
               <p className="text-muted-foreground">No templates available. Please try again later.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+            <fieldset className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+              <legend className="sr-only">Choose a plot structure</legend>
               {templates.map((template) => {
                 const isSelected = selectedTemplateId === template.id;
                 return (
@@ -120,10 +121,23 @@ export default function TemplateSelector({
                     onClick={() => setSelectedTemplateId(template.id)}
                   >
                     <CardHeader>
-                      <CardTitle>{template.name}</CardTitle>
+                      <CardTitle className="flex items-start gap-2">
+                        <input
+                          type="radio"
+                          name="plot-structure-template"
+                          id={`plot-template-${template.id}`}
+                          value={template.id}
+                          checked={isSelected}
+                          onChange={() => setSelectedTemplateId(template.id)}
+                          className="mt-1 h-4 w-4 shrink-0 accent-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                        />
+                        <label htmlFor={`plot-template-${template.id}`} className="cursor-pointer">{template.name}</label>
+                      </CardTitle>
                       <CardDescription>{template.description}</CardDescription>
                     </CardHeader>
-                    <CardContent className="text-sm">
+                    <CardContent className="text-sm space-y-4">
+                      <StructureGuide templateType={template.templateType} name={template.name} />
+                      <div>
                       <p className="mb-2 font-medium">Structure sections:</p>
                       <ul className="list-disc pl-5 space-y-1">
                         {parseTemplateSections(template)
@@ -137,11 +151,13 @@ export default function TemplateSelector({
                           </li>
                         )}
                       </ul>
+                      </div>
                     </CardContent>
                     <CardFooter className="pt-0 justify-end">
                       <Button 
                         variant="ghost" 
                         size="sm"
+                        aria-label={`Use ${template.name} template`}
                         onClick={(e) => {
                           e.stopPropagation();
                           setSelectedTemplateId(template.id);
@@ -155,9 +171,9 @@ export default function TemplateSelector({
                   </Card>
                 );
               })}
-            </div>
+            </fieldset>
           )}
-        </ScrollArea>
+        </div>
         
         <DialogFooter className="pt-4">
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>

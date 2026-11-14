@@ -1,0 +1,94 @@
+{
+  "checkedOn": "2026-11-14",
+  "method": "YouTube public oEmbed and watch-page ytInitialPlayerResponse, plus publisher descriptions and chapter lists. Receipt transcribed from successful tool output after local execution environment disconnected. No login or media download. Availability is point-in-time and may differ by region.",
+  "videos": [
+    {
+      "videoId": "Xi-gjqz-4eA",
+      "url": "https://www.youtube.com/watch?v=Xi-gjqz-4eA",
+      "title": "Plotting a Novel with Freytag's Pyramid",
+      "channel": "Reedsy",
+      "channelUrl": "https://www.youtube.com/@Reedsy",
+      "durationSeconds": 427,
+      "oembedHttp": 200,
+      "watchHttp": 200,
+      "playabilityStatus": "OK"
+    },
+    {
+      "videoId": "oNNaMuBOxv4",
+      "url": "https://www.youtube.com/watch?v=oNNaMuBOxv4",
+      "title": "12 Stages Of The Hero's Journey - Christopher Vogler",
+      "channel": "Film Courage",
+      "channelUrl": "https://www.youtube.com/@filmcourage",
+      "durationSeconds": 1368,
+      "oembedHttp": 200,
+      "watchHttp": 200,
+      "playabilityStatus": "OK"
+    },
+    {
+      "videoId": "tvqjp1CxxD8",
+      "url": "https://www.youtube.com/watch?v=tvqjp1CxxD8",
+      "title": "Three Act Structure Explained — The Secret to Telling a Great Story",
+      "channel": "StudioBinder",
+      "channelUrl": "https://www.youtube.com/@StudioBinder",
+      "durationSeconds": 1629,
+      "oembedHttp": 200,
+      "watchHttp": 200,
+      "playabilityStatus": "OK"
+    },
+    {
+      "videoId": "-XGUVkOmPTA",
+      "url": "https://www.youtube.com/watch?v=-XGUVkOmPTA",
+      "title": "Dan Harmon Story Circle: 8 Proven Steps to Better Stories",
+      "channel": "StudioBinder",
+      "channelUrl": "https://www.youtube.com/@StudioBinder",
+      "durationSeconds": 537,
+      "oembedHttp": 200,
+      "watchHttp": 200,
+      "playabilityStatus": "OK"
+    },
+    {
+      "videoId": "EyO6E1ggR2o",
+      "url": "https://www.youtube.com/watch?v=EyO6E1ggR2o",
+      "title": "How to Structure a Book with the Fichtean Curve",
+      "channel": "Reedsy",
+      "channelUrl": "https://www.youtube.com/@Reedsy",
+      "durationSeconds": 484,
+      "oembedHttp": 200,
+      "watchHttp": 200,
+      "playabilityStatus": "OK"
+    },
+    {
+      "videoId": "k8EfEEjbwGk",
+      "url": "https://www.youtube.com/watch?v=k8EfEEjbwGk",
+      "title": "How to Write a Novel in 15 Steps with the Save the Cat! Beat Sheet",
+      "channel": "Jessica Brody",
+      "channelUrl": "https://www.youtube.com/@jessicabrody1",
+      "durationSeconds": 670,
+      "oembedHttp": 200,
+      "watchHttp": 200,
+      "playabilityStatus": "OK"
+    },
+    {
+      "videoId": "iCfd8K5PAnc",
+      "url": "https://www.youtube.com/watch?v=iCfd8K5PAnc",
+      "title": "Dan Wells on Story Structure",
+      "channel": "NarraVerso com Felipe Rocha",
+      "channelUrl": "https://www.youtube.com/@narraverso",
+      "durationSeconds": 2780,
+      "oembedHttp": 200,
+      "watchHttp": 200,
+      "playabilityStatus": "OK"
+    },
+    {
+      "videoId": "2EwI90ZOGRk",
+      "url": "https://www.youtube.com/watch?v=2EwI90ZOGRk",
+      "title": "Planners & Pantsers (Gardener & Architect) | Brandon Sanderson",
+      "channel": "Brandon Sanderson",
+      "channelUrl": "https://www.youtube.com/@BrandSanderson",
+      "durationSeconds": 462,
+      "oembedHttp": 200,
+      "watchHttp": 200,
+      "playabilityStatus": "OK"
+    }
+  ]
+}
