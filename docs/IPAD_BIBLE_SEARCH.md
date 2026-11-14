@@ -53,7 +53,7 @@ The browser harness creates 313 fictional entries in project one plus an isolate
 
 The mounted/unit suite also checks 1,500 uncapped entries, relevance and stable ties, archive/source/type constraints, account/project count isolation, unavailable/corrupt storage, IME behavior, shared order/stub selection and visualViewport listener cleanup. No tests use real manuscripts or accounts.
 
-## Local validation result (November 14, 2026)
+## Original scroll/focus validation (November 14, 2026)
 
 - TypeScript and production build passed; the existing large-bundle advisory remains.
 - All **418 tests in 42 suites** passed, including 10 added picker regressions.
@@ -75,3 +75,30 @@ The task's sibling `evidence/` directory holds original PNG captures and machine
 - `browser-results.json`, `browser-run.log`: exact browser geometry and outcomes.
 
 No push, merge, deployment, live-data access, or shared-worktree modification is part of this change.
+
+## Boolean filtering follow-up
+
+Only the Write → Writing context → Story Bible → Find chooser uses this syntax. It filters entry **titles only**, immediately as the writer types. The syntax example is visible in the Find dialog. Other shared pickers keep literal substring search and their existing order.
+
+| Query | Meaning |
+| --- | --- |
+| `harbor old` | Title contains both partial words, in either order (implicit AND). |
+| `harbor AND old` | Explicit AND; same match requirement. |
+| `harbor OR lantern` | Either partial term matches. |
+| `harbor NOT old` | Contains harbor, excludes old. |
+| `"chart room"` | Contiguous phrase; still case-insensitive partial matching within the title. |
+| `(harbor OR "chart room") NOT old` | Grouped alternatives, then exclusion. |
+
+Precedence is **NOT > AND > OR**. Parentheses override it. Operators must be uppercase whole words; lowercase `and`, `or`, `not` remain ordinary name terms. Quote a literal operator name. Straight and smart double quotes work; inside a phrase, a backslash can escape its closing quote or a backslash. Regex punctuation such as `+`, `*`, brackets and periods stays literal. Quote parentheses when they are part of a name.
+
+Unfinished operators/groups impose no constraint until their next operand arrives: `Mara OR (`, `Mara AND`, and `Mara OR NOT` retain Mara matches. Unclosed quotes already filter by the phrase typed so far. Empty groups/quotes and stray closing parentheses are tolerated without errors. A single unfinished name prefix such as `OR`, `AND` or `NOT` remains literal when typed alone without a following delimiter. When a final uppercase operator prefix after another term has no literal matches, the completed expression remains visible until typing continues; any literal partial-name matches take priority over this fallback. No query text is rewritten, and ordinary nonmatching completed searches still show the empty state.
+
+Matching positive terms supply relevance before the existing star/frequency/name/ID ties: exact names, then name prefixes, then weaker matches. An ordinary multiword query also retains whole-name exact/prefix priority over disjoint word matches. Negation alone does not boost relevance. Blank browse order and private selection counts are unchanged.
+
+The parser compiles and evaluates iteratively; it never executes a query as JavaScript or a regular expression. Current-project/type/archive eligibility is applied before Boolean filtering, including for negative-only queries. No server search endpoint, additional fields, analytics or settings are introduced.
+
+Run `npm test` for the parser truth tables, type-ahead/phrase/escape cases, deep grouping, ranking, scope and mounted-field regressions. Run the original `tests/bible-picker-browser.mjs` first for the scrolling/shared-consumer matrix, then `tests/bible-query-browser.mjs` using the same environment variables and fictional showcase. The latter checks actual WebKit/Chromium portrait, landscape, narrow and short-viewport flows; it captures Boolean query, long-list and short-viewport PNGs. Its five extra fictional special-character names bring the combined fixture to 318 entries. Evidence for this follow-up is in the task's sibling `boolean-evidence/` directory.
+
+Physical iPad Safari, Home Screen launch and the iPad software-keyboard compositor remain distinct from these desktop-engine checks and are not claimed as tested.
+
+Follow-up validation: TypeScript and production build passed (the existing chunk-size advisory remains); **445 tests across 43 suites** passed. All **14 existing browser regression cases** and **6 additional Boolean browser cases** passed in WebKit 26.0 and Chromium 151.0.7922.34. The new cases exercise 17 query forms per viewport plus incremental typing, mid-query insertion/deletion, a 290-result filtered list through its final entry, short-viewport layout, selection and Escape. The six new viewport cases use 318 fictional entries; parser tests also cover 1,500 entries and 10,000 nested groups. No live manuscripts, browser tabs or persistent accounts were used.

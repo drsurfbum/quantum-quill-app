@@ -39,7 +39,7 @@ export function BibleFindDialog({ projectId, entries, open, onOpenChange, onChoo
       transform: 'none', animation: 'none', transition: 'none', width, height, maxWidth: 'none',
       left: bounds.left + (bounds.width - width) / 2, top: bounds.top + (bounds.height - height) / 2,
     }} onCloseAutoFocus={event => {event.preventDefault();returnFocus.current?.focus({preventScroll:true});}}>
-      <DialogHeader className="shrink-0 pr-6"><DialogTitle>Find a Story Bible element</DialogTitle><DialogDescription>Open its card without leaving your writing.</DialogDescription></DialogHeader>
+      <DialogHeader className="shrink-0 pr-6"><DialogTitle>Find a Story Bible element</DialogTitle><DialogDescription>Search names: words use AND. Example: (harbor OR &quot;chart room&quot;) NOT old.</DialogDescription></DialogHeader>
       <EntryPicker key={`${account}:${projectId}:${open}`} projectId={projectId} entries={entries} types={BIBLE_TYPES} value={0} includeArchived fillHeight ranked counts={counts} onChange={id => {
         if (account !== currentAccount() || !entries.some(entry => entry.projectId === projectId && entry.id === id)) return;
         recordBibleSelection(account, projectId, id, entries);

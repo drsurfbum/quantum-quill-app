@@ -1,4 +1,5 @@
 import type { StoryBibleEntry } from '@shared/schema';
+import { compileBibleQuery, incompleteBibleOperatorQuery } from './bible-query';
 import { bibleEntryArchived } from './story-bible-data';
 
 export type BibleSelectionCounts = Record<string, number>;
@@ -28,16 +29,21 @@ export function biblePickerChoices(entries: StoryBibleEntry[], options: {
   projectId?: number; counts?: BibleSelectionCounts; ranked?: boolean;
 }) {
   const query = (options.ranked ? options.query.trim() : options.query).toLocaleLowerCase();
-  const relevance = (entry: StoryBibleEntry) => {
-    const title = entry.title.toLocaleLowerCase();
-    return !query || title === query ? 0 : title.startsWith(query) ? 1 : 2;
-  };
-  const matches = entries.filter(entry => (options.projectId === undefined || entry.projectId === options.projectId)
+  const evaluate = options.ranked ? compileBibleQuery(options.query) : undefined;
+  const relevance = new Map<number, number>();
+  const eligible = entries.filter(entry => (options.projectId === undefined || entry.projectId === options.projectId)
     && entry.id !== options.sourceId && options.types.includes(entry.entryType)
-    && (options.includeArchived || !bibleEntryArchived(entry))
-    && entry.title.toLocaleLowerCase().includes(query));
+    && (options.includeArchived || !bibleEntryArchived(entry)));
+  const filter = (evaluateQuery: ReturnType<typeof compileBibleQuery>) => eligible.filter(entry => {
+    const result = evaluateQuery(entry.title);
+    relevance.set(entry.id, result.rank);
+    return result.matches;
+  });
+  let matches = evaluate ? filter(evaluate) : eligible.filter(entry => entry.title.toLocaleLowerCase().includes(query));
+  const unfinished = options.ranked ? incompleteBibleOperatorQuery(options.query) : undefined;
+  if (!matches.length && unfinished !== undefined) matches = filter(compileBibleQuery(unfinished));
   if (!options.ranked) return matches;
-  return matches.sort((a, b) => relevance(a) - relevance(b)
+  return matches.sort((a, b) => (relevance.get(a.id) ?? 2) - (relevance.get(b.id) ?? 2)
       || Number((b.priority || 0) > 0) - Number((a.priority || 0) > 0)
       || (options.counts?.[b.id] || 0) - (options.counts?.[a.id] || 0)
       || a.title.localeCompare(b.title) || a.id - b.id);

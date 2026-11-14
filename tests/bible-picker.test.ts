@@ -106,3 +106,16 @@ it('tracks visual viewport resize/pan independently of layout viewport and clean
   expect(remove).toHaveBeenCalledWith('resize',expect.any(Function));expect(remove).toHaveBeenCalledWith('scroll',expect.any(Function));
   Object.defineProperty(window,'visualViewport',{configurable:true,value:undefined});
 });
+
+it('keeps the same field and insertion point while the Write-only Boolean query changes',async()=>{
+ const {input}=await picker({ranked:true});
+ await act(async()=>{input.value='Alpha OR Beta';Simulate.change(input);});
+ expect(host.querySelector('input')).toBe(input);expect(input.value).toBe('Alpha OR Beta');
+ input.setSelectionRange(3,3);
+ await act(async()=>Simulate.keyDown(input,{key:'ArrowDown'}));
+ expect(document.activeElement).toBe(input);expect(input.selectionStart).toBe(3);
+ expect(host.querySelectorAll('[role=option]')).toHaveLength(2);
+ await act(async()=>{input.value='Alpha OR (';Simulate.change(input);});
+ expect(host.querySelectorAll('[role=option]')).toHaveLength(1);
+ expect(document.activeElement).toBe(input);
+});
