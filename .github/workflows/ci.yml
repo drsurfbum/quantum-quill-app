@@ -26,6 +26,7 @@ jobs:
       - run: npm ci --ignore-scripts
       - run: npm run check
       - run: npm test
+      - run: npm run test:mcp
       - run: npm run build
       - run: npm prune --omit=dev --ignore-scripts
       - run: npm run test:alpha

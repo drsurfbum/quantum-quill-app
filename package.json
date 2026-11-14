@@ -17,12 +17,16 @@
     "db:migrate:wizards": "tsx scripts/migrate-wizards-and-scenes.ts",
     "db:migrate:scene-context": "tsx scripts/migrate-scene-context.ts",
     "db:init:alpha": "node scripts/init-alpha-db.mjs",
-    "test:alpha": "node tests/hosted-alpha.mjs"
+    "test:alpha": "node tests/hosted-alpha.mjs",
+    "build:mcp": "node scripts/build-mcp.mjs",
+    "mcp": "node dist/mcp.js",
+    "test:mcp": "npm run build:mcp && node --import tsx --test tests/mcp.test.mts"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
     "@hookform/resolvers": "^3.9.1",
     "@jridgewell/trace-mapping": "^0.3.25",
+    "@modelcontextprotocol/sdk": "1.32.2",
     "@radix-ui/react-accordion": "^1.2.1",
     "@radix-ui/react-alert-dialog": "^1.1.2",
     "@radix-ui/react-aspect-ratio": "^1.1.0",
@@ -98,7 +102,7 @@
     "vaul": "^1.1.0",
     "wouter": "^3.3.5",
     "ws": "^8.18.0",
-    "zod": "^3.23.8"
+    "zod": "3.25.76"
   },
   "devDependencies": {
     "@replit/vite-plugin-cartographer": "^0.0.11",

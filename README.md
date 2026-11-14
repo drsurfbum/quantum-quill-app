@@ -92,3 +92,7 @@ npm run build
 See [testing](README-Testing.md), [hosted alpha operations](docs/HOSTED_ALPHA.md), [draft protection](docs/DRAFT_RECOVERY_AND_DATA_INTEGRITY.md), [scene connections](docs/SCENE_STORY_BIBLE.md), and the [data contract](docs/DATA_CONTRACT.md).
 
 Completed features are checked, committed, and pushed to their feature branches. **Merging and deployment are separate decisions.** See [development workflow](docs/DEVELOPMENT_WORKFLOW.md). The original recovered records and backups remain the rollback point; history is preserved in the [restart audit](docs/RESTART_AUDIT.md) and [Antigravity comparison](docs/ANTIGRAVITY_COMPARISON.md).
+
+## Local writing-assistant access
+
+An opt-in [read-only MCP preview](docs/MCP.md) lets a trusted local assistant read one explicitly selected project, its outline and Story Bible through QQ’s existing authenticated operations. It runs over stdio, requires a local QQ session, and provides no manuscript or write tools. This does not enable MCP on the hosted alpha.

@@ -7,3 +7,5 @@ await build({
   bundle: true, format: "esm", outfile: "dist/index.js",
   define: { "process.env.NODE_ENV": '"production"' },
 });
+
+await import("./build-mcp.mjs");
