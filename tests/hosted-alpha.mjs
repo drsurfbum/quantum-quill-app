@@ -8,6 +8,7 @@ import path from 'node:path';
 import os from 'node:os';
 import pg from 'pg';
 import { initializeAlphaDatabase } from '../scripts/init-alpha-db.mjs';
+import { migrateProseHistory } from '../scripts/migrate-prose-history.mjs';
 import { migrateFeedback } from '../scripts/migrate-feedback.mjs';
 
 const adminURL = process.env.QQ_TEST_PG_ADMIN_URL;
@@ -74,10 +75,12 @@ try {
   const init = await Promise.all([initializeAlphaDatabase(urls[0], 'fresh-alpha'), initializeAlphaDatabase(urls[0], 'fresh-alpha')]);
   assert.deepEqual(init.sort(), ['already-initialized', 'initialized']);
   assert.deepEqual((await Promise.all([migrateFeedback(urls[0], 'fresh-alpha'),migrateFeedback(urls[0], 'fresh-alpha')])).sort(), ['already-applied','applied']);
+  assert.deepEqual((await Promise.all([migrateProseHistory(urls[0], 'apply-prose-history-v1'),migrateProseHistory(urls[0], 'apply-prose-history-v1')])).sort(), ['already-applied','applied']);
   const existing = new pg.Client({ connectionString: urls[2] }); await existing.connect();
   await existing.query("CREATE TABLE original (prose text); INSERT INTO original VALUES ('Untouched writing Ω')");
   await assert.rejects(() => initializeAlphaDatabase(urls[2], 'fresh-alpha'), /not empty/);
   await assert.rejects(() => migrateFeedback(urls[2], 'fresh-alpha'), /Not an initialized/);
+  await assert.rejects(() => migrateProseHistory(urls[2], 'apply-prose-history-v1'), /Not an initialized/);
   assert.deepEqual((await existing.query('SELECT * FROM original')).rows, [{ prose: 'Untouched writing Ω' }]); await existing.end();
   const uploads = path.join(temp, 'uploads'); await mkdir(uploads);
   await start(urls[0], uploads);
@@ -103,6 +106,15 @@ try {
   const prose = '<p><strong>Protected prose Ω</strong> at the harbor.</p>';
   await a('PUT', `/api/scenes/${scene.id}`, { content: prose, _revision: 0 });
   await a('PUT', `/api/scenes/${scene.id}`, { content: 'Stale overwrite', _revision: 0 }, 409);
+  const savedHistory=await json(a('GET', `/api/scenes/${scene.id}/history`));
+  assert.equal(savedHistory.versions.length,2);
+  const restoreRequest={versionId:savedHistory.versions[0].id,expectedRevision:1,requestId:randomUUID()};
+  await a('POST', `/api/scenes/${scene.id}/history/restore`, restoreRequest);
+  await a('POST', `/api/scenes/${scene.id}/history/restore`, restoreRequest);
+  await b('GET', `/api/scenes/${scene.id}/history`, undefined,403);
+  const historyBeforeRestart=await json(a('GET', `/api/scenes/${scene.id}/history`));
+  assert.equal(historyBeforeRestart.versions.length,3);
+
   await b('GET', `/api/scenes/${scene.id}`, undefined, 403);
   const character = await json(a('POST', '/api/story-bible', { projectId: project.id, title: 'Mara Vale', entryType: 'characters', content: 'Synthetic character' }, 201));
   await a('PUT', `/api/scenes/${scene.id}/context`, { _revision: 0, links: [{ entryId: character.id, role: 'viewpoint', note: 'Synthetic context' }] });
@@ -116,6 +128,7 @@ try {
   await stop();
   await start(urls[0], uploads);
   assert.equal((await json(a('GET', `/api/scenes/${scene.id}`))).content, prose);
+  assert.deepEqual(await json(a('GET', `/api/scenes/${scene.id}/history`)),historyBeforeRestart);
   assert.deepEqual(Buffer.from(await (await a('GET', image.url)).arrayBuffer()), png);
   await stop();
   const before = await fingerprints(urls[0]);
@@ -127,14 +140,16 @@ try {
   assert.deepEqual(await readFile(path.join(restoredUploads, '.access', `${image.filename}.json`)), await readFile(path.join(uploads, '.access', `${image.filename}.json`)));
   assert.equal(await initializeAlphaDatabase(urls[1], 'fresh-alpha'), 'already-initialized');
   assert.equal(await migrateFeedback(urls[1], 'fresh-alpha'), 'already-applied');
+  assert.equal(await migrateProseHistory(urls[1], 'apply-prose-history-v1'), 'already-applied');
   await start(urls[1], restoredUploads);
   assert.equal((await json(a('GET', `/api/scenes/${scene.id}`))).content, prose);
+  assert.deepEqual(await json(a('GET', `/api/scenes/${scene.id}/history`)),historyBeforeRestart);
   assert.deepEqual(Buffer.from(await (await a('GET', image.url)).arrayBuffer()), png);
   await b('GET', image.url, undefined, 404);
   assert.equal((await json(a('GET','/api/feedback')))[0].id,feedback.id);
   assert.equal((await json(a('GET',`/api/admin/feedback/${feedback.id}`))).status,'reviewing');
   assert.deepEqual(await json(b('GET','/api/feedback')),[]);
-  console.log(JSON.stringify({ freshBootstrap: 'PASS', concurrentBootstrap: 'PASS', refusesExistingDatabase: 'PASS', registration: 'PASS', secureProxyCookie: 'PASS', sceneContext: 'PASS', staleWriteRejected: 'PASS', accountIsolation: 'PASS', export: 'PASS', restartSessionAndUploads: 'PASS', pairedRestore: 'PASS', restoredTables: Object.keys(before).length }));
+  console.log(JSON.stringify({ freshBootstrap: 'PASS', concurrentBootstrap: 'PASS', refusesExistingDatabase: 'PASS', registration: 'PASS', secureProxyCookie: 'PASS', sceneContext: 'PASS', staleWriteRejected: 'PASS', accountIsolation: 'PASS', export: 'PASS', restartSessionAndUploads: 'PASS', pairedRestore: 'PASS', proseHistoryRestartRestore: 'PASS', restoredTables: Object.keys(before).length }));
 } finally {
   await stop();
   for (const name of names) { assert.match(name, /^qq_alpha_test_[a-z]+_[a-f0-9]{32}$/); await admin.query(`DROP DATABASE IF EXISTS "${name}"`); }

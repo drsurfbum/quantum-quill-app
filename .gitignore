@@ -88,3 +88,8 @@ recovery/
 
 # Schema-only bootstrap, never a data dump.
 !deployment/alpha-schema.sql
+
+!migrations/0007_prose_versions.sql
+
+# Synthetic test output; review evidence is summarized in docs.
+artifacts/history/

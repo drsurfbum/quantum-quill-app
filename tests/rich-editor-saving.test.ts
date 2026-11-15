@@ -183,3 +183,23 @@ it("chapter rename and completion join the same in-flight prose queue without st
   expect(records[url]).toMatchObject({content:"<p>New prose</p>",title:"After",isDraft:false,revision:2});
   expect((global.fetch as jest.Mock).mock.calls.map(([,init])=>JSON.parse(init.body)._revision)).toEqual([0,1]);
 });
+
+
+it("visible history controls preserve undo through autosave and reset it on document navigation", async () => {
+  const url = `/api/chapters/${id}`;
+  records[url] = {id,revision:0,title:"History",content:"<p>Original</p>",projectId:1};
+  const mount = (record:any) => React.createElement(RichTextEditor,{resource:"chapters",chapterId:record.id,revision:record.revision,content:record.content,projectId:1});
+  await act(async()=>render(mount(records[url])));
+  const button = (label:string) => container.querySelector(`button[aria-label="${label}"]`) as HTMLButtonElement;
+  expect(button("Undo").disabled).toBe(true);expect(button("Redo").disabled).toBe(true);expect(button("Version history")).not.toBeNull();
+  await act(async()=>{editor().commands.insertContentAt(editor().state.doc.content.size-1," changed");await flushPendingSaves();});
+  expect(button("Undo").disabled).toBe(false);
+  await act(async()=>{button("Undo").click();await flushPendingSaves();});
+  expect(editor().getText()).toBe("Original");expect(records[url].content).toBe("<p>Original</p>");
+  expect(button("Redo").disabled).toBe(false);
+  await act(async()=>{button("Redo").click();await flushPendingSaves();});
+  expect(editor().getText()).toBe("Original changed");
+  const next={id:id+1000,revision:0,title:"Other document",content:"<p>Separate</p>",projectId:1};records[`/api/chapters/${next.id}`]=next;
+  await act(async()=>render(mount(next)));
+  expect(editor().getText()).toBe("Separate");expect(editor().can().undo()).toBe(false);expect(editor().can().redo()).toBe(false);
+});
