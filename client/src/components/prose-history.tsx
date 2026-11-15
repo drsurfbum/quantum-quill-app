@@ -94,7 +94,7 @@ export default function ProseHistory({resource,documentId,projectId,onClose,onRe
   return <Dialog open onOpenChange={open=>{if(!open&&!operation.current)onClose();}}>
     <DialogContent className="w-[calc(100vw-1rem)] max-w-6xl h-[90dvh] flex flex-col gap-3 overflow-hidden" onCloseAutoFocus={event=>{event.preventDefault();onReturnFocus();}}>
       <DialogHeader className="pr-6"><DialogTitle>Version history</DialogTitle><DialogDescription>Saved prose for this {resource === "scenes" ? "scene" : "chapter"}. Restoring creates a new version and keeps the originals. Planning and chapter order stay as they are.</DialogDescription></DialogHeader>
-      <div className="flex min-h-0 flex-1 flex-col sm:flex-row gap-3">
+      <div data-history-body className="flex min-h-0 flex-1 flex-col sm:flex-row gap-3 overflow-y-auto">
         <nav aria-label="Saved versions" className="sm:w-56 shrink-0 max-h-32 sm:max-h-none overflow-auto border rounded p-2 space-y-1">
           {rows.map(row=><button type="button" key={row.id} aria-current={review?.version.id===row.id ? "true" : undefined} disabled={busy||!!pending} className={`w-full rounded text-left p-2 text-sm focus-visible:ring-2 focus-visible:ring-ring ${review?.version.id===row.id ? "bg-muted" : "hover:bg-muted/60"}`} onClick={()=>void inspect(row.id)}>
             <time dateTime={new Date(row.savedAt).toISOString()}>{stamp(row.savedAt)}</time><span className="block text-xs text-muted-foreground">Revision {row.revision} · {row.kind === "baseline" ? "Original checkpoint" : row.kind === "restore" ? "Restored version" : "Saved"}</span>
@@ -113,9 +113,11 @@ export default function ProseHistory({resource,documentId,projectId,onClose,onRe
           </>}
         </section>
       </div>
+      {!!(pending || review?.issues.length || error) && <div data-history-notices className="shrink-0 max-h-40 overflow-y-auto space-y-2">
       {pending&&<p className="text-sm" role="status">A restoration may already have completed. Retry safely to check its result, or <button className="underline" disabled={busy} onClick={()=>{clearRetry();setReview(undefined);}}>dismiss the retry</button>. Dismissing does not reverse a completed restoration.</p>}
       {review?.issues.map(issue=><p className="text-sm" role="alert" key={issue}>{issue}</p>)}
       {error&&<p role="alert" className="text-sm">{error} <button className="underline" disabled={busy} onClick={()=>void load()}>Refresh history</button></p>}
+      </div>}
       <div className="flex flex-wrap items-center gap-2 justify-end shrink-0">
         <p className="text-xs text-muted-foreground mr-auto">{busy ? "Checking saved writing…" : "Restoration starts a new undo session. Earlier versions remain here."}</p>
         <Button variant="outline" disabled={operation.current} onClick={onClose}>Close</Button>

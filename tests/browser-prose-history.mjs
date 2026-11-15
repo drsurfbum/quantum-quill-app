@@ -65,16 +65,23 @@ try {
   assert.equal(await writing().evaluate(el=>el===document.activeElement),true);
   const afterPosition=await page.locator('[data-writing-scroll]').boundingBox();assert.deepEqual(afterPosition,position);
   mark('Stale restoration is rejected; explicit renewed review restores exact prose, resets undo, and preserves layout');
+  await page.setViewportSize({width:320,height:844});
+  if(await page.getByRole('button',{name:'Hide context',exact:true}).isVisible()) await page.getByRole('button',{name:'Hide context',exact:true}).click();
   // A response lost after the server commits survives page reload as a safe retry.
   await history.click();await dialog.getByRole('button',{name:'Compare with current',exact:true}).waitFor();await chooseOriginal();
   await page.route('**/api/scenes/2/history/restore',async route=>{await route.fetch();await route.abort('failed');});
   const beforeLost=current.revision;
   await dialog.getByRole('button',{name:'Restore as current version',exact:true}).click();await dialog.getByRole('button',{name:'Retry restoration',exact:true}).waitFor();
+  const retryBox=await dialog.getByRole('button',{name:'Retry restoration',exact:true}).boundingBox();assert.ok(retryBox.y+retryBox.height<=844);
+  const bodyBox=await dialog.locator('[data-history-body]').boundingBox(),noticeBox=await dialog.locator('[data-history-notices]').boundingBox();
+  assert.ok(bodyBox.y+bodyBox.height<=noticeBox.y,'The preview scroll area must end above the retry notice');
+  assert.equal(await dialog.locator('[data-history-body]').evaluate(el=>getComputedStyle(el).overflowY),'auto');
+  await page.screenshot({path:`${artifacts}/narrow-retry.png`,animations:'disabled'});
   assert.equal((await read()).revision,beforeLost+1);
   await page.unroute('**/api/scenes/2/history/restore');await page.reload();await writing().waitFor();
   await history.click();await dialog.getByRole('button',{name:'Retry restoration',exact:true}).waitFor();
   await dialog.getByRole('button',{name:'Retry restoration',exact:true}).click();await dialog.waitFor({state:'hidden'});
-  assert.equal((await read()).revision,beforeLost+1);mark('Lost restore response and reload retry do not create another revision');
+  assert.equal((await read()).revision,beforeLost+1);mark('320px retry notices do not overlap previews; lost response and reload retry do not create another revision');
   // Narrow screens retain controls and swap comparison panes instead of squeezing prose.
   if(await page.getByRole('button',{name:'Hide context',exact:true}).isVisible()) await page.getByRole('button',{name:'Hide context',exact:true}).click();
   for(const width of [390,320]) {

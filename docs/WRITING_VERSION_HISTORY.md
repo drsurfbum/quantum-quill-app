@@ -14,7 +14,7 @@ Opening history first saves pending writing through the existing manuscript acti
 
 ![Desktop comparison using fictional writing](images/prose-history-desktop.png)
 
-[320px comparison](images/prose-history-narrow.png). Screenshots show only the original synthetic Lantern Coast fixture.
+[320px comparison](images/prose-history-narrow.png) and [320px lost-response retry](images/prose-history-retry.png). Preview and notices have separate scroll boundaries so longer recovery messages cannot overlap the text. Screenshots show only the original synthetic Lantern Coast fixture.
 
 ## Storage and recovery contract
 
