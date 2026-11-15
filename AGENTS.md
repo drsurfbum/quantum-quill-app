@@ -25,3 +25,9 @@ See [development workflow](docs/DEVELOPMENT_WORKFLOW.md). Synthetic showcase dat
 The user established this standing rule on November 15, 2026: completed work must at least have a draft pull request. After reviewing the diff and running appropriate checks, commit and push the feature branch, then create or update its draft PR against the intended integration branch (currently `codex/writing-first-layout` for QQ release work). Verify the remote head, draft status and base, and report the PR link and validation limits.
 
 Do not stop at local commits or a pushed branch waiting for routine PR permission. A later explicit local-only/no-push instruction overrides this default for that task. Draft PR creation does not authorize marking ready, merging, changing repository visibility, deploying, or touching live data. Preserve existing branches and unrelated changes; never force-push as part of routine completion.
+
+## Project coordination and roadmap ownership
+
+The owner appointed the QQ PM chat to coordinate releases, recurring reviews and roadmap upkeep on November 15, 2026. Use a separate chat for each new feature and reuse the existing feature chat for updates. Check ownership before starting duplicate work. Explain outcomes, remaining risks and decisions in plain language.
+
+The PM owns keeping the roadmap current. Each material feature or release must have an evidence-based roadmap update through a PR. Distinguish local-only, published branch, draft PR, merged and live status; do not mark a release available until deployment and verification succeed. Preserve historical notes and keep private writing out of the public roadmap. Weekly Monday reviews should identify stale status and prepare the appropriate correction, not silently merge or deploy unrelated work.

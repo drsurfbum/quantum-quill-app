@@ -1,7 +1,13 @@
 name: Guided Story Bible browser verification
 on:
   push:
-    branches: [codex/workspace-integration]
+    branches: [codex/workspace-integration, codex/writing-first-layout, codex/release-guided-bible-nov15]
+    paths:
+      - 'client/**'
+      - 'shared/**'
+      - 'tests/**'
+      - '.github/workflows/guided-bible-browser.yml'
+  pull_request:
     paths:
       - 'client/**'
       - 'shared/**'

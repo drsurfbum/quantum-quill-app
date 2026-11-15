@@ -38,6 +38,9 @@ try {
   await page.getByRole('button', { name: /^(Login|Sign in|Log in)$/i }).click();
   await page.waitForURL(url => !url.pathname.startsWith('/auth'));
   await page.goto(`${base}/project/1/story-bible`);
+  // This feature walkthrough is independent of the first-use interface tour.
+  const tourInvitation = page.getByRole('button', { name: 'Skip for now', exact: true });
+  if (await tourInvitation.isVisible()) await tourInvitation.click();
 
   const getEntry = async id => {
     const response = await context.request.get(`${base}/api/story-bible/${id}`);
@@ -171,8 +174,7 @@ try {
   assert.deepEqual(errors, []);
   await writeFile(`${artifacts}/receipt.json`, JSON.stringify({ fixture: 'The Lantern Coast; in-memory synthetic only', checks, consoleErrors: errors, browser: await browser.version(), viewport: [1440,1000], compactViewport: [390,844] }, null, 2));
   console.log('QQ14_RECEIPT:' + await readFile(`${artifacts}/receipt.json`, 'utf8'));
-  // Synthetic evidence only; allow review through GitHub without a local executor.
-  for (const name of ['01-choose-a-type','02-develop-character','05-compact-develop','07-field-help']) console.log(`QQ14_IMAGE:${name}:${(await readFile(`${artifacts}/${name}.jpg`)).toString('base64')}`);
+  // Screenshots are retained in the workflow artifact; keep binary data out of logs.
 } catch (error) {
   if (page) console.error('Synthetic browser failure at', page.url(), await page.locator('body').innerText().catch(()=>''));
   if (page) await page.screenshot({ path: `${artifacts}/failure.png` }).catch(() => {});
