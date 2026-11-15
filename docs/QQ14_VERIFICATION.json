@@ -1,0 +1,75 @@
+{
+  "fixture": "The Lantern Coast; in-memory synthetic only",
+  "checks": [
+    "characters: type guidance, name-only creation, partial edit, keyboard disclosure, tabs and reload",
+    "groups_races: type guidance, name-only creation, partial edit, keyboard disclosure, tabs and reload",
+    "locations: type guidance, name-only creation, partial edit, keyboard disclosure, tabs and reload",
+    "events: type guidance, name-only creation, partial edit, keyboard disclosure, tabs and reload",
+    "world_elements: type guidance, name-only creation, partial edit, keyboard disclosure, tabs and reload",
+    "details: type guidance, name-only creation, partial edit, keyboard disclosure, tabs and reload",
+    "research: type guidance, name-only creation, partial edit, keyboard disclosure, tabs and reload",
+    "Existing imported entry: guidance is read-only; prose, unknown nested values and original source retained",
+    "groups_races: existing nested/legacy values retained through UI save",
+    "locations: existing nested/legacy values retained through UI save",
+    "events: existing nested/legacy values retained through UI save",
+    "world_elements: existing nested/legacy values retained through UI save",
+    "details: existing nested/legacy values retained through UI save",
+    "research: existing nested/legacy values retained through UI save",
+    "Optional suggestion uses shared picker; no target/write until explicit selection and save; link survives reload",
+    "Compact viewport: bounded scrolling, labels, save indicator and creation dialog"
+  ],
+  "consoleErrors": [],
+  "browser": "141.0.7390.37",
+  "viewport": [
+    1440,
+    1000
+  ],
+  "compactViewport": [
+    390,
+    844
+  ],
+  "codeCommit": "a09d6d099898b843094b8127e5223898dbc1c499",
+  "browserRun": "https://github.com/drsurfbum/quantum-quill-app/actions/runs/40136370126",
+  "fullValidation": {
+    "commit": "e85059c5ce8468939909df977ceee52d82324277",
+    "run": "https://github.com/drsurfbum/quantum-quill-app/actions/runs/40136074526",
+    "result": "success",
+    "note": "Only screenshot capture settings and evidence were refined afterward; application and Jest test source unchanged."
+  },
+  "reviewedScreenshots": [
+    {
+      "path": "images/qq14/01-choose-a-type.jpg",
+      "bytes": 90933,
+      "sha256": "0fd9fb6293222eb9b2d0545d4ac4b00063ae1af2be71922b999e9018b6c62097"
+    },
+    {
+      "path": "images/qq14/02-develop-character.jpg",
+      "bytes": 146386,
+      "sha256": "a3623a293f872af2e1334fdd1fb4e3148027495e24ed49f70674028e65f12166"
+    },
+    {
+      "path": "images/qq14/05-compact-develop.jpg",
+      "bytes": 39044,
+      "sha256": "e64efbde382fd21d8e523b04063e6dc18d39dd41aed97685afc2c773050d3b4c"
+    },
+    {
+      "path": "images/qq14/07-field-help.jpg",
+      "bytes": 121390,
+      "sha256": "05f9f5bce5478766f2c77e0896cca5f8fbc9848093823baea76581eff14c18f4"
+    }
+  ],
+  "reviewDate": "2026-10-24",
+  "artifact": {
+    "id": 12576429973,
+    "url": "https://github.com/drsurfbum/quantum-quill-app/actions/runs/40136370126/artifacts/12576429973",
+    "sha256": "3e2b4cd48c3721c7c49e9cd7f9ada75b24cb2b9083bbfb55baa22eec97f03935",
+    "retentionDays": 14
+  },
+  "publicRoadmap": {
+    "commit": "e0c74bc0573b7b50f6d1234cb3fba90078fc8ec3",
+    "url": "https://drsurfbum.github.io/quantum-quill-roadmap/",
+    "pagesRun": "https://github.com/drsurfbum/quantum-quill-roadmap/actions/runs/40136734756",
+    "result": "success",
+    "htmlSha256": "edbfd6e76916454b1ea87f58ffda4ce025c1d26f16e4c064522844d03d14ea3b"
+  }
+}

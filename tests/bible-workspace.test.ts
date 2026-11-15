@@ -11,6 +11,9 @@ import {flushPendingSaves,getSaveQueue} from "../client/src/hooks/use-autosave";
 import {DraftJournal} from "../client/src/lib/draft-journal";
 import {bibleCategory,bibleDescription,bibleText,defaultBibleFilters,filterBibleEntries} from "../client/src/lib/bible-workspace";
 import type {StoryBibleEntry} from "../shared/schema";
+import {BIBLE_GUIDES,bibleGuide} from "../shared/bible-guidance";
+import {BIBLE_TYPES} from "../shared/bible-catalog";
+import {availableRelationshipTypes,targetTypes} from "../shared/relationships";
 let root:Root,container:HTMLDivElement,id=16000,entry:StoryBibleEntry,records:Record<string,any>,fail=false;
 const url=()=>`/api/story-bible/${id}`;
 const listUrl=()=>`/api/projects/${id}/story-bible`;
@@ -75,4 +78,95 @@ it('opens an entry from a keyboard-usable library row and keeps all category con
  expect(container.querySelectorAll('[aria-label="Entry types"] button')).toHaveLength(8);
  await act(async()=>namedButton('Open The Navigator').click());expect(onOpen).toHaveBeenCalledWith(entry);
  expect(container.querySelector('select[aria-label="Archive filter"]')).toBeTruthy();
+});
+
+it('guides the existing seven types and proposes only supported optional connection kinds',()=>{
+ expect(Object.keys(BIBLE_GUIDES).sort()).toEqual([...BIBLE_TYPES].sort());
+ for(const type of BIBLE_TYPES){
+  const guide=bibleGuide(type)!;
+  expect(guide.purpose).toBeTruthy();expect(guide.examples).toBeTruthy();
+  expect(Object.values(guide.groups).some(group=>group.start)).toBe(true);
+  for(const suggestion of guide.connections){
+   expect(availableRelationshipTypes(type)).toContain(suggestion.kind);
+   expect(targetTypes(suggestion.kind,type).length).toBeGreaterThan(0);
+  }
+ }
+ expect(bibleGuide('timeline')).toBeUndefined();
+});
+
+it.each([
+ ['characters','basicInfo','#age','metadata','age'],
+ ['groups_races','basicInfo','#tagline','metadata','tagline'],
+ ['locations','coreInfo','#tagline','metadata','tagline'],
+ ['events','coreSummary','#shortSummary','content','shortSummary'],
+ ['world_elements','coreOverview','#shortNotes','content','shortNotes'],
+ ['details','content','#content','content','content'],
+ ['research','coreInfo','#shortSummary','content','shortSummary'],
+])('%s keeps edits, original imports and unknown nested values through disclosures, tabs and reload',async(type,group,selector,bucket,key)=>{
+ const original={untouched:{list:['one','two'],flag:false},category:'Unknown saved category'};
+ entry={...entry,entryType:type,metadata:{...(entry.metadata as Record<string,unknown>),...(bucket==='metadata' ? original : {})},content:bucket==='content' ? JSON.stringify(original) : '<p>A <strong>formatted</strong> story note.</p>'};
+ records[url()]=entry;records[listUrl()]=[entry];queryClient.setQueryData([url()],entry);queryClient.setQueryData([listUrl()],[entry]);
+ await mount();await tab('Develop');
+ const trigger=container.querySelector<HTMLButtonElement>(`[data-bible-group="${group}"] h3 button`)!;
+ if(trigger.getAttribute('aria-expanded')==='false')await act(async()=>trigger.click());
+ const input=container.querySelector<HTMLInputElement>(selector)!;
+ expect(input).toBeTruthy();
+ await act(async()=>{input.value='Unfinished idea — keep this';Simulate.change(input);});
+ await act(async()=>trigger.click());
+ expect(document.getElementById(trigger.getAttribute('aria-controls')!)?.hidden).toBe(true);
+ expect(container.querySelector(selector)).toBe(input);
+ await act(async()=>namedButton('Hide guidance').click());
+ await tab('Source');await tab('Connections');await tab('Develop');
+ await act(async()=>{trigger.click();namedButton('Show guidance').click();});
+ expect(container.querySelector(selector)).toBe(input);expect(input.value).toBe('Unfinished idea — keep this');
+ await act(async()=>{await flushPendingSaves();});
+ expect(records[url()].revision).toBe(1);
+ const saved=bucket==='content' ? JSON.parse(records[url()].content) : records[url()].metadata;
+ expect(saved).toMatchObject({...original,[key]:'Unfinished idea — keep this'});
+ expect(records[url()].metadata._notionImport).toEqual(source);
+ if(bucket==='metadata')expect(records[url()].content).toBe(entry.content);
+ await act(async()=>root.render(React.createElement('div')));await mount();await tab('Develop');
+ expect(container.querySelector<HTMLInputElement>(selector)!.value).toBe('Unfinished idea — keep this');
+});
+
+it('opening guidance, examples, retained values and empty groups never writes or inserts example content',async()=>{
+ await mount();await tab('Develop');
+ const trigger=container.querySelector<HTMLButtonElement>('[data-bible-group="personality"] h3 button')!;
+ await act(async()=>trigger.click());
+ const example=container.querySelector<HTMLDetailsElement>('#characters-motivations-help details')!;
+ await act(async()=>{example.open=true;Simulate.toggle(example);});
+ expect(example.textContent).toContain('Example only:');
+ expect(container.querySelector<HTMLTextAreaElement>('#motivations')!.value).toBe('');
+ const retained=[...container.querySelectorAll('details')].find(d=>d.querySelector('summary')?.textContent==='Saved & legacy values')!;
+ await act(async()=>{retained.open=true;Simulate.toggle(retained);});
+ expect(retained.textContent).toContain('keep me');expect(retained.textContent).toContain('Untouched original notes');
+ await act(async()=>namedButton('Hide guidance').click());
+ await act(async()=>{namedButton('Show guidance').click();trigger.click();await flushPendingSaves();});
+ expect((global.fetch as jest.Mock).mock.calls.filter(([,init])=>init?.method && init.method!=='GET')).toHaveLength(0);
+ expect(records[url()]).toEqual(entry);
+});
+
+it('uses a real button disclosure with an accessible name and a stable controlled panel',async()=>{
+ await mount();await tab('Develop');
+ const trigger=container.querySelector<HTMLButtonElement>('[data-bible-group="basicInfo"] h3 button')!;
+ const panel=document.getElementById(trigger.getAttribute('aria-controls')!);
+ expect(trigger.tagName).toBe('BUTTON');expect(trigger.type).toBe('button');expect(trigger.textContent).toContain('Identity & role');
+ await act(async()=>{trigger.focus();trigger.click();});
+ expect(document.activeElement).toBe(trigger);expect(panel?.hidden).toBe(false);
+ expect(container.querySelector('#primaryRole')?.getAttribute('aria-describedby')).toBe('characters-primaryRole-help');
+ await act(async()=>trigger.click());expect(panel?.hidden).toBe(true);expect(document.activeElement).toBe(trigger);
+});
+
+it('connection ideas open the shared picker without choosing a target, writing or making recovery copies',async()=>{
+ await mount();await tab('Connections');
+ const ideas=[...container.querySelectorAll('details')].find(d=>d.querySelector('summary')?.textContent==='Ideas for connections (optional)')!;
+ await act(async()=>{ideas.open=true;Simulate.toggle(ideas);namedButton('Add an affiliation').click();});
+ const dialog=document.querySelector('[role="dialog"]')!;
+ expect(dialog.querySelector<HTMLSelectElement>('select')!.value).toBe('affiliation');
+ expect(dialog.querySelector('[aria-label="Search entries"]')).toBeTruthy();
+ expect([...dialog.querySelectorAll<HTMLButtonElement>('button')].find(b=>b.textContent==='Add relationship')!.disabled).toBe(true);
+ expect(Object.keys(window.localStorage).filter(key=>key.includes('relationship-draft'))).toEqual([]);
+ expect((global.fetch as jest.Mock).mock.calls.filter(([,init])=>init?.method && init.method!=='GET')).toHaveLength(0);
+ await act(async()=>{[...dialog.querySelectorAll<HTMLButtonElement>('button')].find(b=>b.textContent==='Close — keep draft')!.click();});
+ expect(records[url()]).toEqual(entry);
 });
