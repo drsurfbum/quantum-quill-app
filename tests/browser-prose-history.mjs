@@ -86,7 +86,11 @@ try {
     await dialog.getByRole('button',{name:'Saved version',exact:true}).click();
     const bounds=await dialog.boundingBox();assert.ok(bounds.x>=0&&bounds.x+bounds.width<=width);
     const restoreBounds=await dialog.getByRole('button',{name:'Restore as current version',exact:true}).boundingBox();assert.ok(restoreBounds.y+restoreBounds.height<=844);
-    assert.ok(await dialog.evaluate(el=>el.scrollWidth<=el.clientWidth+1));
+    const geometry=await dialog.evaluate(el=>{
+      const box=el.getBoundingClientRect();
+      return {width:el.clientWidth,scrollWidth:el.scrollWidth,overflow:[...el.querySelectorAll('*')].filter(child=>{const r=child.getBoundingClientRect();return r.width&&r.right>box.right+1;}).slice(0,5).map(child=>({tag:child.tagName,text:child.textContent?.slice(0,60)}))};
+    });
+    assert.ok(geometry.scrollWidth<=geometry.width+1,JSON.stringify({viewport:width,...geometry}));
     await page.screenshot({path:`${artifacts}/narrow-${width}.png`,animations:'disabled'});
     await page.keyboard.press('Escape');await dialog.waitFor({state:'hidden'});
   }
