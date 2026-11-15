@@ -93,9 +93,17 @@ try {
   await page.route('**/api/scenes/2/history/restore',async route=>{await route.fetch();await route.abort('failed');});
   const beforeLost=current.revision;
   await dialog.getByRole('button',{name:'Restore as current version',exact:true}).click();await dialog.getByRole('button',{name:'Retry restoration',exact:true}).waitFor();
-  const retryBox=await dialog.getByRole('button',{name:'Retry restoration',exact:true}).boundingBox();assert.ok(retryBox.y+retryBox.height<=844);
-  const bodyBox=await dialog.locator('[data-history-body]').boundingBox(),noticeBox=await dialog.locator('[data-history-notices]').boundingBox();
-  assert.ok(bodyBox.y+bodyBox.height<=noticeBox.y,'The preview scroll area must end above the retry notice');
+  // The pending retry label appears before the network failure settles. Wait for
+  // the final error state, then measure every boundary in the same layout frame.
+  await dialog.getByRole('alert').waitFor();
+  await page.waitForFunction(()=>[...document.querySelectorAll('[role="dialog"] button')].some(button=>button.textContent==='Retry restoration'&&!button.disabled));
+  const retryGeometry=await dialog.evaluate(el=>{
+    const body=el.querySelector('[data-history-body]').getBoundingClientRect(),notice=el.querySelector('[data-history-notices]').getBoundingClientRect();
+    const retry=[...el.querySelectorAll('button')].find(button=>button.textContent==='Retry restoration').getBoundingClientRect();
+    return {bodyBottom:body.bottom,noticeTop:notice.top,retryBottom:retry.bottom};
+  });
+  assert.ok(retryGeometry.retryBottom<=844,JSON.stringify(retryGeometry));
+  assert.ok(retryGeometry.bodyBottom<=retryGeometry.noticeTop,`The preview scroll area must end above the retry notice: ${JSON.stringify(retryGeometry)}`);
   assert.equal(await dialog.locator('[data-history-body]').evaluate(el=>getComputedStyle(el).overflowY),'auto');
   await page.screenshot({path:`${artifacts}/narrow-retry.png`,animations:'disabled'});
   assert.equal((await read()).revision,beforeLost+1);
