@@ -1,6 +1,6 @@
 # Write-sidebar Story Bible search
 
-Local change based on release `65483de7ad8a78ec5d81a46cb68f01f8ae318fa4`.
+Change based on release `65483de7ad8a78ec5d81a46cb68f01f8ae318fa4`.
 
 ## Surface and findings
 
@@ -74,7 +74,7 @@ The task's sibling `evidence/` directory holds original PNG captures and machine
 - `*-wheel-last.png`: native desktop wheel/trackpad-style scrolling.
 - `browser-results.json`, `browser-run.log`: exact browser geometry and outcomes.
 
-No push, merge, deployment, live-data access, or shared-worktree modification is part of this change.
+The implementation and evidence were initially prepared locally. Completed work now follows the user’s standing draft-PR rule. Merging, deployment, live-data access and shared-worktree modification remain outside this change.
 
 ## Boolean filtering follow-up
 
