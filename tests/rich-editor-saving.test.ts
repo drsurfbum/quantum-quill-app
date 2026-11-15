@@ -34,6 +34,7 @@ beforeEach(() => {
   queryClient.setQueryData(["/api/user"], { id });
   records = {}; block = undefined;
   jest.spyOn(global, "fetch").mockImplementation(async (url, init) => {
+    if (init?.method === "POST" && String(url).endsWith("/history/checkpoint")) return new Response(JSON.stringify({sessionCheckpoint:true}),{status:200});
     if (init?.method !== "PUT") throw new Error(`Unexpected read ${url}`);
     const key = String(url); const patch = JSON.parse(init.body as string);
     await block;

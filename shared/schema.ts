@@ -308,6 +308,9 @@ export type FeedbackReport = typeof feedbackReports.$inferSelect;
 
 // Immutable prose checkpoints. Structural/planning fields are deliberately excluded.
 export const proseVersions = pgTable("prose_versions", {
+  keptAt: timestamp("kept_at", { withTimezone: true }),
+  restoreProtected: boolean("restore_protected").notNull().default(false),
+  sessionCheckpoint: boolean("session_checkpoint").notNull().default(false),
   id: serial("id").primaryKey(),
   projectId: integer("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
   resource: text("resource").$type<"chapters" | "scenes">().notNull(),

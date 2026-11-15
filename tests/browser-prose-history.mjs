@@ -1,6 +1,6 @@
 // Real Chromium with fictional memory-only writing. No working DB or account.
 import assert from 'node:assert/strict';
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, writeFile, readFile } from 'node:fs/promises';
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE || 'playwright');
@@ -54,12 +54,33 @@ try {
   assert.equal((await read()).revision,current.revision,'opening/reviewing makes no writes');
   await page.screenshot({path:`${artifacts}/desktop-compare.png`,animations:'disabled'});
   mark('Formatted preview and side-by-side comparison are read-only under production CSP');
+  const beforePolicy=await (await context.request.get(`${base}/api/scenes/2/history`)).json();
+  const originalVersion=beforePolicy.versions.find(v=>v.kind==='baseline');
+  await dialog.getByRole('button',{name:'Keep this version',exact:true}).click();await dialog.getByRole('button',{name:'Kept',exact:true}).waitFor();
+  const downloading=page.waitForEvent('download');await dialog.getByRole('button',{name:'Download version',exact:true}).click();
+  const download=await downloading;const downloaded=JSON.parse(await readFile(await download.path(),'utf8'));
+  assert.equal(downloaded.content,initial.content);assert.equal(downloaded.version.id,originalVersion.id);assert.ok(!('requestId' in downloaded.version));
+  await dialog.getByRole('button',{name:'Retention review',exact:true}).click();
+  await dialog.getByRole('region',{name:'Retention review'}).getByText('Deleted: 0.',{exact:true}).waitFor();
+  assert.ok(await dialog.getByRole('button',{name:'Restore as current version',exact:true}).isDisabled());
+  await page.screenshot({path:`${artifacts}/retention-desktop.png`,animations:'disabled'});
+  const policy=await (await context.request.get(`${base}/api/scenes/2/history/retention`)).json();
+  assert.equal(policy.mode,'dry-run');assert.ok(policy.decisions.find(v=>v.id===originalVersion.id).reasons.includes('kept-by-writer'));
+  assert.equal((await read()).revision,current.revision);
+  assert.equal((await (await context.request.get(`${base}/api/scenes/2/history`)).json()).versions.length,beforePolicy.versions.length);
+  await page.keyboard.press('Escape');await page.reload();await writing().waitFor();await history.click();
+  await dialog.getByRole('button',{name:'Compare with current',exact:true}).waitFor();await chooseOriginal();
+  assert.ok(await dialog.getByRole('button',{name:'Kept',exact:true}).isDisabled());
+  mark('Keep persists across reload; download preserves exact prose; retention review is read-only with zero deletion');
   const remote=await context.request.put(`${base}/api/scenes/2`,{data:{content:'<p>Newer remote writing</p>',_revision:current.revision}});assert.equal(remote.status(),200);current=await remote.json();
   await dialog.getByRole('button',{name:'Restore as current version',exact:true}).click();await dialog.getByRole('alert').filter({hasText:'changed after your comparison'}).waitFor();
   assert.equal((await read()).content,'<p>Newer remote writing</p>');
   await chooseOriginal();
   await dialog.getByRole('button',{name:'Restore as current version',exact:true}).click();await dialog.waitFor({state:'hidden'});
   current=await read();assert.equal(current.content,initial.content);assert.equal(current.summary,initial.summary);
+  const protectedVersions=(await (await context.request.get(`${base}/api/scenes/2/history`)).json()).versions;
+  for(const version of [protectedVersions[0],protectedVersions[1],protectedVersions.find(v=>v.id===originalVersion.id)])assert.ok(version.restoreProtected);
+  mark('Successful restoration protects the source, outgoing checkpoint and restored result');
   assert.ok(await undo.isDisabled());assert.ok(await redo.isDisabled());
   await page.waitForFunction(()=>document.activeElement?.matches('.writing-document [contenteditable="true"]'));
   assert.equal(await writing().evaluate(el=>el===document.activeElement),true);
@@ -99,6 +120,10 @@ try {
     });
     assert.ok(geometry.scrollWidth<=geometry.width+1,JSON.stringify({viewport:width,...geometry}));
     await page.screenshot({path:`${artifacts}/narrow-${width}.png`,animations:'disabled'});
+    await dialog.getByRole('button',{name:'Retention review',exact:true}).click();
+    await dialog.getByRole('region',{name:'Retention review'}).getByText('Deleted: 0.',{exact:true}).waitFor();
+    assert.ok(await dialog.evaluate(el=>el.scrollWidth<=el.clientWidth+1));
+    await page.screenshot({path:`${artifacts}/retention-${width}.png`,animations:'disabled'});
     await page.keyboard.press('Escape');await dialog.waitFor({state:'hidden'});
   }
   mark('320px and 390px controls, pane switching, Escape, and restore action stay reachable without horizontal overflow');

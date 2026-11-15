@@ -1,3 +1,4 @@
+import { planProseRetention } from "@shared/prose-retention";
 import type { Express, Request, Response, RequestHandler } from "express";
 import { z } from "zod";
 import type { IStorage } from "./storage";
@@ -28,6 +29,40 @@ export function registerProseHistoryRoutes(app: Express, storage: IStorage) {
       const versions = rows.slice(0,HISTORY_PAGE_SIZE);
       res.setHeader("Cache-Control","no-store");
       res.json({versions,nextBefore:rows.length > HISTORY_PAGE_SIZE ? versions.at(-1)!.id : null});
+    }));
+    app.get(`${base}/retention`,handler(async(req,res)=>{
+      const report=await storage.withReadSnapshot(async scoped=>{
+        const current=await recordFor(scoped,req);
+        return planProseRetention(await scoped.getProseRetentionRows(current.projectId,resource,current.id),current.revision);
+      });
+      res.json(report);
+    }));
+    app.post(`${base}/checkpoint`,handler(async(req,res)=>{
+      const {revision}=z.object({revision:z.number().int().nonnegative()}).strict().parse(req.body);
+      const record=await recordFor(storage,req);
+      const result=await storage.withProjectLock(record.projectId,async scoped=>{
+        const current=await recordFor(scoped,req);
+        return scoped.checkpointProseSession(current.projectId,resource,current.id,revision);
+      });
+      if(!result) fail(409,"Writing changed before the session checkpoint. Current writing and saved versions are preserved.","REVISION_CONFLICT");
+      res.json(historySummary(result));
+    }));
+    app.post(`${base}/:versionId/keep`,handler(async(req,res)=>{
+      z.object({}).strict().parse(req.body);
+      const record=await recordFor(storage,req);
+      const result=await storage.withProjectLock(record.projectId,async scoped=>{
+        const current=await recordFor(scoped,req);
+        return scoped.keepProseVersion(current.projectId,resource,current.id,id.parse(req.params.versionId));
+      });
+      if(!result) fail(404,"Saved version not found in this document.");
+      res.json(historySummary(result));
+    }));
+    app.get(`${base}/:versionId/download`,handler(async(req,res)=>{
+      const record=await recordFor(storage,req);
+      const version=await storage.getProseVersion(record.projectId,resource,record.id,id.parse(req.params.versionId));
+      if(!version) fail(404,"Saved version not found in this document.");
+      res.setHeader("Content-Disposition",`attachment; filename="qq-${resource}-${record.id}-revision-${version.revision}.json"`);
+      res.json({format:"qq-prose-version-v1",version:historySummary(version),content:version.content});
     }));
     app.get(`${base}/:versionId`,handler(async(req,res) => {
       const review = await storage.withReadSnapshot(async scoped => {

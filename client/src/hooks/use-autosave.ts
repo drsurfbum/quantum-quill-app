@@ -175,3 +175,15 @@ export async function acceptSavedProse(url: string, listUrl: string, record: Rec
   queryClient.setQueryData([url],record);
   queryClient.setQueryData([listUrl],(old:{id:number}[]|undefined)=>old?.map(item=>item.id===record.id ? record : item));
 }
+
+/** Best-effort session marker after an acknowledged save. All prose versions are
+ * still captured, so a failed marker cannot lose writing during dry-run review. */
+export async function checkpointProseSession(url:string, account:number) {
+  if(ownerId()!==account)return;
+  const queue=queues.get(`${account}:${url}`);
+  if(queue&&!await queue.flush())return;
+  if(ownerId()!==account)return;
+  const record=snapshots.get(`${account}:${url}`);
+  if(!Number.isInteger(record?.revision))return;
+  await apiRequest("POST",`${url}/history/checkpoint`,{revision:record!.revision});
+}

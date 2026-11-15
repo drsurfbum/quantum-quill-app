@@ -1,3 +1,4 @@
+import { currentAccount } from "@/lib/queryClient";
 import ProseHistory from "../prose-history";
 import { EditorState, TextSelection } from "@tiptap/pm/state";
 import type { Editor } from "@tiptap/core";
@@ -8,7 +9,7 @@ import { SaveStatus } from "@/components/save-status";
 import { Button } from "@/components/ui/button";
 import { Maximize, Minimize } from "lucide-react";
 import { editorContent } from "@/lib/editor-content";
-import { useAutosave, withPendingEdits } from "@/hooks/use-autosave";
+import { useAutosave, withPendingEdits, checkpointProseSession } from "@/hooks/use-autosave";
 import { useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Heading from '@tiptap/extension-heading';
@@ -51,6 +52,13 @@ function RichTextDocument({
   onOpenEntry, onEditorReady, onChange
 }: RichTextEditorProps) {
   const labelId = useId();
+  const edited=useRef(false);
+  const account=useRef(currentAccount());
+  useEffect(()=>()=>{
+    if(edited.current&&account.current) void checkpointProseSession(`/api/${resource}/${chapterId}`,account.current).catch(()=>{
+      // Current prose and every acknowledged version remain saved. No expiry is active.
+    });
+  },[resource,chapterId]);
   const [historyOpen,setHistoryOpen] = useState(false);
   const [historyMessage,setHistoryMessage] = useState("");
   const [linkRequest,setLinkRequest] = useState(0);
@@ -127,7 +135,7 @@ function RichTextDocument({
     setWordCount(text ? words.length : 0);
   };
 
-  const handleContentChange = (html: string) => { autosave.save({ content: html }); };
+  const handleContentChange = (html: string) => { edited.current=true; autosave.save({ content: html }); };
   useEffect(() => {
     if (!editor || editor.isDestroyed) return;
     const initial = withPendingEdits(`/api/${resource}/${chapterId}`, { content, projectId, revision, title }).content || "";

@@ -93,3 +93,5 @@ recovery/
 
 # Synthetic test output; review evidence is summarized in docs.
 artifacts/history/
+
+!migrations/0008_prose_retention.sql

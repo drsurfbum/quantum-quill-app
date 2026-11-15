@@ -1,3 +1,4 @@
+import { RETENTION_SCAN_LIMIT, type RetentionInput } from "@shared/prose-retention";
 import type { ProseVersion } from "@shared/schema";
 import { HISTORY_PAGE_SIZE, historySummary, versionValue, type ProseResource, type ProseRecord, type RestoreSource, type VersionSummary } from "@shared/prose-history";
 import type { FeedbackInput, FeedbackInboxQuery, FeedbackStatus, FeedbackSummary } from "@shared/feedback";
@@ -26,6 +27,9 @@ import session from "express-session";
 import createMemoryStore from "memorystore";
 
 export interface IStorage {
+  getProseRetentionRows(projectId:number, resource:ProseResource, documentId:number): Promise<RetentionInput[]>;
+  keepProseVersion(projectId:number, resource:ProseResource, documentId:number, versionId:number): Promise<ProseVersion | undefined>;
+  checkpointProseSession(projectId:number, resource:ProseResource, documentId:number, revision:number): Promise<ProseVersion | undefined>;
   listProseVersions(projectId: number, resource: ProseResource, documentId: number, before?: number): Promise<VersionSummary[]>;
   getProseVersion(projectId: number, resource: ProseResource, documentId: number, id: number): Promise<ProseVersion | undefined>;
   getProseRestore(projectId: number, resource: ProseResource, documentId: number, requestId: string): Promise<ProseVersion | undefined>;
@@ -126,6 +130,25 @@ export interface IStorage {
 
 export class MemStorage implements IStorage {
   private proseHistory: ProseVersion[] = [];
+  async getProseRetentionRows(projectId:number, resource:ProseResource, documentId:number) {
+    return this.proseHistory.filter(r=>r.projectId===projectId&&r.resource===resource&&r.documentId===documentId).slice(0,RETENTION_SCAN_LIMIT+1)
+      .map(row=>{const {id,revision,savedAt,kind,restoredFromId,keptAt,restoreProtected,sessionCheckpoint,bytes}=historySummary(row);return {id,revision,savedAt,kind,restoredFromId,keptAt,restoreProtected,sessionCheckpoint,bytes};});
+  }
+  async keepProseVersion(projectId:number, resource:ProseResource, documentId:number, versionId:number) {
+    const row=this.proseHistory.find(r=>r.projectId===projectId&&r.resource===resource&&r.documentId===documentId&&r.id===versionId);
+    if(row&&!row.keptAt) row.keptAt=new Date();
+    return row;
+  }
+  async checkpointProseSession(projectId:number, resource:ProseResource, documentId:number, revision:number) {
+    const record=resource==="chapters" ? this.chaptersMap.get(documentId) : this.scenesMap.get(documentId);
+    if(!record||record.projectId!==projectId||record.revision!==revision||("writingMode" in record&&record.writingMode!=="chapter")) return undefined;
+    let row=this.proseHistory.find(r=>r.projectId===projectId&&r.resource===resource&&r.documentId===documentId&&r.revision===revision);
+    if(!row) {
+      const any=this.proseHistory.some(r=>r.projectId===projectId&&r.resource===resource&&r.documentId===documentId);
+      row={...versionValue(resource,record,any?"save":"baseline"),id:this.proseHistory.length+1,capturedAt:new Date()};this.proseHistory.push(row);
+    }
+    row.sessionCheckpoint=true;return row;
+  }
   async listProseVersions(projectId: number, resource: ProseResource, documentId: number, before?: number) {
     return this.proseHistory.filter(r => r.projectId === projectId && r.resource === resource && r.documentId === documentId && (!before || r.id < before))
       .sort((a,b) => b.id - a.id).slice(0,HISTORY_PAGE_SIZE + 1).map(historySummary);
@@ -139,10 +162,18 @@ export class MemStorage implements IStorage {
   private captureProse(resource: ProseResource, before: ProseRecord, after: ProseRecord, source?: RestoreSource) {
     if (before.content === after.content && !source) return;
     if (resource === "chapters" && (before as Chapter).writingMode !== "chapter") return;
+    const sourceRow=source && this.proseHistory.find(r=>r.projectId===before.projectId&&r.resource===resource&&r.documentId===before.id&&r.id===source.restoredFromId);
+    if(source&&!sourceRow) throw new Error("Restore source is unavailable");
     const append = (record: ProseRecord, kind: ProseVersion["kind"], restore?: RestoreSource) => {
       this.proseHistory.push({ ...versionValue(resource,record,kind,restore), id:this.proseHistory.length + 1, capturedAt:new Date() });
     };
     if (!this.proseHistory.some(r => r.resource === resource && r.documentId === before.id && r.projectId === before.projectId)) append(before,"baseline");
+    if(source&&sourceRow) {
+      sourceRow.restoreProtected=true;
+      let outgoing=this.proseHistory.find(r=>r.projectId===before.projectId&&r.resource===resource&&r.documentId===before.id&&r.revision===before.revision);
+      if(!outgoing) {append(before,"save");outgoing=this.proseHistory.at(-1)!;}
+      outgoing.restoreProtected=true;
+    }
     append(after,source ? "restore" : "save",source);
   }
   private feedback = new Map<number, FeedbackReport>();

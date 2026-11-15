@@ -95,3 +95,47 @@ it("preview strips executable and outbound content while keeping formatted words
   expect(html).toContain('font-size:18pt');expect(html).toContain('Link text');expect(html).toContain('<strong>Kept</strong>');
   expect(html).not.toMatch(/script|href=|onerror|<img/);expect(html).toContain('title="https://example.test"');
 });
+it.each(['chapters','scenes'] as const)('%s keeps immutable versions and reviews retention without deleting or exposing prose',async resource=>{
+ const f=await setup(resource);await f.agent.put(f.url).send({content:'Private synthetic version Ω',_revision:0}).expect(200);
+ const versions=(await f.agent.get(f.history)).body.versions,selected=versions[0];
+ const before=await f.storage.getProseVersion(f.project.id,resource,f.record.id,selected.id);
+ const kept=(await f.agent.post(`${f.history}/${selected.id}/keep`).send({}).expect(200)).body;
+ expect(kept.keptAt).toBeTruthy();expect(kept.content).toBeUndefined();expect(kept.requestId).toBeUndefined();
+ expect((await f.agent.post(`${f.history}/${selected.id}/keep`).send({}).expect(200)).body).toEqual(kept);
+ expect((await f.storage.getProseVersion(f.project.id,resource,f.record.id,selected.id))!.content).toBe(before!.content);
+ const snapshot=JSON.stringify(await f.storage.getProseRetentionRows(f.project.id,resource,f.record.id));
+ const report=(await f.agent.get(`${f.history}/retention`).expect(200)).body;
+ expect(report.mode).toBe('dry-run');expect(JSON.stringify(report)).not.toMatch(/Private synthetic|Original Ω|requestId|title/);
+ expect(report.decisions.find((r:any)=>r.id===selected.id).reasons).toContain('kept-by-writer');
+ expect(JSON.stringify(await f.storage.getProseRetentionRows(f.project.id,resource,f.record.id))).toBe(snapshot);
+ const download=await f.agent.get(`${f.history}/${selected.id}/download`).expect(200);
+ expect(download.headers['content-disposition']).toMatch(/attachment/);expect(download.body.content).toBe(before!.content);expect(download.body.version.requestId).toBeUndefined();
+ for(const path of [`${f.history}/retention`,`${f.history}/${selected.id}/download`]) {await f.other.get(path).expect(403);await request(f.server).get(path).expect(401);}
+ await f.other.post(`${f.history}/${selected.id}/keep`).send({}).expect(403);
+ await f.agent.post(`${f.history}/${selected.id}/keep`).send({keptAt:null}).expect(400);
+ const other=await f.storage.createChapter({projectId:f.project.id,title:'Separate',order:1});
+ await f.agent.post(`/api/chapters/${other.id}/history/${selected.id}/keep`).send({}).expect(404);
+ await f.agent.get(`/api/chapters/${other.id}/history/${selected.id}/download`).expect(404);
+ await f.agent.post(`${f.history}/retention`).send({apply:true}).expect(404);
+ expect((await f.agent.get(f.url)).body.revision).toBe(1);expect((await f.agent.get(f.history)).body.versions).toHaveLength(2);
+});
+it('protects the exact outgoing revision after a title-only change and preserves source/result',async()=>{
+ const f=await setup('chapters');await f.agent.put(f.url).send({content:'Outgoing Ω',_revision:0}).expect(200);
+ const original=(await f.agent.get(f.history)).body.versions[1];
+ await f.agent.put(f.url).send({title:'Renamed',_revision:1}).expect(200);
+ await f.agent.post(`${f.history}/restore`).send({versionId:original.id,expectedRevision:2,requestId:randomUUID()}).expect(200);
+ const versions=(await f.agent.get(f.history)).body.versions;
+ for(const rev of [0,2,3])expect(versions.find((v:any)=>v.revision===rev).restoreProtected).toBe(true);
+ const outgoing=versions.find((v:any)=>v.revision===2);
+ expect((await f.storage.getProseVersion(f.project.id,'chapters',f.record.id,outgoing.id))!.content).toBe('Outgoing Ω');
+ expect(outgoing.title).toBe('Renamed');
+});
+it('marks clean session ends only at the acknowledged revision without changing prose or creating duplicates',async()=>{
+ const f=await setup('chapters');await f.agent.put(f.url).send({content:'Session end',_revision:0}).expect(200);
+ await f.agent.post(`${f.history}/checkpoint`).send({revision:0}).expect(409);
+ const checkpoint=(await f.agent.post(`${f.history}/checkpoint`).send({revision:1}).expect(200)).body;
+ expect(checkpoint.sessionCheckpoint).toBe(true);
+ expect((await f.agent.post(`${f.history}/checkpoint`).send({revision:1}).expect(200)).body).toEqual(checkpoint);
+ await f.other.post(`${f.history}/checkpoint`).send({revision:1}).expect(403);
+ expect((await f.agent.get(f.history)).body.versions).toHaveLength(2);expect((await f.agent.get(f.url)).body).toMatchObject({revision:1,content:'Session end'});
+});

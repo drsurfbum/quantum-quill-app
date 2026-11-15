@@ -1,3 +1,4 @@
+import ProseRetentionReview from "./prose-retention-review";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { Button } from "./ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "./ui/dialog";
@@ -29,11 +30,14 @@ export default function ProseHistory({resource,documentId,projectId,onClose,onRe
   const [review,setReview] = useState<Review>();
   const [busy,setBusy] = useState(true), [error,setError] = useState("");
   const [compare,setCompare] = useState(false), [pane,setPane] = useState<"saved"|"current">("saved");
+  const [policyOpen,setPolicyOpen]=useState(false);
+  const [notice,setNotice]=useState("");
   const [pending,setPending] = useState<RestoreRequest>();
   const url = `/api/${resource}/${documentId}`, historyUrl = `${url}/history`;
   const retryKey = `qq:history-restore:${owner}:${projectId}:${resource}:${documentId}`;
   const valid = () => active.current && currentAccount() === originalOwner.current;
   async function inspect(versionId:number) {
+    setPolicyOpen(false);setNotice("");
     const ticket = ++selection.current; setBusy(true);setError("");setReview(undefined);setPane("saved");
     try {
       const result = await (await apiRequest("GET",`${historyUrl}/${versionId}`)).json();
@@ -90,20 +94,44 @@ export default function ProseHistory({resource,documentId,projectId,onClose,onRe
       }
     } finally {operation.current=false;if(valid())setBusy(false);}
   }
+  async function keep() {
+    if(!review||operation.current||!valid())return;
+    operation.current=true;setBusy(true);setError("");setNotice("");
+    try {
+      const version:VersionSummary=await (await apiRequest("POST",`${historyUrl}/${review.version.id}/keep`,{})).json();
+      if(!valid())return;
+      setReview(old=>old&&({...old,version}));setRows(old=>old.map(row=>row.id===version.id?version:row));
+      setNotice("Kept. This version will not expire automatically.");
+    }catch(e){if(valid())setError((e as Error).message);}
+    finally{operation.current=false;if(valid())setBusy(false);}
+  }
+  async function download() {
+    if(!review||operation.current||!valid())return;
+    operation.current=true;setBusy(true);setError("");
+    try {
+      const response=await apiRequest("GET",`${historyUrl}/${review.version.id}/download`),blob=await response.blob();
+      if(!valid())return;
+      const href=URL.createObjectURL(blob),link=document.createElement("a");
+      link.href=href;link.download=`qq-${resource}-${documentId}-revision-${review.version.revision}.json`;
+      link.click();setTimeout(()=>URL.revokeObjectURL(href),1000);
+    }catch(e){if(valid())setError((e as Error).message);}
+    finally{operation.current=false;if(valid())setBusy(false);}
+  }
   if (owner !== originalOwner.current) return null;
   return <Dialog open onOpenChange={open=>{if(!open&&!operation.current)onClose();}}>
     <DialogContent className="w-[calc(100vw-1rem)] max-w-6xl h-[90dvh] flex flex-col gap-3 overflow-hidden" onCloseAutoFocus={event=>{event.preventDefault();onReturnFocus();}}>
-      <DialogHeader className="pr-6"><DialogTitle>Version history</DialogTitle><DialogDescription>Saved prose for this {resource === "scenes" ? "scene" : "chapter"}. Restoring creates a new version and keeps the originals. Planning and chapter order stay as they are.</DialogDescription></DialogHeader>
+      <DialogHeader className="pr-6"><div className="flex flex-wrap items-center justify-between gap-2"><DialogTitle>Version history</DialogTitle><Button variant="outline" size="sm" disabled={busy||!!pending} onClick={()=>setPolicyOpen(open=>!open)}>{policyOpen?"Back to preview":"Retention review"}</Button></div><DialogDescription>Saved prose for this {resource === "scenes" ? "scene" : "chapter"}. Restore creates a new current version. Cleanup is dry-run only; nothing expires yet.</DialogDescription></DialogHeader>
       <div data-history-body className="flex min-h-0 flex-1 flex-col sm:flex-row gap-3 overflow-y-auto">
         <nav aria-label="Saved versions" className="sm:w-56 shrink-0 max-h-32 sm:max-h-none overflow-auto border rounded p-2 space-y-1">
           {rows.map(row=><button type="button" key={row.id} aria-current={review?.version.id===row.id ? "true" : undefined} disabled={busy||!!pending} className={`w-full rounded text-left p-2 text-sm focus-visible:ring-2 focus-visible:ring-ring ${review?.version.id===row.id ? "bg-muted" : "hover:bg-muted/60"}`} onClick={()=>void inspect(row.id)}>
-            <time dateTime={new Date(row.savedAt).toISOString()}>{stamp(row.savedAt)}</time><span className="block text-xs text-muted-foreground">Revision {row.revision} · {row.kind === "baseline" ? "Original checkpoint" : row.kind === "restore" ? "Restored version" : "Saved"}</span>
+            <time dateTime={new Date(row.savedAt).toISOString()}>{stamp(row.savedAt)}</time><span className="block text-xs text-muted-foreground">Revision {row.revision} · {row.kind === "baseline" ? "Original checkpoint" : row.kind === "restore" ? "Restored version" : "Saved"}{row.keptAt?" · Kept":row.restoreProtected?" · Restore protected":""}</span>
           </button>)}
           {next && <Button variant="outline" size="sm" disabled={busy||!!pending} onClick={()=>void load(next)}>Older versions</Button>}
           {!rows.length&&!busy&&<p className="text-sm p-2">No earlier versions yet. Your current prose will be preserved when you next change and save it.</p>}
         </nav>
         <section aria-label="Version preview" className="flex flex-1 min-h-0 min-w-0 flex-col gap-2">
-          {review && <>
+          {policyOpen?<ProseRetentionReview historyUrl={historyUrl}/>:review && <>
+            <div className="flex flex-wrap gap-2 shrink-0"><Button variant="outline" size="sm" disabled={busy||!!pending||!!review.version.keptAt} onClick={()=>void keep()}>{review.version.keptAt?"Kept":"Keep this version"}</Button><Button variant="outline" size="sm" disabled={busy||!!pending} onClick={()=>void download()}>Download version</Button></div>
             <div className="flex flex-wrap items-center gap-2"><p className="text-sm flex-1 min-w-0 truncate" title={review.version.title}>{review.version.title} · Revision {review.version.revision}</p><Button variant="outline" size="sm" aria-pressed={compare} onClick={()=>setCompare(v=>!v)}>{compare ? "Preview only" : "Compare with current"}</Button></div>
             {compare && <div className="grid grid-cols-2 gap-2 lg:hidden" role="group" aria-label="Comparison view"><Button size="sm" className="h-auto min-h-9 min-w-0 whitespace-normal px-2 text-xs" variant={pane==="saved"?"secondary":"ghost"} aria-pressed={pane==="saved"} onClick={()=>setPane("saved")}>Saved version</Button><Button size="sm" className="h-auto min-h-9 min-w-0 whitespace-normal px-2 text-xs" variant={pane==="current"?"secondary":"ghost"} aria-pressed={pane==="current"} onClick={()=>setPane("current")}>Current saved text</Button></div>}
             <div className={`grid flex-1 min-h-0 min-w-0 gap-3 ${compare ? "lg:grid-cols-2" : "grid-cols-1"}`}>
@@ -113,7 +141,8 @@ export default function ProseHistory({resource,documentId,projectId,onClose,onRe
           </>}
         </section>
       </div>
-      {!!(pending || review?.issues.length || error) && <div data-history-notices className="shrink-0 max-h-40 overflow-y-auto space-y-2">
+      {!!(pending || review?.issues.length || error || notice) && <div data-history-notices className="shrink-0 max-h-40 overflow-y-auto space-y-2">
+      {notice&&<p role="status" className="text-sm">{notice}</p>}
       {pending&&<p className="text-sm" role="status">A restoration may already have completed. Retry safely to check its result, or <button className="underline" disabled={busy} onClick={()=>{clearRetry();setReview(undefined);}}>dismiss the retry</button>. Dismissing does not reverse a completed restoration.</p>}
       {review?.issues.map(issue=><p className="text-sm" role="alert" key={issue}>{issue}</p>)}
       {error&&<p role="alert" className="text-sm">{error} <button className="underline" disabled={busy} onClick={()=>void load()}>Refresh history</button></p>}
@@ -121,7 +150,7 @@ export default function ProseHistory({resource,documentId,projectId,onClose,onRe
       <div className="flex flex-wrap items-center gap-2 justify-end shrink-0">
         <p className="text-xs text-muted-foreground mr-auto">{busy ? "Checking saved writing…" : "Restoration starts a new undo session. Earlier versions remain here."}</p>
         <Button variant="outline" disabled={operation.current} onClick={onClose}>Close</Button>
-        <Button disabled={busy||!review||!!review.issues.length} onClick={()=>void restore()}>{pending ? "Retry restoration" : "Restore as current version"}</Button>
+        <Button disabled={busy||policyOpen||!review||!!review.issues.length} onClick={()=>void restore()}>{pending ? "Retry restoration" : "Restore as current version"}</Button>
       </div>
     </DialogContent>
   </Dialog>;

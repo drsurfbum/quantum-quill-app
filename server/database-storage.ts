@@ -1,3 +1,4 @@
+import { RETENTION_SCAN_LIMIT } from "@shared/prose-retention";
 import { proseVersions } from "@shared/schema";
 import { HISTORY_PAGE_SIZE, versionValue, type ProseResource, type ProseRecord, type RestoreSource } from "@shared/prose-history";
 import type { FeedbackInput, FeedbackInboxQuery, FeedbackStatus } from "@shared/feedback";
@@ -40,6 +41,26 @@ function baseCondition(table: any, base?: Record<string, unknown>) {
 }
 
 export class DatabaseStorage implements IStorage {
+  async getProseRetentionRows(projectId:number, resource:ProseResource, documentId:number) {
+    const {id,revision,savedAt,kind,restoredFromId,keptAt,restoreProtected,sessionCheckpoint}=getTableColumns(proseVersions);
+    return this.database.select({id,revision,savedAt,kind,restoredFromId,keptAt,restoreProtected,sessionCheckpoint,bytes:sql<number>`octet_length(coalesce(${proseVersions.content}, ''))`}).from(proseVersions)
+      .where(and(eq(proseVersions.projectId,projectId),eq(proseVersions.resource,resource),eq(proseVersions.documentId,documentId)))
+      .orderBy(proseVersions.id).limit(RETENTION_SCAN_LIMIT+1);
+  }
+  async keepProseVersion(projectId:number, resource:ProseResource, documentId:number, versionId:number) {
+    const [row]=await this.database.update(proseVersions).set({keptAt:sql`coalesce(${proseVersions.keptAt}, now())`})
+      .where(and(eq(proseVersions.projectId,projectId),eq(proseVersions.resource,resource),eq(proseVersions.documentId,documentId),eq(proseVersions.id,versionId))).returning();return row;
+  }
+  async checkpointProseSession(projectId:number, resource:ProseResource, documentId:number, revision:number) {
+    return this.database.transaction(async tx=>{
+      const table=resource==="chapters"?chapters:scenes;
+      const [record]=await tx.select().from(table).where(and(eq(table.id,documentId),eq(table.projectId,projectId),eq(table.revision,revision))).for("update");
+      if(!record||("writingMode" in record&&record.writingMode!=="chapter")) return undefined;
+      const [any]=await tx.select({id:proseVersions.id}).from(proseVersions).where(and(eq(proseVersions.projectId,projectId),eq(proseVersions.resource,resource),eq(proseVersions.documentId,documentId))).limit(1);
+      const [row]=await tx.insert(proseVersions).values({...versionValue(resource,record,any?"save":"baseline"),sessionCheckpoint:true})
+        .onConflictDoUpdate({target:[proseVersions.projectId,proseVersions.resource,proseVersions.documentId,proseVersions.revision],set:{sessionCheckpoint:true}}).returning();return row;
+    });
+  }
   async listProseVersions(projectId: number, resource: ProseResource, documentId: number, before?: number) {
     const {content,requestId,...columns} = getTableColumns(proseVersions);
     return this.database.select({...columns,bytes:sql<number>`octet_length(coalesce(${proseVersions.content}, ''))`}).from(proseVersions)
@@ -63,6 +84,13 @@ export class DatabaseStorage implements IStorage {
       if ((before.content !== after.content || source) && (resource === "scenes" || (before as Chapter).writingMode === "chapter")) {
         const [existing] = await tx.select({id:proseVersions.id}).from(proseVersions).where(and(eq(proseVersions.projectId,before.projectId),eq(proseVersions.resource,resource),eq(proseVersions.documentId,id))).limit(1);
         if (!existing) await tx.insert(proseVersions).values(versionValue(resource,before,"baseline"));
+        if(source) {
+          const [protectedSource]=await tx.update(proseVersions).set({restoreProtected:true})
+            .where(and(eq(proseVersions.projectId,before.projectId),eq(proseVersions.resource,resource),eq(proseVersions.documentId,id),eq(proseVersions.id,source.restoredFromId))).returning({id:proseVersions.id});
+          if(!protectedSource) throw new Error("Restore source is unavailable");
+          await tx.insert(proseVersions).values({...versionValue(resource,before,"save"),restoreProtected:true})
+            .onConflictDoUpdate({target:[proseVersions.projectId,proseVersions.resource,proseVersions.documentId,proseVersions.revision],set:{restoreProtected:true}});
+        }
         await tx.insert(proseVersions).values(versionValue(resource,after,source ? "restore" : "save",source));
       }
       return after;

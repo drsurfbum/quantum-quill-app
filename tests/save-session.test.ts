@@ -1,5 +1,5 @@
 import { queryClient, apiRequest } from "../client/src/lib/queryClient";
-import { getSaveQueue, flushPendingSaves, withPendingEdits } from "../client/src/hooks/use-autosave";
+import { getSaveQueue, flushPendingSaves, withPendingEdits, checkpointProseSession } from "../client/src/hooks/use-autosave";
 function asUser(id: number) { queryClient.clear(); queryClient.setQueryData(["/api/user"], { id }); queryClient.setQueryData([`/api/chapters/${id}`], { id, revision: 0, projectId: id, content: "Original" }); }
 function reply(id: number) { return new Response(JSON.stringify({ id, revision: 1, title: "Saved" }), { status: 200, headers: { "content-type": "application/json" } }); }
 
@@ -84,4 +84,22 @@ it("does not expire a new login when an old account's request returns 401", asyn
   await expect(request).rejects.toThrow("Expired");
   expect(queryClient.getQueryData(["/api/user"])).toEqual({ id: 107 });
   jest.restoreAllMocks(); queryClient.clear();
+});
+
+it("marks a session checkpoint only after an acknowledged save, with no prose in its request", async()=>{
+ asUser(108);const url='/api/chapters/108';
+ const fetch=jest.spyOn(global,'fetch').mockImplementation(async(_url,init)=>init?.method==='PUT'?reply(108):new Response('{}',{status:200}));
+ getSaveQueue(url).enqueue({content:'Session final writing'});
+ await checkpointProseSession(url,108);
+ expect(fetch.mock.calls.map(call=>call[1]?.method)).toEqual(['PUT','POST']);
+ expect(fetch.mock.calls[1][0]).toBe(`${url}/history/checkpoint`);expect(JSON.parse(fetch.mock.calls[1][1]!.body as string)).toEqual({revision:1});
+ jest.restoreAllMocks();queryClient.clear();
+});
+it("does not mark failed saves or another account's session as clean", async()=>{
+ asUser(109);const url='/api/chapters/109';
+ const fetch=jest.spyOn(global,'fetch').mockResolvedValue(new Response('Unavailable',{status:503}));
+ getSaveQueue(url).enqueue({content:'Unsent writing'});await checkpointProseSession(url,109);
+ expect(fetch.mock.calls.map(call=>call[1]?.method)).toEqual(['PUT']);
+ asUser(110);await checkpointProseSession(url,109);expect(fetch).toHaveBeenCalledTimes(1);
+ jest.restoreAllMocks();queryClient.clear();
 });

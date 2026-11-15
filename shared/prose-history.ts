@@ -11,5 +11,6 @@ export function historySummary(row: ProseVersion): VersionSummary {
 export function versionValue(resource: ProseResource, record: ProseRecord, kind: ProseVersion["kind"], source?: RestoreSource) {
   return { projectId: record.projectId, resource, documentId: record.id, revision: record.revision,
     title: record.title, content: record.content, savedAt: record.updatedAt || record.createdAt || new Date(),
+    keptAt: null, restoreProtected: !!source, sessionCheckpoint: false,
     kind, restoredFromId: source?.restoredFromId ?? null, requestId: source?.requestId ?? null };
 }
