@@ -163,7 +163,7 @@ export default function RichTextEditor({
         isFullscreen ? "fixed inset-0 z-50 bg-white dark:bg-neutral-900" : ""
       )}
     >
-      <EditorMenuBar editor={editor} onLinkEntry={()=>setLinkRequest(n=>n+1)} />
+      <EditorMenuBar editor={editor} documentKey={`${projectId}:${resource}:${chapterId}`} onLinkEntry={()=>setLinkRequest(n=>n+1)} />
       <InlineLinker editor={editor} projectId={projectId} request={linkRequest} onOpenEntry={id=>{setIsFullscreen(false);onOpenEntry?.(id);}} />
       <div data-writing-scroll className="flex-1 min-h-0 min-w-0 overflow-y-auto [scrollbar-gutter:stable] p-3 md:p-4">
         <WritingSurface editor={editor} label={resource === "scenes" ? "Scene text" : "Chapter text"} labelId={labelId} />

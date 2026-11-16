@@ -1,0 +1,23 @@
+import assert from 'node:assert/strict';
+// Only run against the disposable loopback showcase fixture.
+const {chromium,request}=await import(process.env.PLAYWRIGHT_MODULE || 'playwright');
+import {writeFile} from 'node:fs/promises';
+const base=`http://127.0.0.1:${Number(process.env.QQ_SHOWCASE_PORT || 5063)}`;const api=await request.newContext({baseURL:base});
+await api.post('/api/login',{data:{username:'demo-writer',password:'synthetic-showcase-only'}});
+const browser=await chromium.launch({headless:true});const context=await browser.newContext({storageState:await api.storageState(),viewport:{width:1200,height:900}});
+const page=await context.newPage();await page.addInitScript(()=>localStorage.setItem('quantum-quill:interface-tour:1',JSON.stringify({versions:{'1':'dismissed'}})));
+await page.goto(base+'/project/1/write?chapter=1&scene=2');await page.locator('.ProseMirror').waitFor();
+const original=await page.locator('.ProseMirror').evaluate(e=>e.editor.getHTML());let writes=0;page.on('request',r=>{if(r.method()==='PUT')writes++;});
+await page.route('**/wordnet/**/*.gz',r=>r.abort());
+await page.getByRole('button',{name:'Word Finder',exact:true}).click();const input=page.getByLabel('English word or expression');
+await input.fill('ocean');await input.press('Enter');await page.getByRole('status').filter({hasText:/fetch|load/i}).waitFor();
+assert.equal(await page.locator('.ProseMirror').evaluate(e=>e.editor.getHTML()),original);assert.equal(writes,0);
+await page.unroute('**/wordnet/**/*.gz');
+let first=true;await page.route('**/wordnet/**/*.gz',async r=>{if(first){first=false;await new Promise(resolve=>setTimeout(resolve,700));}try{await r.continue();}catch{}});
+await input.fill('ocean');await input.press('Enter');await page.waitForTimeout(60);await input.fill('bright');await input.press('Enter');
+await page.getByText(/meanings for “bright”/).waitFor();await page.waitForTimeout(800);assert.equal(await page.getByText(/meanings for “ocean”/).count(),0);assert.equal(writes,0);
+await page.keyboard.press('Escape');
+await page.getByRole('button',{name:'Word Finder',exact:true}).click();
+await page.goto(base+'/project/1/write?chapter=2&scene=3');await page.locator('.ProseMirror').waitFor();assert.equal(await page.getByLabel('English word or expression').count(),0);
+await writeFile(`${process.env.QQ_EVIDENCE_DIR || '.local/word-finder'}/edge-results.json`,JSON.stringify({networkFailureNoEdit:true,lateResultDiscarded:true,navigationDiscardsTarget:true,lookupWrites:writes},null,2));
+console.log('Network failure, delayed result race and scene navigation checks passed.');await browser.close();await api.dispose();
