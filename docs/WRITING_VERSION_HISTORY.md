@@ -1,6 +1,6 @@
 # Write: Undo/Redo and saved version history
 
-Review candidate for QQ-31, based on release `d610409`. No live migration or deployment is part of this feature. Named alternate drafts remain separate.
+Review candidate for QQ-31, integrating release `3daa3fc` (Word Finder) with the existing history branch. No live migration or deployment is part of this feature. Named alternate drafts remain separate.
 
 ## Writer behavior
 
@@ -99,7 +99,7 @@ Deploy only after release approval and capacity review. Verify history/restore w
 Validation uses fictional in-memory records and newly created disposable databases only. No working story, account, database, backup, or browser profile is used.
 
 - TypeScript and production build pass. Existing bundle-size advisory remains; no dependencies or lockfile changed.
-- Full Jest suite: **497 tests / 46 suites passed**, plus two subsequent focused session-checkpoint regressions (8/8 in that suite). Coverage includes history authorization, pagination, exact body preservation, stale and competing saves/restores, retry idempotency, exports, absent/archived references, safe previews, visible undo/redo across autosave and navigation, and existing writing/recovery regressions.
+- Full Jest suite: **509 tests / 48 suites passed** after Word Finder integration. Coverage includes history authorization, pagination, exact body preservation, stale and competing saves/restores, retry idempotency, exports, absent/archived references, safe previews, visible undo/redo across autosave and navigation, and existing writing/recovery regressions.
 - PostgreSQL rehearsal covers migration rollback/concurrency/idempotency, unchanged original fields, competing writes, failed snapshot atomic rollback, outer transaction rollback, scenes, isolation, physical storage growth, legacy restore protection backfill, protection rollback, concurrent Keep/restore, and unchanged rows before/after dry-run review.
 - Production build passes fresh/concurrent bootstrap, refusal of an unrelated database, restart/session/upload preservation, and paired restore of all 19 tables including kept and restore-protected history; also exercises the compiled operator report.
 - Actual Chrome with the production CSP passes toolbar/keyboard/focus, read-only preview/compare, stale restore rejection, explicit restoration, undo reset, lost response/reload retry, 320px/390px layout, dark mode, failed-save/crash recovery, persistent Keep, exact JSON download, and dry-run policy review. [Browser receipt](verification/prose-history-browser.json). Physical iPad/software-keyboard and assistive-technology testing remain unverified.
@@ -115,8 +115,23 @@ node --import tsx tests/postgres-prose-history.ts
 node tests/hosted-alpha.mjs
 # Disposable Playwright installation, without app dependency/lockfile edits:
 node tests/browser-prose-history.mjs
+node tests/browser-history-word-finder.mjs
+QQ_BROWSER_ENGINE=webkit node tests/browser-history-word-finder.mjs
 ```
 
 Database tests require `QQ_TEST_PG_ADMIN_URL`; hosted restore also accepts `PG_BIN`. Browser tests support `PLAYWRIGHT_MODULE`, `CHROME_EXECUTABLE`, and a dedicated `QQ_HISTORY_BROWSER_PORT`; they start and stop their own synthetic fixture. CI runs the server/storage and browser regressions.
 
-Duplicate Chapter remains owned by the existing feature chat and local `duplicate-chapter-app` candidate `c11753e`. Its original/copy remain independent canonical documents and both export. This feature does not copy parent history or add alternate-draft selection; each copied document would start its own history on its first changed save. Combined integration with that unpublished candidate and the separate MCP candidate remains a later release check. All original branches/worktrees are preserved. Roadmap/PM updates remain with the PM chat; this candidate is a draft PR, not a deployed feature.
+Duplicate Chapter remains owned by the existing feature chat and local `duplicate-chapter-app` candidate `c11753e`. Its original/copy remain independent canonical documents and both export. This feature does not copy parent history or add alternate-draft selection; each copied document would start its own history on its first changed save. Combined integration with that unpublished candidate and the separate MCP candidate remains a later release check. All original branches/worktrees are preserved. Roadmap/PM updates remain with the PM chat; PR readiness is conditional on final-head checks, separate from deployment approval. No deployment is included.
+
+
+## Word Finder integration — November 16, 2026
+
+The release branch at `3daa3fc1a392aaede70d217d252d6a7257780f29` is merged normally into this feature branch. The two shared-editor conflicts retain both the project/resource/document key for Word Finder and the History callback. All Word Finder selection guards, literal replacement, mixed-format/link exclusions, independent undo boundary, dictionary shards and attribution remain unchanged. Undo, Redo, History, Word Finder, inline Bible linking and More formatting coexist in the fixed-height toolbar.
+
+Combined Chromium and WebKit checks cover both chapter and scene prose: formatted replacement, visible undo/redo through autosave, kept-version preview/restore, protected outgoing/source/result checkpoints, a fresh lookup after restoration and undo that cannot cross the restoration. Additional checks exercise in-app chapter/scene switches, stale selections, delayed and failed dictionary requests, pending replacement saves, stale restore rejection, failed-save recovery after an explicitly verified new-page reload, focus and 320px/390px layouts. The separate existing six-case Chromium/WebKit Word Finder walkthrough and lookup-edge checks pass. The history/retention regression and 19-table production-style paired backup rehearsal also pass. [Integration receipt](verification/history-word-finder-integration.json).
+
+The browser workflow pins disposable Playwright 1.65.1 and runs the combined test in Chromium and WebKit. Local Playwright 1.56.1 / WebKit 26.0 reproducibly crashed when reloading after a deliberately aborted save; the current WebKit 27.2 completed that same failure/recovery check. The test records only WebKit's expected access-control diagnostic for the exact deliberately aborted save URL during that injection phase; all other page errors fail. The recovery check closes the blocking modal and verifies a new document loaded before inspecting the durable draft. Application dependencies and lockfile are unchanged. Physical iPad/Safari/software-keyboard acceptance remains a deployment validation limit.
+
+![Combined toolbar and Word Finder at 320px, fictional writing only](images/history-word-finder-320.png)
+
+Capacity planning, independent paired database/upload backups, migration 0007/0008 review and deployment authorization remain outstanding. These are deployment gates, not a requirement to keep a fully validated PR in draft. Retention is still dry-run only, with no deletion job or live migration. PM owns context and roadmap updates.

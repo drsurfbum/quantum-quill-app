@@ -10,9 +10,11 @@ import { WRITING_FONTS } from '@shared/writing-styles';
 import { currentWritingStyle, setParagraphAppearance, clearWritingFormatting } from './formatting';
 import { StyleGallery } from './style-gallery';
 import { FindReplace } from './search';
+import { WordFinder } from './word-finder';
 
 interface EditorMenuBarProps {
   editor: Editor;
+  documentKey?: string;
   onLinkEntry?: () => void;
   onHistory?: () => void;
 }
@@ -34,7 +36,7 @@ function Colors({ editor, highlight = false }: { editor: Editor; highlight?: boo
       <Button variant="outline" size="sm" onClick={() => set(null)}>{highlight ? 'Remove highlight' : 'Automatic text color'}</Button>
     </PopoverContent></Popover>;
 }
-export default function EditorMenuBar({ editor, onLinkEntry, onHistory }: EditorMenuBarProps) {
+export default function EditorMenuBar({ editor, onLinkEntry, onHistory, documentKey }: EditorMenuBarProps) {
   const style = currentWritingStyle(editor);
   const [insertOpen, setInsertOpen] = useState(false);
   const [dialog, setDialog] = useState<'link' | 'image' | null>(null);
@@ -80,6 +82,7 @@ export default function EditorMenuBar({ editor, onLinkEntry, onHistory }: Editor
       <span className="h-5 w-px bg-border mx-1" aria-hidden="true" />
       {textControls}
     </div>
+    <WordFinder key={documentKey} editor={editor} />
     <Tool label="Link Story Bible element" onClick={()=>onLinkEntry?.()}><AtSign className="h-4 w-4" /></Tool>
     <Popover><PopoverTrigger asChild><Button type="button" variant="ghost" size="icon" className="h-8 w-8 shrink-0" aria-label="More formatting" title="More formatting"><SlidersHorizontal className="h-4 w-4" /></Button></PopoverTrigger>
       <PopoverContent align="end" className="w-[min(26rem,calc(100vw-2rem))] max-h-[70dvh] overflow-y-auto p-3" onOpenAutoFocus={event=>event.preventDefault()} onCloseAutoFocus={event=>event.preventDefault()} onFocusOutside={event=>event.preventDefault()}>

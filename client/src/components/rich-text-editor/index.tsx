@@ -180,7 +180,7 @@ function RichTextDocument({
         isFullscreen ? "fixed inset-0 z-50 bg-white dark:bg-neutral-900" : ""
       )}
     >
-      <EditorMenuBar editor={editor} onLinkEntry={()=>setLinkRequest(n=>n+1)} onHistory={()=>{setHistoryMessage("");setHistoryOpen(true);}} />
+      <EditorMenuBar editor={editor} documentKey={`${projectId}:${resource}:${chapterId}`} onLinkEntry={()=>setLinkRequest(n=>n+1)} onHistory={()=>{setHistoryMessage("");setHistoryOpen(true);}} />
       {historyOpen && <ProseHistory resource={resource} documentId={Number(chapterId)} projectId={projectId} onClose={closeHistory} onReturnFocus={()=>{if(!editor.isDestroyed)editor.commands.focus();}} onRestored={record=>{
         editor.commands.setContent(editorContent(record.content || ""),false,{preserveWhitespace:"full"});
         editor.view.updateState(EditorState.create({schema:editor.schema,doc:editor.state.doc,plugins:editor.state.plugins}));
