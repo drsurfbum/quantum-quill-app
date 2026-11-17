@@ -4,7 +4,7 @@ English dictionary and thesaurus inside Write. Open the book icon beside the Sto
 Bible link tool with a word selected, or type a query. Results group definitions,
 synonyms and antonyms by meaning; examples and related concepts expand on demand.
 Related concepts open another lookup. Choosing a synonym/antonym only previews it;
-**Replace selection** is the explicit edit. Undo and Redo remain in More formatting.
+**Replace selection** is the explicit edit. Undo and Redo are visible beside Version history in the combined Write toolbar.
 
 ## Data and privacy
 
@@ -63,7 +63,7 @@ Review and version a future data update rather than replacing a live path silent
 - Replacement uses one ordinary editor transaction and existing autosave/recovery/
   revision/conflict protections. History boundaries isolate it from preceding and
   subsequent typing. One Undo restores the original text and formatting; Redo
-  reapplies it. This is in-session history, not persistent saved versions.
+  reapplies it. This is in-session undo history. Changed saves also enter the separate saved-version history; restoring a saved version starts a new undo session.
 - Captured targets require the same editor document and selection. Any intervening
   document edit or selection change invalidates replacement. Switching a project,
   chapter or scene remounts the tool and discards its target and pending query.

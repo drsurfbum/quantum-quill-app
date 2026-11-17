@@ -1,0 +1,14 @@
+{
+  "syntheticOnly": true,
+  "checks": [
+    "Visible buttons and keyboard undo preserve editor focus and work across autosave",
+    "Formatted preview and side-by-side comparison are read-only under production CSP",
+    "Keep persists across reload; download preserves exact prose; retention review is read-only with zero deletion",
+    "Successful restoration protects the source, outgoing checkpoint and restored result",
+    "Stale restoration is rejected; explicit renewed review restores exact prose, resets undo, and preserves layout",
+    "320px retry notices do not overlap previews; lost response and reload retry do not create another revision",
+    "320px and 390px controls, pane switching, Escape, and restore action stay reachable without horizontal overflow",
+    "Failed-save history gate and crash/reload draft recovery retain unsent writing"
+  ],
+  "errors": []
+}

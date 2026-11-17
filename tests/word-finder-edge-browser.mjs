@@ -4,7 +4,7 @@ const {chromium,request}=await import(process.env.PLAYWRIGHT_MODULE || 'playwrig
 import {writeFile} from 'node:fs/promises';
 const base=`http://127.0.0.1:${Number(process.env.QQ_SHOWCASE_PORT || 5063)}`;const api=await request.newContext({baseURL:base});
 await api.post('/api/login',{data:{username:'demo-writer',password:'synthetic-showcase-only'}});
-const browser=await chromium.launch({headless:true});const context=await browser.newContext({storageState:await api.storageState(),viewport:{width:1200,height:900}});
+const browser=await chromium.launch({headless:true,...(process.env.CHROMIUM_EXECUTABLE?{executablePath:process.env.CHROMIUM_EXECUTABLE}:{})});const context=await browser.newContext({storageState:await api.storageState(),viewport:{width:1200,height:900}});
 const page=await context.newPage();await page.addInitScript(()=>localStorage.setItem('quantum-quill:interface-tour:1',JSON.stringify({versions:{'1':'dismissed'}})));
 await page.goto(base+'/project/1/write?chapter=1&scene=2');await page.locator('.ProseMirror').waitFor();
 const original=await page.locator('.ProseMirror').evaluate(e=>e.editor.getHTML());let writes=0;page.on('request',r=>{if(r.method()==='PUT')writes++;});

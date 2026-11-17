@@ -1,3 +1,4 @@
+import { registerProseHistoryRoutes } from "./prose-history";
 import { registerFeedbackRoutes } from "./feedback";
 import { validateWritingLinks, writingUses } from "./writing-links";
 import { readSceneContext, saveSceneContext, sceneUses } from "./scene-context";
@@ -69,6 +70,7 @@ type Resource<T extends Child, C> = {
 export function registerRoutes(app: Express, storage: IStorage, directory = path.join(process.cwd(), "uploads")) {
   app.use("/api", requireUser);
   registerFeedbackRoutes(app, storage);
+  registerProseHistoryRoutes(app, storage);
   const projectFor = async (req: Request, id: number) => {
     const project = await storage.getProject(id);
     if (!project) fail(404, "Project not found");

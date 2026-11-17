@@ -1,0 +1,37 @@
+name: Writing history browser verification
+on:
+  pull_request:
+    paths: ['client/**', 'server/**', 'shared/**', 'tests/**', '.github/workflows/prose-history-browser.yml']
+  push:
+    branches: [codex/writing-version-history, codex/writing-first-layout]
+    paths: ['client/**', 'server/**', 'shared/**', 'tests/**', '.github/workflows/prose-history-browser.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  browser:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run build
+      - name: Install disposable browser-test tooling
+        run: |
+          npm install --no-save --package-lock=false --ignore-scripts playwright@1.65.1
+          npx playwright install --with-deps chromium webkit
+      - run: node tests/browser-prose-history.mjs
+      - run: node tests/browser-history-word-finder.mjs
+      - run: node tests/browser-history-word-finder.mjs
+        env:
+          QQ_BROWSER_ENGINE: webkit
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: writing-history-synthetic-browser
+          path: artifacts/history/
+          retention-days: 14

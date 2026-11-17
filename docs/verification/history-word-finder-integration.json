@@ -1,0 +1,180 @@
+{
+  "syntheticOnly": true,
+  "releaseParent": "3daa3fc1a392aaede70d217d252d6a7257780f29",
+  "historyParent": "3e082f0519ae7df7911df3e438514618d6444e37",
+  "typecheck": "PASS",
+  "productionBuild": "PASS",
+  "jest": {
+    "tests": 509,
+    "suites": 48,
+    "status": "PASS"
+  },
+  "combinedChromium": {
+    "syntheticOnly": true,
+    "engine": "chromium",
+    "checks": [
+      "scene: formatted replacement, visible undo/redo, autosave, kept history preview/restore, fresh lookup and safe undo boundary",
+      "chapter: formatted replacement, visible undo/redo, autosave, kept history preview/restore, fresh lookup and safe undo boundary",
+      "History dismisses Word Finder; changed selections cannot replace stale targets",
+      "Chapter/scene navigation and delayed lookup completion discard old selections without writing",
+      "390px/320px combined toolbar, focus, previews and stable writing layout",
+      "Pending replacement save completes before history review; stale restoration preserves newer device writing",
+      "Failed replacement save blocks history restoration and preserves the recoverable draft across reload"
+    ],
+    "errors": []
+  },
+  "combinedWebKit": {
+    "syntheticOnly": true,
+    "engine": "webkit",
+    "browserVersion": "27.2",
+    "checks": [
+      "scene: formatted replacement, visible undo/redo, autosave, kept history preview/restore, fresh lookup and safe undo boundary",
+      "chapter: formatted replacement, visible undo/redo, autosave, kept history preview/restore, fresh lookup and safe undo boundary",
+      "History dismisses Word Finder; changed selections cannot replace stale targets",
+      "Chapter/scene navigation and delayed lookup completion discard old selections without writing",
+      "390px/320px combined toolbar, focus, previews and stable writing layout",
+      "Pending replacement save completes before history review; stale restoration preserves newer device writing",
+      "Failed replacement save blocks history restoration and preserves the recoverable draft across reload"
+    ],
+    "errors": [],
+    "injectedNetworkErrors": [
+      "/127.0.0.1:57587/api/chapters/4 due to access control checks."
+    ]
+  },
+  "existingWordFinder": [
+    {
+      "engine": "chromium",
+      "version": "157.0.8103.79",
+      "label": "desktop",
+      "passed": true,
+      "lookups": 5,
+      "bounds": {
+        "x": 614,
+        "y": 225,
+        "width": 400,
+        "height": 576
+      }
+    },
+    {
+      "engine": "chromium",
+      "version": "157.0.8103.79",
+      "label": "tablet",
+      "passed": true,
+      "lookups": 5,
+      "bounds": {
+        "x": 544,
+        "y": 225,
+        "width": 400,
+        "height": 531
+      }
+    },
+    {
+      "engine": "chromium",
+      "version": "157.0.8103.79",
+      "label": "narrow",
+      "passed": true,
+      "lookups": 5,
+      "bounds": {
+        "x": 12,
+        "y": 225,
+        "width": 366,
+        "height": 576
+      }
+    },
+    {
+      "engine": "webkit",
+      "version": "26.0",
+      "label": "desktop",
+      "passed": true,
+      "lookups": 5,
+      "bounds": {
+        "x": 614,
+        "y": 225,
+        "width": 400,
+        "height": 576
+      }
+    },
+    {
+      "engine": "webkit",
+      "version": "26.0",
+      "label": "tablet",
+      "passed": true,
+      "lookups": 5,
+      "bounds": {
+        "x": 544,
+        "y": 225,
+        "width": 400,
+        "height": 531
+      }
+    },
+    {
+      "engine": "webkit",
+      "version": "26.0",
+      "label": "narrow",
+      "passed": true,
+      "lookups": 5,
+      "bounds": {
+        "x": 12,
+        "y": 225,
+        "width": 366,
+        "height": 576
+      }
+    }
+  ],
+  "lookupEdges": {
+    "networkFailureNoEdit": true,
+    "lateResultDiscarded": true,
+    "navigationDiscardsTarget": true,
+    "lookupWrites": 0
+  },
+  "historyRegression": {
+    "syntheticOnly": true,
+    "checks": [
+      "Visible buttons and keyboard undo preserve editor focus and work across autosave",
+      "Formatted preview and side-by-side comparison are read-only under production CSP",
+      "Keep persists across reload; download preserves exact prose; retention review is read-only with zero deletion",
+      "Successful restoration protects the source, outgoing checkpoint and restored result",
+      "Stale restoration is rejected; explicit renewed review restores exact prose, resets undo, and preserves layout",
+      "320px retry notices do not overlap previews; lost response and reload retry do not create another revision",
+      "320px and 390px controls, pane switching, Escape, and restore action stay reachable without horizontal overflow",
+      "Failed-save history gate and crash/reload draft recovery retain unsent writing"
+    ],
+    "errors": []
+  },
+  "databaseChecks": [
+    "migration rollback",
+    "additive concurrent migration",
+    "original fields preserved",
+    "competing saves",
+    "snapshot failure atomic rollback",
+    "restore idempotency",
+    "outer transaction rollback",
+    "scene isolation",
+    "unchanged-body deduplication",
+    "retention migration rollback and legacy restore backfill",
+    "idempotent concurrent keep",
+    "revision-checked session marker",
+    "restore protection rollback",
+    "concurrent keep and restore",
+    "metadata-only dry-run leaves every version unchanged"
+  ],
+  "pairedRestore": {
+    "freshBootstrap": "PASS",
+    "concurrentBootstrap": "PASS",
+    "refusesExistingDatabase": "PASS",
+    "registration": "PASS",
+    "secureProxyCookie": "PASS",
+    "sceneContext": "PASS",
+    "staleWriteRejected": "PASS",
+    "accountIsolation": "PASS",
+    "export": "PASS",
+    "restartSessionAndUploads": "PASS",
+    "pairedRestore": "PASS",
+    "proseHistoryRestartRestore": "PASS",
+    "keptAndProtectedVersionsRestore": "PASS",
+    "productionReadOnlyReport": "PASS",
+    "restoredTables": 19
+  },
+  "browserTooling": "Playwright 1.65.1 pinned for combined CI; older local WebKit 26.0 crashed during forced-network-abort reload, current WebKit 27.2 passes.",
+  "deployment": "Not authorized; no live migration, data change or retention deletion."
+}

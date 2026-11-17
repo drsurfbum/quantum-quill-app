@@ -161,3 +161,29 @@ export async function restoreDraft(draft: DurableDraft, reviewed: Awaited<Return
     queryClient.setQueryData([draft.listUrl], (old: { id: number }[] | undefined) => old?.map(item => item.id === result.id ? result : item));
   }
 }
+
+/** Explicitly adopt a reviewed server revision; never rebase pending writing. */
+export async function acceptSavedProse(url: string, listUrl: string, record: Record<string, unknown>, account: number) {
+  const safe = () => {
+    if (ownerId() !== account) throw new Error("Your account changed. Reopen your writing.");
+    if (pendingSaveCount() || draftJournal.read(account).some(draft => draft.url === url)) throw new Error("There are pending edits. Review saved drafts before loading this version.");
+  };
+  safe();
+  await Promise.all([url,listUrl].map(key=>queryClient.cancelQueries({queryKey:[key],exact:true})));
+  safe();
+  snapshots.set(`${account}:${url}`,record);
+  queryClient.setQueryData([url],record);
+  queryClient.setQueryData([listUrl],(old:{id:number}[]|undefined)=>old?.map(item=>item.id===record.id ? record : item));
+}
+
+/** Best-effort session marker after an acknowledged save. All prose versions are
+ * still captured, so a failed marker cannot lose writing during dry-run review. */
+export async function checkpointProseSession(url:string, account:number) {
+  if(ownerId()!==account)return;
+  const queue=queues.get(`${account}:${url}`);
+  if(queue&&!await queue.flush())return;
+  if(ownerId()!==account)return;
+  const record=snapshots.get(`${account}:${url}`);
+  if(!Number.isInteger(record?.revision))return;
+  await apiRequest("POST",`${url}/history/checkpoint`,{revision:record!.revision});
+}

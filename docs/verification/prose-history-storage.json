@@ -1,0 +1,59 @@
+{
+  "syntheticOnly": true,
+  "postgres": "16.15 (Homebrew)",
+  "checks": [
+    "migration rollback",
+    "additive concurrent migration",
+    "original fields preserved",
+    "competing saves",
+    "snapshot failure atomic rollback",
+    "restore idempotency",
+    "outer transaction rollback",
+    "scene isolation",
+    "unchanged-body deduplication",
+    "retention migration rollback and legacy restore backfill",
+    "idempotent concurrent keep",
+    "revision-checked session marker",
+    "restore protection rollback",
+    "concurrent keep and restore",
+    "metadata-only dry-run leaves every version unchanged"
+  ],
+  "samples": [
+    {
+      "documentBytes": 10000,
+      "saves": 120,
+      "versions": 121,
+      "logicalBytes": 1204570,
+      "storedContentBytes": 1204571,
+      "tableGrowthBytes": 1564672,
+      "bytesPerSave": 13039,
+      "dryRunWouldExpire": 95,
+      "dryRunLogicalCandidateBytes": 953617,
+      "reclaimedBytes": 0
+    },
+    {
+      "documentBytes": 50000,
+      "saves": 120,
+      "versions": 121,
+      "logicalBytes": 6004570,
+      "storedContentBytes": 6004571,
+      "tableGrowthBytes": 6512640,
+      "bytesPerSave": 54272,
+      "dryRunWouldExpire": 95,
+      "dryRunLogicalCandidateBytes": 4753617,
+      "reclaimedBytes": 0
+    },
+    {
+      "documentBytes": 200000,
+      "saves": 120,
+      "versions": 121,
+      "logicalBytes": 24004570,
+      "storedContentBytes": 24004571,
+      "tableGrowthBytes": 24887296,
+      "bytesPerSave": 207394,
+      "dryRunWouldExpire": 95,
+      "dryRunLogicalCandidateBytes": 19003617,
+      "reclaimedBytes": 0
+    }
+  ]
+}
