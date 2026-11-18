@@ -1,3 +1,4 @@
+import { defaultAgentAccess, type AgentAccess } from "@shared/agent-access";
 import { RETENTION_SCAN_LIMIT, type RetentionInput } from "@shared/prose-retention";
 import type { ProseVersion } from "@shared/schema";
 import { HISTORY_PAGE_SIZE, historySummary, versionValue, type ProseResource, type ProseRecord, type RestoreSource, type VersionSummary } from "@shared/prose-history";
@@ -27,6 +28,9 @@ import session from "express-session";
 import createMemoryStore from "memorystore";
 
 export interface IStorage {
+  getAgentAccess(userId: number): Promise<AgentAccess>;
+  putAgentAccess(access: AgentAccess): Promise<void>;
+  withAgentLock<T>(userId: number, work: (storage: IStorage) => Promise<T>): Promise<T>;
   getProseRetentionRows(projectId:number, resource:ProseResource, documentId:number): Promise<RetentionInput[]>;
   keepProseVersion(projectId:number, resource:ProseResource, documentId:number, versionId:number): Promise<ProseVersion | undefined>;
   checkpointProseSession(projectId:number, resource:ProseResource, documentId:number, revision:number): Promise<ProseVersion | undefined>;
@@ -129,6 +133,17 @@ export interface IStorage {
 }
 
 export class MemStorage implements IStorage {
+  private agentAccess = new Map<number, AgentAccess>();
+  private agentLocks = new Map<number, Promise<void>>();
+  async getAgentAccess(userId: number) { return structuredClone(this.agentAccess.get(userId) || defaultAgentAccess(userId)); }
+  async putAgentAccess(access: AgentAccess) { this.agentAccess.set(access.userId, structuredClone(access)); }
+  async withAgentLock<T>(userId: number, work: (storage: IStorage) => Promise<T>): Promise<T> {
+    const previous = this.agentLocks.get(userId) || Promise.resolve();
+    let release!: () => void;
+    const next = new Promise<void>(resolve => { release = resolve; });
+    this.agentLocks.set(userId, next); await previous;
+    try { return await work(this); } finally { release(); if (this.agentLocks.get(userId) === next) this.agentLocks.delete(userId); }
+  }
   private proseHistory: ProseVersion[] = [];
   async getProseRetentionRows(projectId:number, resource:ProseResource, documentId:number) {
     return this.proseHistory.filter(r=>r.projectId===projectId&&r.resource===resource&&r.documentId===documentId).slice(0,RETENTION_SCAN_LIMIT+1)
@@ -227,12 +242,15 @@ export class MemStorage implements IStorage {
   // Creation callbacks only insert rows. Roll back their inserts, not unrelated projects.
   async withCreationTransaction<T>(scope: number, work: (storage: IStorage) => Promise<T>): Promise<T> {
     return this.withProjectLock(scope, async storage => {
-      const inserted = { projects: [] as number[], chapters: [] as number[], scenes: [] as number[], requests: [] as string[] };
+      const inserted = { projects: [] as number[], chapters: [] as number[], scenes: [] as number[], outline: [] as number[], bible: [] as number[], requests: [] as string[] };
       const scoped = new Proxy(storage, {
         get(target, key) {
+          if (key === "withProjectLock") return <T>(id: number, work: (s: IStorage) => Promise<T>) => target.withProjectLock(id, () => work(scoped));
           if (key === "createProject") return async (data: InsertProject) => { const row = await target.createProject(data); inserted.projects.push(row.id); return row; };
           if (key === "createChapter") return async (data: InsertChapter) => { const row = await target.createChapter(data); inserted.chapters.push(row.id); return row; };
           if (key === "createScene") return async (data: InsertScene) => { const row = await target.createScene(data); inserted.scenes.push(row.id); return row; };
+          if (key === "createOutlineItem") return async (data: InsertOutlineItem) => { const row = await target.createOutlineItem(data); inserted.outline.push(row.id); return row; };
+          if (key === "createStoryBibleEntry") return async (data: InsertStoryBibleEntry) => { const row = await target.createStoryBibleEntry(data); inserted.bible.push(row.id); return row; };
           if (key === "putCreationRequest") return async (row: CreationRequest) => { await target.putCreationRequest(row); inserted.requests.push(`${row.scope}:${row.requestId}`); };
           const value = Reflect.get(target, key); return typeof value === "function" ? value.bind(target) : value;
         },
@@ -240,6 +258,8 @@ export class MemStorage implements IStorage {
       try { return await work(scoped); } catch (error) {
         inserted.scenes.forEach(id => this.scenesMap.delete(id));
         inserted.chapters.forEach(id => this.chaptersMap.delete(id));
+        inserted.outline.forEach(id => this.outlineItemsMap.delete(id));
+        inserted.bible.forEach(id => this.storyBibleEntriesMap.delete(id));
         inserted.projects.forEach(id => this.projectsMap.delete(id));
         inserted.requests.forEach(id => this.creationRequestsMap.delete(id));
         throw error;

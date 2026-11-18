@@ -3,6 +3,9 @@ import assert from 'node:assert/strict';
 import { mkdir, writeFile, readFile } from 'node:fs/promises';
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
+import { resolve } from 'node:path';
+import { Client } from '@modelcontextprotocol/sdk/client/index.js';
+import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 const { chromium, webkit } = await import(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const port=Number(process.env.QQ_COMBINED_BROWSER_PORT || 57584), base=`http://127.0.0.1:${port}`,artifacts=`artifacts/history/integration-${process.env.QQ_BROWSER_ENGINE || 'chromium'}`;
 await mkdir(artifacts,{recursive:true});
@@ -137,6 +140,33 @@ try {
   assert.equal((await read(url)).content,remote.content);assert.ok(await button('Restore as current version').isDisabled());
   await page.keyboard.press('Escape');await historyDialog.waitFor({state:'hidden'});
   mark('Pending replacement save completes before history review; stale restoration preserves newer device writing');
+  // Real stdio MCP edits must be visible in the same history UI and invalidate stale restores.
+  const {hasKey,...initialAccess}=await read('/api/agent-settings');
+  let response=await context.request.put(`${base}/api/agent-settings`,{data:{...initialAccess,enabled:true,projectIds:[1],allowWrites:true,allowManuscript:true}});
+  assert.equal(response.status(),200);const access=await response.json();
+  response=await context.request.post(`${base}/api/agent-settings/key`,{data:{revision:access.revision}});assert.equal(response.status(),200);
+  const {key}=await response.json();
+  const mcp=new Client({name:'qq-combined-browser-fixture',version:'0.1.0'});
+  const transport=new StdioClientTransport({command:process.execPath,args:[resolve('dist/mcp.js')],env:{QQ_MCP_ORIGIN:base,QQ_MCP_TOKEN:key},stderr:'pipe'});
+  transport.stderr?.on('data',()=>{});
+  try {
+    await mcp.connect(transport);assert.equal((await mcp.listTools()).tools.length,19);
+    const beforeAgent=await read(url),agentText=source+'<p>Fictional MCP revision.</p>';
+    const edit=await mcp.callTool({name:'qq_update_chapter',arguments:{projectId:1,chapterId:chapter.id,revision:beforeAgent.revision,patch:{content:agentText}}});assert(!edit.isError);
+    assert.equal((await read(url)).content,agentText);
+    await page.reload();await writing.waitFor();assert.match(await html(),/Fictional MCP revision/);assert.match(await html(),/data-qq-entry=/);
+    await history.click();await button('Compare with current').waitFor();await button('Compare with current').click();
+    assert.match(await page.frameLocator('iframe[title="Saved version preview"]').locator('body').innerText(),/Fictional MCP revision/);
+    await page.screenshot({path:`${artifacts}/mcp-history.png`,animations:'disabled'});
+    const current=await read(url);
+    assert(!(await mcp.callTool({name:'qq_update_chapter',arguments:{projectId:1,chapterId:chapter.id,revision:current.revision,patch:{content:agentText+'<p>Newer MCP save.</p>'}}})).isError);
+    await button('Restore as current version').click();await historyDialog.getByRole('alert').filter({hasText:'changed after your comparison'}).waitFor();
+    assert.match((await read(url)).content,/Newer MCP save/);
+    await page.keyboard.press('Escape');await historyDialog.waitFor({state:'hidden'});
+    assert.equal((await context.request.delete(`${base}/api/agent-settings/key`)).status(),200);
+    assert((await mcp.callTool({name:'qq_get_chapter',arguments:{projectId:1,chapterId:chapter.id}})).isError);
+    mark('Real MCP formatted prose appears in history; newer MCP edit blocks stale UI restore; live key revocation denies the next read');
+  } finally {await mcp.close();await transport.close();}
   // Start the failure rehearsal from an acknowledged synthetic fixture revision.
   await put(url,{content:source});await page.reload();await writing.waitFor();
   const beforeFailure=await read(url);

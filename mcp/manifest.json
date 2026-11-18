@@ -1,0 +1,50 @@
+{
+  "manifest_version": "0.3",
+  "name": "quantum-quill-local",
+  "display_name": "Quantum Quill \u2014 Local Writing Assistant",
+  "version": "0.1.0",
+  "description": "Work with explicitly permitted local Quantum Quill projects. Start read-only; editing and manuscript access are controlled in QQ Settings.",
+  "author": {
+    "name": "Quantum Quill"
+  },
+  "license": "MIT",
+  "server": {
+    "type": "node",
+    "entry_point": "server/index.cjs",
+    "mcp_config": {
+      "command": "node",
+      "args": [
+        "${__dirname}/server/index.cjs"
+      ],
+      "env": {
+        "QQ_MCP_ORIGIN": "${user_config.origin}",
+        "QQ_MCP_TOKEN": "${user_config.key}"
+      }
+    }
+  },
+  "tools_generated": true,
+  "compatibility": {
+    "platforms": [
+      "darwin"
+    ],
+    "runtimes": {
+      "node": ">=20.0.0"
+    }
+  },
+  "user_config": {
+    "origin": {
+      "type": "string",
+      "title": "Local QQ address",
+      "description": "Keep QQ running locally. Only numeric loopback HTTP addresses with explicit ports are accepted.",
+      "default": "http://127.0.0.1:5055",
+      "required": true
+    },
+    "key": {
+      "type": "string",
+      "title": "Private QQ connection key",
+      "description": "Create in QQ Settings \u2192 Agents. Paste here, never into a conversation. Replacing/revoking it in QQ removes access.",
+      "sensitive": true,
+      "required": true
+    }
+  }
+}

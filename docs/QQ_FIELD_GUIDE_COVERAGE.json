@@ -1,0 +1,136 @@
+{
+  "guideVersion": "1.2.0",
+  "routes": {
+    "/admin/feedback": "feedback",
+    "/": "projects",
+    "/project/:id": "projects",
+    "/project/:id/write": "writing",
+    "/project/:id/storyboard": "storyboard",
+    "/project/:id/outline": "outline",
+    "/project/:id/story-bible": "bible",
+    "/auth": "projects"
+  },
+  "sections": {
+    "start": [
+      "client/src/App.tsx",
+      "shared/agent-tools.ts"
+    ],
+    "index": [
+      "client/src/App.tsx"
+    ],
+    "connect": [
+      "client/src/components/agent-connection-setup.tsx",
+      "server/agent-setup.ts",
+      "mcp/manifest.json"
+    ],
+    "permissions": [
+      "client/src/components/agent-settings.tsx",
+      "server/agent-access.ts",
+      "shared/agent-access.ts"
+    ],
+    "projects": [
+      "client/src/components/new-project-wizard.tsx",
+      "client/src/pages/dashboard.tsx",
+      "client/src/pages/project.tsx",
+      "client/src/pages/auth-page.tsx"
+    ],
+    "storyboard": [
+      "client/src/pages/storyboard.tsx",
+      "client/src/components/plot-structure/template-selector.tsx",
+      "client/src/components/plot-structure/structure-guide.tsx",
+      "client/src/lib/plot-structure-guides.ts"
+    ],
+    "blueprint": [
+      "client/src/components/blueprint-wizard.tsx"
+    ],
+    "outline": [
+      "client/src/pages/outline.tsx",
+      "client/src/components/scene-plan-editor.tsx"
+    ],
+    "writing": [
+      "client/src/pages/write.tsx",
+      "client/src/components/chapter-sidebar.tsx"
+    ],
+    "formatting": [
+      "client/src/components/rich-text-editor/menu-bar.tsx",
+      "client/src/components/rich-text-editor/style-gallery.tsx",
+      "client/src/components/rich-text-editor/search.tsx"
+    ],
+    "organize": [
+      "client/src/components/manuscript-organizer.tsx"
+    ],
+    "bible": [
+      "client/src/pages/story-bible.tsx",
+      "client/src/components/story-bible/workspace-entry.tsx",
+      "shared/bible-field-schemas.ts",
+      "client/src/components/story-bible/guidance.tsx",
+      "shared/bible-guidance.ts"
+    ],
+    "relationships": [
+      "client/src/components/story-bible/relationships.tsx",
+      "client/src/components/rich-text-editor/inline-linker.tsx"
+    ],
+    "scene-context": [
+      "client/src/components/scene-bible-context.tsx",
+      "docs/SCENE_STORY_BIBLE.md"
+    ],
+    "recovery": [
+      "client/src/components/draft-recovery.tsx",
+      "client/src/components/pending-saves.tsx",
+      "client/src/components/wizard-recovery.tsx"
+    ],
+    "export": [
+      "client/src/components/export-modal.tsx",
+      "server/routes.ts"
+    ],
+    "import": [
+      "client/src/components/story-bible/imported-source.tsx",
+      "client/src/App.tsx"
+    ],
+    "feedback": [
+      "client/src/components/feedback-dialog.tsx",
+      "client/src/pages/feedback-inbox.tsx",
+      "client/src/components/ui/theme-toggle.tsx",
+      "client/src/components/tour/help-menu.tsx",
+      "client/src/components/tour/tour-provider.tsx"
+    ],
+    "mcp": [
+      "shared/agent-tools.ts",
+      "server/agent-operations.ts",
+      "server/mcp/guide.ts"
+    ],
+    "troubleshooting": [
+      "server/mcp/app-reader.ts",
+      "server/agent-access.ts",
+      "server/agent-setup.ts"
+    ],
+    "boundaries": [
+      "client/src/App.tsx",
+      "shared/agent-tools.ts"
+    ],
+    "maintenance": [
+      "scripts/check-field-guide.mjs",
+      "scripts/build-mcp.mjs"
+    ],
+    "history": [
+      "client/src/components/prose-history.tsx",
+      "client/src/components/prose-retention-review.tsx",
+      "server/prose-history.ts",
+      "shared/prose-history.ts"
+    ],
+    "word-finder": [
+      "client/src/components/rich-text-editor/word-finder.tsx",
+      "client/src/components/rich-text-editor/word-selection.ts",
+      "client/src/lib/wordnet.ts"
+    ]
+  },
+  "optionalNotIncluded": [
+    "plot-hole review tools (39edbdd)",
+    "iPad/Android Home Screen guide"
+  ],
+  "unsupported": [
+    "generic manuscript import",
+    "hosted MCP",
+    "MCP settings administration"
+  ]
+}

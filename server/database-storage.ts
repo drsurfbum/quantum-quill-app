@@ -1,3 +1,5 @@
+import { defaultAgentAccess, type AgentAccess } from "@shared/agent-access";
+import { agentAccess } from "@shared/schema";
 import { RETENTION_SCAN_LIMIT } from "@shared/prose-retention";
 import { proseVersions } from "@shared/schema";
 import { HISTORY_PAGE_SIZE, versionValue, type ProseResource, type ProseRecord, type RestoreSource } from "@shared/prose-history";
@@ -41,6 +43,21 @@ function baseCondition(table: any, base?: Record<string, unknown>) {
 }
 
 export class DatabaseStorage implements IStorage {
+  async getAgentAccess(userId: number): Promise<AgentAccess> {
+    const [row] = await this.database.select().from(agentAccess).where(eq(agentAccess.userId, userId));
+    return row ? { ...row.permissions, userId, revision: row.revision, tokenHash: row.tokenHash } : defaultAgentAccess(userId);
+  }
+  async putAgentAccess(access: AgentAccess) {
+    const { userId, revision, tokenHash, ...permissions } = access;
+    await this.database.insert(agentAccess).values({ userId, revision, tokenHash, permissions })
+      .onConflictDoUpdate({ target: agentAccess.userId, set: { revision, tokenHash, permissions } });
+  }
+  async withAgentLock<T>(userId: number, work: (storage: IStorage) => Promise<T>): Promise<T> {
+    return this.database.transaction(async tx => {
+      await tx.execute(sql`select pg_advisory_xact_lock(5329234, ${userId})`);
+      return work(new DatabaseStorage(tx, this.sessionStore));
+    });
+  }
   async getProseRetentionRows(projectId:number, resource:ProseResource, documentId:number) {
     const {id,revision,savedAt,kind,restoredFromId,keptAt,restoreProtected,sessionCheckpoint}=getTableColumns(proseVersions);
     return this.database.select({id,revision,savedAt,kind,restoredFromId,keptAt,restoreProtected,sessionCheckpoint,bytes:sql<number>`octet_length(coalesce(${proseVersions.content}, ''))`}).from(proseVersions)

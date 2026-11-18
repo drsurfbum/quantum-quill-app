@@ -1,4 +1,5 @@
 import { replayTour } from "./tour/tour-provider";
+import { SettingsButton } from "./agent-settings";
 import { useAuth } from "@/hooks/use-auth";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -30,6 +31,7 @@ export default function UserProfile() {
 
   return (
     <div className="flex items-center gap-2 p-4 border-t">
+      <SettingsButton />
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" className="relative h-8 w-8 rounded-full p-0">
