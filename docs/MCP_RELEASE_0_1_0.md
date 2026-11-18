@@ -51,6 +51,8 @@ The Codex check isolates its configuration root, blocks inference at an unused l
 - Real Chromium checks cover Settings permissions/setup/revocation and guided Bible. Chromium and WebKit both pass combined Word Finder/history/focus/formatting/navigation/conflict/recovery checks. A real stdio MCP edit appears in the history UI; a subsequent MCP edit blocks stale UI restoration and revocation blocks the next read. This is local app integration testing, not hosted/browser-client MCP support.
 - Installed Codex app-server preflight and isolated Claude Code handshake pass again. Both use fictional data and temporary configs; no model calls or normal client changes.
 
+The first two hosted history-browser CI attempts timed out downloading Ubuntu packages before any app tests ran. The workflow now uses the official Playwright 1.65.1 Noble image, pinned by digest, with the same npm version. Chromium, WebKit, all test commands, artifacts and the 12-minute job limit are unchanged. This follows Playwright's [documented container approach](https://playwright.dev/docs/docker); final-head results belong to the PR checks, not the earlier setup failures.
+
 The actual Claude Desktop extension installation/private setup/model conversation and ChatGPT Desktop local Work conversation remain incomplete. PR #2 stays draft for this acceptance gate, not merely for later deployment review. The full matrix and exact user handoff are in [MCP_DESKTOP_ACCEPTANCE.md](MCP_DESKTOP_ACCEPTANCE.md). No hosted transport, live migration, merge, tag or deployment is part of this integration.
 
 ## Earlier candidate checks — November 14, 2026
