@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { type Editor } from '@tiptap/react';
-import { Bold, Italic, Underline, Strikethrough, AlignLeft, AlignCenter, AlignRight, AlignJustify, List, ListOrdered, Quote, Link, Image as ImageIcon, Table, Undo2, Redo2, Superscript, Subscript, Eraser, IndentIncrease, IndentDecrease, Palette, Highlighter, ChevronDown, Minus, Plus, SlidersHorizontal, AtSign } from 'lucide-react';
+import { Bold, Italic, Underline, Strikethrough, AlignLeft, AlignCenter, AlignRight, AlignJustify, List, ListOrdered, Quote, Link, Image as ImageIcon, Table, Undo2, Redo2, History, Superscript, Subscript, Eraser, IndentIncrease, IndentDecrease, Palette, Highlighter, ChevronDown, Minus, Plus, SlidersHorizontal, AtSign } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,10 +10,13 @@ import { WRITING_FONTS } from '@shared/writing-styles';
 import { currentWritingStyle, setParagraphAppearance, clearWritingFormatting } from './formatting';
 import { StyleGallery } from './style-gallery';
 import { FindReplace } from './search';
+import { WordFinder } from './word-finder';
 
 interface EditorMenuBarProps {
   editor: Editor;
+  documentKey?: string;
   onLinkEntry?: () => void;
+  onHistory?: () => void;
 }
 function Tool({ label, children, active, disabled, onClick }: { label: string; children: ReactNode; active?: boolean; disabled?: boolean; onClick: () => void }) {
   return <Button type="button" variant="ghost" size="icon" className={`h-8 w-8 shrink-0 ${active ? 'bg-muted' : ''}`} title={label} aria-label={label} aria-pressed={active} disabled={disabled} onMouseDown={event => event.preventDefault()} onClick={onClick}>{children}</Button>;
@@ -33,7 +36,7 @@ function Colors({ editor, highlight = false }: { editor: Editor; highlight?: boo
       <Button variant="outline" size="sm" onClick={() => set(null)}>{highlight ? 'Remove highlight' : 'Automatic text color'}</Button>
     </PopoverContent></Popover>;
 }
-export default function EditorMenuBar({ editor, onLinkEntry }: EditorMenuBarProps) {
+export default function EditorMenuBar({ editor, onLinkEntry, onHistory, documentKey }: EditorMenuBarProps) {
   const style = currentWritingStyle(editor);
   const [insertOpen, setInsertOpen] = useState(false);
   const [dialog, setDialog] = useState<'link' | 'image' | null>(null);
@@ -69,21 +72,23 @@ export default function EditorMenuBar({ editor, onLinkEntry }: EditorMenuBarProp
       </div></>;
   return <div className="shrink-0 border-b bg-background min-w-0" aria-label="Write formatting tools">
     <div className="write-toolbar flex h-12 items-center gap-1 px-2">
+    <div className="flex items-center shrink-0" role="group" aria-label="Writing history">
+      <Button type="button" variant="ghost" size="icon" className="h-9 w-9 shrink-0" aria-label="Undo" title="Undo (⌘/Ctrl+Z)" aria-keyshortcuts="Meta+Z Control+Z" disabled={!editor.can().undo()} onMouseDown={e=>e.preventDefault()} onClick={()=>editor.chain().focus().undo().run()}><Undo2 className="h-4 w-4"/></Button>
+      <Button type="button" variant="ghost" size="icon" className="h-9 w-9 shrink-0" aria-label="Redo" title="Redo (⌘/Ctrl+Shift+Z, Ctrl+Y)" aria-keyshortcuts="Meta+Shift+Z Control+Shift+Z Control+Y" disabled={!editor.can().redo()} onMouseDown={e=>e.preventDefault()} onClick={()=>editor.chain().focus().redo().run()}><Redo2 className="h-4 w-4"/></Button>
+      {onHistory && <Button type="button" variant="ghost" size="icon" className="h-9 w-9 shrink-0" aria-label="Version history" title="Version history" onMouseDown={e=>e.preventDefault()} onClick={onHistory}><History className="h-4 w-4"/></Button>}
+    </div>
     <div className="flex flex-1 min-w-0 items-center gap-1 overflow-hidden">
       <StyleGallery editor={editor} compact />
       <span className="h-5 w-px bg-border mx-1" aria-hidden="true" />
       {textControls}
     </div>
+    <WordFinder key={documentKey} editor={editor} />
     <Tool label="Link Story Bible element" onClick={()=>onLinkEntry?.()}><AtSign className="h-4 w-4" /></Tool>
     <Popover><PopoverTrigger asChild><Button type="button" variant="ghost" size="icon" className="h-8 w-8 shrink-0" aria-label="More formatting" title="More formatting"><SlidersHorizontal className="h-4 w-4" /></Button></PopoverTrigger>
       <PopoverContent align="end" className="w-[min(26rem,calc(100vw-2rem))] max-h-[70dvh] overflow-y-auto p-3" onOpenAutoFocus={event=>event.preventDefault()} onCloseAutoFocus={event=>event.preventDefault()} onFocusOutside={event=>event.preventDefault()}>
       <p className="mb-2 text-sm font-semibold">Formatting & tools</p>
       <div className="flex flex-wrap gap-1 mb-3" aria-label="Text formatting">{textControls}</div>
       <div className="flex flex-wrap items-center gap-x-1 gap-y-2">
-      <div className="flex items-center" role="group" aria-label="History">
-        <Tool label="Undo" disabled={!editor.can().undo()} onClick={() => editor.chain().focus().undo().run()}><Undo2 className="h-4 w-4" /></Tool>
-        <Tool label="Redo" disabled={!editor.can().redo()} onClick={() => editor.chain().focus().redo().run()}><Redo2 className="h-4 w-4" /></Tool>
-      </div>
       <span className="h-5 w-px bg-border mx-1" aria-hidden="true" />
       <div className="flex items-center" role="group" aria-label="Additional text emphasis">
         <Tool label="Strikethrough" active={style.strike} onClick={() => editor.chain().focus().toggleStrike().run()}><Strikethrough className="h-4 w-4" /></Tool>

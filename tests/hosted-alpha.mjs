@@ -8,6 +8,9 @@ import path from 'node:path';
 import os from 'node:os';
 import pg from 'pg';
 import { initializeAlphaDatabase } from '../scripts/init-alpha-db.mjs';
+import { migrateProseRetention } from '../scripts/migrate-prose-retention.mjs';
+import { migrateProseHistory } from '../scripts/migrate-prose-history.mjs';
+import { migrateAgentAccess } from '../scripts/migrate-agent-access.mjs';
 import { migrateFeedback } from '../scripts/migrate-feedback.mjs';
 
 const adminURL = process.env.QQ_TEST_PG_ADMIN_URL;
@@ -74,10 +77,16 @@ try {
   const init = await Promise.all([initializeAlphaDatabase(urls[0], 'fresh-alpha'), initializeAlphaDatabase(urls[0], 'fresh-alpha')]);
   assert.deepEqual(init.sort(), ['already-initialized', 'initialized']);
   assert.deepEqual((await Promise.all([migrateFeedback(urls[0], 'fresh-alpha'),migrateFeedback(urls[0], 'fresh-alpha')])).sort(), ['already-applied','applied']);
+  assert.deepEqual((await Promise.all([migrateProseHistory(urls[0], 'apply-prose-history-v1'),migrateProseHistory(urls[0], 'apply-prose-history-v1')])).sort(), ['already-applied','applied']);
+  assert.deepEqual((await Promise.all([migrateProseRetention(urls[0], 'apply-prose-retention-v1'),migrateProseRetention(urls[0], 'apply-prose-retention-v1')])).sort(), ['already-applied','applied']);
+  assert.deepEqual((await Promise.all([migrateAgentAccess(urls[0], 'apply-local-agent-access-v1'),migrateAgentAccess(urls[0], 'apply-local-agent-access-v1')])).sort(), ['already-applied','applied']);
   const existing = new pg.Client({ connectionString: urls[2] }); await existing.connect();
   await existing.query("CREATE TABLE original (prose text); INSERT INTO original VALUES ('Untouched writing Ω')");
   await assert.rejects(() => initializeAlphaDatabase(urls[2], 'fresh-alpha'), /not empty/);
   await assert.rejects(() => migrateFeedback(urls[2], 'fresh-alpha'), /Not an initialized/);
+  await assert.rejects(() => migrateProseHistory(urls[2], 'apply-prose-history-v1'), /Not an initialized/);
+  await assert.rejects(() => migrateProseRetention(urls[2], 'apply-prose-retention-v1'), /Not an initialized/);
+  await assert.rejects(() => migrateAgentAccess(urls[2], 'apply-local-agent-access-v1'), /Not an initialized/);
   assert.deepEqual((await existing.query('SELECT * FROM original')).rows, [{ prose: 'Untouched writing Ω' }]); await existing.end();
   const uploads = path.join(temp, 'uploads'); await mkdir(uploads);
   await start(urls[0], uploads);
@@ -85,6 +94,8 @@ try {
   const credentials = { username: 'alpha-test-writer', password: 'synthetic-only-password', email: 'writer@example.test' };
   await a('POST', '/api/register', credentials, 201);
   await b('POST', '/api/register', { ...credentials, username: 'other-alpha-writer' }, 201);
+  await a('GET','/api/agent-settings',undefined,403);
+  await a('POST','/api/mcp/call',{name:'qq_list_projects',arguments:{}},403);
   const feedbackInput={requestId:randomUUID(),category:'bug',summary:'Synthetic alpha feedback',details:'This is a test of the private feedback process.',area:'Write',device:'',allowContact:false};
   const feedback=await json(a('POST','/api/feedback',feedbackInput,201));
   assert.deepEqual(await json(a('POST','/api/feedback',feedbackInput,201)),feedback);
@@ -97,12 +108,28 @@ try {
   assert.equal(detail.reporter.email,null);
   await a('PATCH',`/api/admin/feedback/${feedback.id}`,{status:'reviewing',expectedStatus:'received'});
   await a('PATCH',`/api/admin/feedback/${feedback.id}`,{status:'resolved',expectedStatus:'received'},409);
+  await a('GET','/api/agent-settings',undefined,403);
   assert.equal((await json(a('GET','/api/feedback')))[0].status,'reviewing');
   const project = await json(a('POST', '/api/project-setup', { requestId: randomUUID(), title: 'Fresh alpha story', settings: {} }, 201));
   const scene = await json(a('POST', `/api/projects/${project.id}/scenes`, { requestId: randomUUID(), chapterTitle: 'Opening', title: 'At the harbor' }, 201));
   const prose = '<p><strong>Protected prose Ω</strong> at the harbor.</p>';
   await a('PUT', `/api/scenes/${scene.id}`, { content: prose, _revision: 0 });
   await a('PUT', `/api/scenes/${scene.id}`, { content: 'Stale overwrite', _revision: 0 }, 409);
+  const savedHistory=await json(a('GET', `/api/scenes/${scene.id}/history`));
+  assert.equal(savedHistory.versions.length,2);
+  const restoreRequest={versionId:savedHistory.versions[0].id,expectedRevision:1,requestId:randomUUID()};
+  await a('POST', `/api/scenes/${scene.id}/history/restore`, restoreRequest);
+  await a('POST', `/api/scenes/${scene.id}/history/restore`, restoreRequest);
+  await b('GET', `/api/scenes/${scene.id}/history`, undefined,403);
+  await a('POST', `/api/scenes/${scene.id}/history/${savedHistory.versions[0].id}/keep`, {});
+  const policy=await json(a('GET', `/api/scenes/${scene.id}/history/retention`));assert.equal(policy.mode,'dry-run');
+  const operator=JSON.parse(execFileSync(process.execPath,['dist/prose-retention-report.js','--project-id',String(project.id),'--capacity-mb','100'],{env:{...process.env,DATABASE_URL:urls[0]},encoding:'utf8'}));
+  assert.equal(operator.deletedVersions,0);assert.equal(operator.reclaimedBytes,0);
+  const historyBeforeRestart=await json(a('GET', `/api/scenes/${scene.id}/history`));
+  assert.ok(historyBeforeRestart.versions.filter(v=>v.revision>=1).every(v=>v.restoreProtected));
+  assert.ok(historyBeforeRestart.versions.find(v=>v.id===savedHistory.versions[0].id).keptAt);
+  assert.equal(historyBeforeRestart.versions.length,3);
+
   await b('GET', `/api/scenes/${scene.id}`, undefined, 403);
   const character = await json(a('POST', '/api/story-bible', { projectId: project.id, title: 'Mara Vale', entryType: 'characters', content: 'Synthetic character' }, 201));
   await a('PUT', `/api/scenes/${scene.id}/context`, { _revision: 0, links: [{ entryId: character.id, role: 'viewpoint', note: 'Synthetic context' }] });
@@ -116,8 +143,13 @@ try {
   await stop();
   await start(urls[0], uploads);
   assert.equal((await json(a('GET', `/api/scenes/${scene.id}`))).content, prose);
+  assert.deepEqual(await json(a('GET', `/api/scenes/${scene.id}/history`)),historyBeforeRestart);
   assert.deepEqual(Buffer.from(await (await a('GET', image.url)).arrayBuffer()), png);
   await stop();
+  // Include a nonempty synthetic MCP grant in the paired restore; never a live key.
+  const grantDb=new pg.Client({connectionString:urls[0]});await grantDb.connect();
+  await grantDb.query("INSERT INTO agent_access(user_id,revision,permissions,token_hash) SELECT id,3,$1::jsonb,$2 FROM users WHERE username=$3",[JSON.stringify({enabled:false,allProjects:false,projectIds:[project.id],allowWrites:false,allowManuscript:false}),'a'.repeat(64),credentials.username]);
+  await grantDb.end();
   const before = await fingerprints(urls[0]);
   const dump = path.join(temp, 'alpha.dump');
   execFileSync(process.env.PG_BIN ? path.join(process.env.PG_BIN, 'pg_dump') : 'pg_dump', ['--dbname', urls[0], '--format=custom', '--file', dump], { stdio: 'pipe' });
@@ -127,14 +159,19 @@ try {
   assert.deepEqual(await readFile(path.join(restoredUploads, '.access', `${image.filename}.json`)), await readFile(path.join(uploads, '.access', `${image.filename}.json`)));
   assert.equal(await initializeAlphaDatabase(urls[1], 'fresh-alpha'), 'already-initialized');
   assert.equal(await migrateFeedback(urls[1], 'fresh-alpha'), 'already-applied');
+  assert.equal(await migrateProseHistory(urls[1], 'apply-prose-history-v1'), 'already-applied');
+  assert.equal(await migrateProseRetention(urls[1], 'apply-prose-retention-v1'), 'already-applied');
+  assert.equal(await migrateAgentAccess(urls[1], 'apply-local-agent-access-v1'), 'already-applied');
   await start(urls[1], restoredUploads);
   assert.equal((await json(a('GET', `/api/scenes/${scene.id}`))).content, prose);
+  assert.deepEqual(await json(a('GET', `/api/scenes/${scene.id}/history`)),historyBeforeRestart);
   assert.deepEqual(Buffer.from(await (await a('GET', image.url)).arrayBuffer()), png);
   await b('GET', image.url, undefined, 404);
+  await a('GET','/api/agent-settings',undefined,403);
   assert.equal((await json(a('GET','/api/feedback')))[0].id,feedback.id);
   assert.equal((await json(a('GET',`/api/admin/feedback/${feedback.id}`))).status,'reviewing');
   assert.deepEqual(await json(b('GET','/api/feedback')),[]);
-  console.log(JSON.stringify({ freshBootstrap: 'PASS', concurrentBootstrap: 'PASS', refusesExistingDatabase: 'PASS', registration: 'PASS', secureProxyCookie: 'PASS', sceneContext: 'PASS', staleWriteRejected: 'PASS', accountIsolation: 'PASS', export: 'PASS', restartSessionAndUploads: 'PASS', pairedRestore: 'PASS', restoredTables: Object.keys(before).length }));
+  console.log(JSON.stringify({ freshBootstrap: 'PASS', concurrentBootstrap: 'PASS', refusesExistingDatabase: 'PASS', registration: 'PASS', secureProxyCookie: 'PASS', sceneContext: 'PASS', staleWriteRejected: 'PASS', accountIsolation: 'PASS', export: 'PASS', restartSessionAndUploads: 'PASS', pairedRestore: 'PASS', agentGrantAndLedgerRestore:'PASS', productionAgentDenial:'PASS', proseHistoryRestartRestore: 'PASS', keptAndProtectedVersionsRestore: 'PASS', productionReadOnlyReport: 'PASS', restoredTables: Object.keys(before).length }));
 } finally {
   await stop();
   for (const name of names) { assert.match(name, /^qq_alpha_test_[a-z]+_[a-f0-9]{32}$/); await admin.query(`DROP DATABASE IF EXISTS "${name}"`); }

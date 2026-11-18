@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { apiRequest, currentAccount, queryClient } from "@/lib/queryClient";
 import { useStoryBibleEntries } from "@/hooks/use-story-bible";
 import { flushPendingSaves } from "@/hooks/use-autosave";
+import { biblePickerChoices, type BibleSelectionCounts } from "@/lib/bible-picker";
 import { bibleEntryArchived } from "@/lib/story-bible-data";
 import { relationshipInput, availableRelationshipTypes, relationshipDefinition, targetTypes, type Relationship, type RelationshipInput, type RelationshipType } from "@shared/relationships";
 import type { StoryBibleEntry } from "@shared/schema";
@@ -32,37 +33,61 @@ export function RelationshipTarget({ entry }: { entry?: StoryBibleEntry }) {
   }}>{entry.title}{bibleEntryArchived(entry) && <span className="ml-2 text-xs text-muted-foreground">Archived</span>}</button>{error && <p role="alert" className="text-sm text-destructive">{error}</p>}</> : <span className="text-muted-foreground">Unavailable entry</span>;
 }
 
-/** The same searchable target picker is used for every relationship kind. */
-export function EntryPicker({ entries, sourceId, types, value, onChange, onStub, initialSearch = "", onChoose }: { entries: StoryBibleEntry[]; sourceId?: number; types: readonly string[]; value: number; onChange: (id: number) => void; onStub?: (title: string) => void; initialSearch?: string; onChoose?: (id:number) => void }) {
+/** Keep DOM focus/caret in the field; options use virtual keyboard focus. */
+export function EntryPicker({ entries, sourceId, types, value, onChange, onStub, initialSearch = "", onChoose, projectId, counts, includeArchived = false, fillHeight = false, ranked = false }: { entries: StoryBibleEntry[]; sourceId?: number; types: readonly string[]; value: number; onChange: (id: number) => void; onStub?: (title: string) => void; initialSearch?: string; onChoose?: (id:number) => void; projectId?: number; counts?: BibleSelectionCounts; includeArchived?: boolean; fillHeight?: boolean; ranked?: boolean }) {
   const [search, setSearch] = useState(initialSearch);
   const [active, setActive] = useState(0);
+  const input = useRef<HTMLInputElement>(null);
+  const list = useRef<HTMLDivElement>(null);
   const listId = useId();
-  const choices = entries.filter(entry => entry.id !== sourceId && types.includes(entry.entryType) && !bibleEntryArchived(entry) && entry.title.toLocaleLowerCase().includes(search.toLocaleLowerCase()));
-  const selected = entries.find(entry => entry.id === value);
-  return <div className="space-y-2 rounded-md border p-3">
-    <Input aria-label="Search entries" placeholder="Search by entry name…" role="combobox" aria-expanded="true" aria-controls={listId} aria-activedescendant={choices[active] ? `${listId}-${choices[active].id}` : undefined} value={search} onChange={event => {setSearch(event.target.value);setActive(0);}} onKeyDown={event=>{
-      if (event.key === "ArrowDown" || event.key === "ArrowUp") { event.preventDefault(); const next = Math.max(0,Math.min(choices.length-1,active+(event.key === "ArrowDown" ? 1 : -1)));setActive(next);document.getElementById(`${listId}-${choices[next]?.id}`)?.scrollIntoView?.({block:"nearest"}); }
-      if (event.key === "Enter" && choices[active]) {event.preventDefault(); (onChoose || onChange)(choices[active].id);}
+  const choices = biblePickerChoices(entries, {query: search, types, sourceId, projectId, counts, includeArchived, ranked});
+  const activeIndex = Math.min(active, choices.length - 1);
+  const selected = entries.find(entry => entry.id === value && (projectId === undefined || entry.projectId === projectId));
+  function activate(index: number) {
+    const next = Math.max(0, Math.min(choices.length - 1, index));
+    setActive(next);
+    // Scroll just the list, never the dialog/document containing the typing caret.
+    const option = list.current?.children[next] as HTMLElement | undefined;
+    if (!option || !list.current) return;
+    const outer = list.current.getBoundingClientRect(), inner = option.getBoundingClientRect();
+    if (inner.top < outer.top) list.current.scrollTop -= outer.top - inner.top;
+    else if (inner.bottom > outer.bottom) list.current.scrollTop += inner.bottom - outer.bottom;
+  }
+  function choose(id: number) {
+    input.current?.focus({preventScroll: true});
+    (onChoose || onChange)(id);
+  }
+  return <div className={`bible-entry-picker rounded-md border p-3 ${fillHeight ? "flex min-h-0 flex-1 flex-col gap-2 overflow-hidden" : "space-y-2"}`}>
+    <Input ref={input} className="shrink-0 text-base" aria-label="Search entries" placeholder="Search by entry name…" role="combobox" aria-autocomplete="list" aria-haspopup="listbox" autoComplete="off" spellCheck={false} aria-expanded="true" aria-controls={listId} aria-describedby={`${listId}-help`} aria-activedescendant={choices[activeIndex] ? `${listId}-${choices[activeIndex].id}` : undefined} value={search} onChange={event => {setSearch(event.target.value);setActive(0);if(list.current)list.current.scrollTop=0;}} onKeyDown={event=>{
+      if (event.nativeEvent.isComposing) return;
+      if (["ArrowDown", "ArrowUp", "PageDown", "PageUp"].includes(event.key)) {
+        event.preventDefault();
+        const page = Math.max(1, Math.floor((list.current?.clientHeight || 160) / 44));
+        activate(activeIndex + (event.key === "ArrowDown" ? 1 : event.key === "ArrowUp" ? -1 : event.key === "PageDown" ? page : -page));
+      }
+      if ((event.ctrlKey || event.metaKey) && (event.key === "Home" || event.key === "End")) {event.preventDefault();activate(event.key === "Home" ? 0 : choices.length - 1);}
+      if (event.key === "Enter" && choices[activeIndex]) {event.preventDefault();choose(choices[activeIndex].id);}
+      // Escape bubbles to the owning dialog; ordinary Home/End keep editing the text.
     }} />
-    {selected && <p className="text-sm">Selected: <strong>{selected.title}</strong></p>}
-    <div id={listId} role="listbox" aria-label="Matching entries" className="max-h-40 overflow-y-auto space-y-1">
-      {choices.map((entry,index) => <button id={`${listId}-${entry.id}`} role="option" aria-selected={index === active} key={entry.id} type="button" aria-pressed={entry.id === value} className={`block w-full rounded px-2 py-2 text-left text-sm hover:bg-accent ${entry.id === value || index === active ? "bg-accent text-accent-foreground" : ""}`} onMouseEnter={()=>setActive(index)} onClick={() => (onChoose || onChange)(entry.id)}>{entry.title}<span className="ml-2 text-xs text-muted-foreground">{nameOfType(entry.entryType)}</span></button>)}
-      {!choices.length && <p className="text-sm text-muted-foreground">No active entries match this search.</p>}
+    {selected && <p className="shrink-0 text-sm">Selected: <strong>{selected.title}</strong></p>}
+    <div ref={list} id={listId} role="listbox" tabIndex={-1} aria-label="Matching entries" className={`bible-picker-options space-y-1 ${fillHeight ? "min-h-0 flex-1" : "max-h-40"}`}>
+      {choices.map((entry,index) => <button id={`${listId}-${entry.id}`} role="option" aria-selected={index === activeIndex} tabIndex={-1} key={entry.id} type="button" className={`block min-h-11 w-full rounded px-2 py-2 text-left text-sm break-words hover:bg-accent ${entry.id === value || index === activeIndex ? "bg-accent text-accent-foreground" : ""}`} onMouseDown={event=>event.preventDefault()} onClick={() => choose(entry.id)}>{entry.title}<span className="ml-2 text-xs text-muted-foreground">{nameOfType(entry.entryType)}{(entry.priority || 0) > 0 ? " · Starred" : ""}{bibleEntryArchived(entry) ? " · Archived" : ""}</span></button>)}
+      {!choices.length && <p className="text-sm text-muted-foreground">{includeArchived ? "No entries match this search." : "No active entries match this search."}</p>}
     </div>
     {onStub && <Button type="button" size="sm" variant="outline" onClick={() => onStub(search.trim())}>Create a new stub…</Button>}
-    <p className="text-xs text-muted-foreground">Archived entries stay linked, but cannot be added as new targets.</p>
+    <p id={`${listId}-help`} className="shrink-0 text-xs text-muted-foreground">{includeArchived ? `${choices.length} ${search.trim() ? "matches" : "entries"} · Scroll or use ↑ ↓ to browse. ${search.trim() ? "Best matches first." : "Starred, then most opened here."}` : "Archived entries stay linked, but cannot be added as new targets."}</p>
   </div>;
 }
 
 type Form = RelationshipInput & { requestId: string; stub: boolean; stubTitle: string; stubType: string; baseVersion?: string };
 const recoveredForm = relationshipInput.extend({ targetId: z.number().int().nonnegative(), requestId: z.string().uuid(), stub: z.boolean(), stubTitle: z.string(), stubType: z.string(), baseVersion: z.string().optional() });
-function RelationshipForm({ entry, link, kinds, close }: { entry: StoryBibleEntry; link?: Relationship; kinds: RelationshipType[]; close: () => void }) {
+function RelationshipForm({ entry, link, kinds, initialKind, close }: { entry: StoryBibleEntry; link?: Relationship; kinds: RelationshipType[]; initialKind?: RelationshipType; close: () => void }) {
   const { data: entries = [] } = useStoryBibleEntries(entry.projectId, { staleTime: 0 });
   const owner = useRef(currentAccount()).current;
   const prefix = `quantum-quill:relationship-draft:v1:${owner}:${entry.projectId}:${entry.id}:${link?.id || `new:${[...kinds].sort().join(",")}`}:`;
   const key = prefix + relationshipPageId;
   const restored = useRef<{ key: string; raw: string } | null>(null);
-  const initial = (): Form => ({ sourceId: link?.sourceId || entry.id, targetId: link?.targetId || 0, relationshipType: link?.relationshipType || kinds[0], role: link?.role || "", context: link?.context || "", startDate: link?.startDate || "", endDate: link?.endDate || "", requestId: crypto.randomUUID(), stub: false, stubTitle: "", stubType: "", baseVersion: link?.version });
+  const initial = (): Form => ({ sourceId: link?.sourceId || entry.id, targetId: link?.targetId || 0, relationshipType: link?.relationshipType || (initialKind && kinds.includes(initialKind) ? initialKind : kinds[0]), role: link?.role || "", context: link?.context || "", startDate: link?.startDate || "", endDate: link?.endDate || "", requestId: crypto.randomUUID(), stub: false, stubTitle: "", stubType: "", baseVersion: link?.version });
   const [form, setForm] = useState<Form>(initial);
   const [recovery, setRecovery] = useState<Array<{ key: string; raw: string; form: Form }>>(() => {
     try { return Object.keys(window.localStorage).filter(key => key.startsWith(prefix)).flatMap(key => {
@@ -132,12 +157,13 @@ function RelationshipForm({ entry, link, kinds, close }: { entry: StoryBibleEntr
   </div>;
 }
 
-export function RelationshipSection({ entry, kinds, title = "Relationships" }: { entry: StoryBibleEntry; kinds?: RelationshipType[]; title?: string }) {
+export function RelationshipSection({ entry, kinds, title = "Relationships", suggestions }: { entry: StoryBibleEntry; kinds?: RelationshipType[]; title?: string; suggestions?: ReadonlyArray<{kind: RelationshipType; label: string; reason: string}> }) {
   const { data: links = [], isError, refetch } = useRelationships(entry.projectId);
   const { data: entries = [] } = useStoryBibleEntries(entry.projectId, { staleTime: 0 });
   const choices = kinds || availableRelationshipTypes(entry.entryType);
   const current = entries.find(item => item.id === entry.id) || entry;
   const [edit, setEdit] = useState<Relationship | "new" | null>(null);
+  const [initialKind, setInitialKind] = useState<RelationshipType>();
   const [removing, setRemoving] = useState<Relationship | null>(null); const [busy, setBusy] = useState(false); const [error, setError] = useState("");
   const outgoing = links.filter(link => link.sourceId === entry.id && choices.includes(link.relationshipType));
   const archived = bibleEntryArchived(current);
@@ -147,7 +173,8 @@ export function RelationshipSection({ entry, kinds, title = "Relationships" }: {
     catch (cause) { setError(cause instanceof Error ? cause.message : "Could not remove link."); } finally { setBusy(false); }
   }
   return <section className="rounded-lg border bg-card p-4 space-y-3" aria-label={title}>
-    <div className="flex flex-wrap gap-2 items-center justify-between"><h3 className="font-semibold">{title}</h3><Button size="sm" variant="outline" disabled={archived || isError || !choices.length} onClick={() => setEdit("new")}>Add link</Button></div>
+    <div className="flex flex-wrap gap-2 items-center justify-between"><h3 className="font-semibold">{title}</h3><Button size="sm" variant="outline" disabled={archived || isError || !choices.length} onClick={() => {setInitialKind(undefined);setEdit("new");}}>Add link</Button></div>
+    {!!suggestions?.length && <details className="text-sm"><summary className="cursor-pointer text-muted-foreground">Ideas for connections (optional)</summary><p className="mt-2 text-xs text-muted-foreground">These open the shared picker. Nothing is linked until you choose an entry and save.</p><ul className="mt-3 space-y-3">{suggestions.filter(item=>choices.includes(item.kind)).map(item=><li key={item.kind}><Button type="button" size="sm" variant="outline" disabled={archived || isError} onClick={()=>{setInitialKind(item.kind);setEdit("new");}}>{item.label}</Button><p className="mt-1 text-xs text-muted-foreground">{item.reason}</p></li>)}</ul></details>}
     {isError ? <p role="alert">Relationships could not load. <button className="underline" onClick={() => void refetch()}>Retry</button></p> : outgoing.length === 0 ? <p className="text-sm text-muted-foreground">No links yet.</p> : <ul className="space-y-3">{outgoing.map(link => <li key={link.id} className="border rounded p-3 space-y-1" data-relationship-id={link.id}>
       <RelationshipTarget entry={entries.find(item => item.id === link.targetId)} />
       <p className="text-xs text-muted-foreground">{relationshipDefinition(link.relationshipType).label}{link.role && ` · ${link.role}`}{link.legacy && " · Recovered link"}</p>
@@ -156,7 +183,7 @@ export function RelationshipSection({ entry, kinds, title = "Relationships" }: {
       <div className="flex gap-2"><Button size="sm" variant="ghost" disabled={archived || link.unavailable || entries.some(item => item.id === link.targetId && bibleEntryArchived(item))} onClick={() => setEdit(link)}>Edit link</Button><Button size="sm" variant="ghost" onClick={() => { setError(""); setRemoving(link); }}>Remove link</Button></div>
     </li>)}</ul>}
     {archived && <p className="text-sm text-muted-foreground">Archived. Connections are retained; restore this entry to add or edit links.</p>}
-    <Dialog open={edit !== null} onOpenChange={open => { if (!open) setEdit(null); }}><DialogContent className="max-h-[90vh] overflow-y-auto"><DialogHeader><DialogTitle>{edit === "new" ? "Add relationship" : "Edit relationship"}</DialogTitle><DialogDescription>Connect entries in this project. Save explicitly; unfinished edits stay on this device.</DialogDescription></DialogHeader>{edit && <RelationshipForm key={edit === "new" ? "new" : edit.id} entry={entry} link={edit === "new" ? undefined : edit} kinds={choices} close={() => setEdit(null)} />}</DialogContent></Dialog>
+    <Dialog open={edit !== null} onOpenChange={open => { if (!open) setEdit(null); }}><DialogContent className="max-h-[90vh] overflow-y-auto"><DialogHeader><DialogTitle>{edit === "new" ? "Add relationship" : "Edit relationship"}</DialogTitle><DialogDescription>Connect entries in this project. Save explicitly; unfinished edits stay on this device.</DialogDescription></DialogHeader>{edit && <RelationshipForm key={edit === "new" ? "new" : edit.id} entry={entry} link={edit === "new" ? undefined : edit} kinds={choices} initialKind={initialKind} close={() => setEdit(null)} />}</DialogContent></Dialog>
     <Dialog open={!!removing} onOpenChange={open => { if (!open && !busy) setRemoving(null); }}><DialogContent><DialogHeader><DialogTitle>Remove relationship?</DialogTitle><DialogDescription>This removes the connection and its backlink. Both entries remain. Recovered source payloads are retained.</DialogDescription></DialogHeader>{error && <p role="alert">{error}</p>}<div className="flex justify-end gap-2"><Button variant="outline" disabled={busy} onClick={() => setRemoving(null)}>Cancel</Button><Button disabled={busy} onClick={() => void remove()}>Remove relationship</Button></div></DialogContent></Dialog>
   </section>;
 }

@@ -1,5 +1,8 @@
 import { defaultAgentAccess, type AgentAccess } from "@shared/agent-access";
 import { agentAccess } from "@shared/schema";
+import { RETENTION_SCAN_LIMIT } from "@shared/prose-retention";
+import { proseVersions } from "@shared/schema";
+import { HISTORY_PAGE_SIZE, versionValue, type ProseResource, type ProseRecord, type RestoreSource } from "@shared/prose-history";
 import type { FeedbackInput, FeedbackInboxQuery, FeedbackStatus } from "@shared/feedback";
 import { feedbackReports } from "@shared/schema";
 import { sceneBibleContexts, type SceneContextRow } from "@shared/schema";
@@ -53,6 +56,61 @@ export class DatabaseStorage implements IStorage {
     return this.database.transaction(async tx => {
       await tx.execute(sql`select pg_advisory_xact_lock(5329234, ${userId})`);
       return work(new DatabaseStorage(tx, this.sessionStore));
+    });
+  }
+  async getProseRetentionRows(projectId:number, resource:ProseResource, documentId:number) {
+    const {id,revision,savedAt,kind,restoredFromId,keptAt,restoreProtected,sessionCheckpoint}=getTableColumns(proseVersions);
+    return this.database.select({id,revision,savedAt,kind,restoredFromId,keptAt,restoreProtected,sessionCheckpoint,bytes:sql<number>`octet_length(coalesce(${proseVersions.content}, ''))`}).from(proseVersions)
+      .where(and(eq(proseVersions.projectId,projectId),eq(proseVersions.resource,resource),eq(proseVersions.documentId,documentId)))
+      .orderBy(proseVersions.id).limit(RETENTION_SCAN_LIMIT+1);
+  }
+  async keepProseVersion(projectId:number, resource:ProseResource, documentId:number, versionId:number) {
+    const [row]=await this.database.update(proseVersions).set({keptAt:sql`coalesce(${proseVersions.keptAt}, now())`})
+      .where(and(eq(proseVersions.projectId,projectId),eq(proseVersions.resource,resource),eq(proseVersions.documentId,documentId),eq(proseVersions.id,versionId))).returning();return row;
+  }
+  async checkpointProseSession(projectId:number, resource:ProseResource, documentId:number, revision:number) {
+    return this.database.transaction(async tx=>{
+      const table=resource==="chapters"?chapters:scenes;
+      const [record]=await tx.select().from(table).where(and(eq(table.id,documentId),eq(table.projectId,projectId),eq(table.revision,revision))).for("update");
+      if(!record||("writingMode" in record&&record.writingMode!=="chapter")) return undefined;
+      const [any]=await tx.select({id:proseVersions.id}).from(proseVersions).where(and(eq(proseVersions.projectId,projectId),eq(proseVersions.resource,resource),eq(proseVersions.documentId,documentId))).limit(1);
+      const [row]=await tx.insert(proseVersions).values({...versionValue(resource,record,any?"save":"baseline"),sessionCheckpoint:true})
+        .onConflictDoUpdate({target:[proseVersions.projectId,proseVersions.resource,proseVersions.documentId,proseVersions.revision],set:{sessionCheckpoint:true}}).returning();return row;
+    });
+  }
+  async listProseVersions(projectId: number, resource: ProseResource, documentId: number, before?: number) {
+    const {content,requestId,...columns} = getTableColumns(proseVersions);
+    return this.database.select({...columns,bytes:sql<number>`octet_length(coalesce(${proseVersions.content}, ''))`}).from(proseVersions)
+      .where(and(eq(proseVersions.projectId,projectId),eq(proseVersions.resource,resource),eq(proseVersions.documentId,documentId),before ? sql`${proseVersions.id} < ${before}` : undefined))
+      .orderBy(sql`${proseVersions.id} desc`).limit(HISTORY_PAGE_SIZE + 1);
+  }
+  async getProseVersion(projectId: number, resource: ProseResource, documentId: number, id: number) {
+    const [row] = await this.database.select().from(proseVersions).where(and(eq(proseVersions.projectId,projectId),eq(proseVersions.resource,resource),eq(proseVersions.documentId,documentId),eq(proseVersions.id,id))); return row;
+  }
+  async getProseRestore(projectId: number, resource: ProseResource, documentId: number, requestId: string) {
+    const [row] = await this.database.select().from(proseVersions).where(and(eq(proseVersions.projectId,projectId),eq(proseVersions.resource,resource),eq(proseVersions.documentId,documentId),eq(proseVersions.requestId,requestId))); return row;
+  }
+  private async updateProse(resource: ProseResource, id: number, patch: Partial<Chapter | Scene>, base?: Record<string, unknown>, source?: RestoreSource): Promise<ProseRecord | undefined> {
+    return this.database.transaction(async tx => {
+      const table = resource === "chapters" ? chapters : scenes;
+      const [before] = await tx.select().from(table).where(eq(table.id,id)).for("update");
+      if (!before) return undefined;
+      const [after] = await tx.update(table).set({...patch,revision:sql`${table.revision} + 1`,updatedAt:new Date()})
+        .where(and(eq(table.id,id),baseCondition(table,base))).returning();
+      if (!after) return undefined;
+      if ((before.content !== after.content || source) && (resource === "scenes" || (before as Chapter).writingMode === "chapter")) {
+        const [existing] = await tx.select({id:proseVersions.id}).from(proseVersions).where(and(eq(proseVersions.projectId,before.projectId),eq(proseVersions.resource,resource),eq(proseVersions.documentId,id))).limit(1);
+        if (!existing) await tx.insert(proseVersions).values(versionValue(resource,before,"baseline"));
+        if(source) {
+          const [protectedSource]=await tx.update(proseVersions).set({restoreProtected:true})
+            .where(and(eq(proseVersions.projectId,before.projectId),eq(proseVersions.resource,resource),eq(proseVersions.documentId,id),eq(proseVersions.id,source.restoredFromId))).returning({id:proseVersions.id});
+          if(!protectedSource) throw new Error("Restore source is unavailable");
+          await tx.insert(proseVersions).values({...versionValue(resource,before,"save"),restoreProtected:true})
+            .onConflictDoUpdate({target:[proseVersions.projectId,proseVersions.resource,proseVersions.documentId,proseVersions.revision],set:{restoreProtected:true}});
+        }
+        await tx.insert(proseVersions).values(versionValue(resource,after,source ? "restore" : "save",source));
+      }
+      return after;
     });
   }
   async listFeedback(query: FeedbackInboxQuery) {
@@ -129,9 +187,8 @@ export class DatabaseStorage implements IStorage {
   async getScene(id: number) { const [row] = await this.database.select().from(scenes).where(eq(scenes.id, id)); return row; }
   async getProjectScenes(projectId: number) { return this.database.select().from(scenes).where(eq(scenes.projectId, projectId)).orderBy(scenes.order, scenes.id); }
   async createScene(scene: InsertScene) { const [row] = await this.database.insert(scenes).values(scene).returning(); return row; }
-  async updateScene(id: number, patch: Partial<Scene>, base?: Record<string, unknown>) {
-    const [row] = await this.database.update(scenes).set({ ...patch, revision: sql`${scenes.revision} + 1`, updatedAt: new Date() })
-      .where(and(eq(scenes.id, id), baseCondition(scenes, base))).returning(); return row;
+  async updateScene(id: number, patch: Partial<Scene>, base?: Record<string, unknown>, source?: RestoreSource) {
+    return this.updateProse("scenes",id,patch,base,source) as Promise<Scene | undefined>;
   }
 
   // User methods
@@ -224,13 +281,8 @@ export class DatabaseStorage implements IStorage {
     return newChapter;
   }
 
-  async updateChapter(id: number, chapterUpdate: Partial<Chapter>, base?: Record<string, unknown>): Promise<Chapter | undefined> {
-    const [updatedChapter] = await this.database
-      .update(chapters)
-      .set({ ...chapterUpdate, revision: sql`${chapters.revision} + 1`, updatedAt: new Date() })
-      .where(and(eq(chapters.id, id), baseCondition(chapters, base)))
-      .returning();
-    return updatedChapter;
+  async updateChapter(id: number, patch: Partial<Chapter>, base?: Record<string, unknown>, source?: RestoreSource) {
+    return this.updateProse("chapters",id,patch,base,source) as Promise<Chapter | undefined>;
   }
 
   async deleteChapter(id: number): Promise<boolean> {

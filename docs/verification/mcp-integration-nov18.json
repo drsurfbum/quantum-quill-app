@@ -1,0 +1,45 @@
+{
+  "date": "2026-11-18",
+  "releaseBase": "ce88058cbe7611df496552e4fa1f78d3a42ac3bf",
+  "syntheticOnly": true,
+  "unchangedDeployedFilesSha256": {
+    "deployment/alpha-schema.sql": "874472908a5f445afef642b72480dcc39c5d7bf6098ca5edcf509acb9a7d576a",
+    "migrations/0007_prose_versions.sql": "237b611c124c82e0e5c8e3304e230a473ab652e7a9883a8ddeffac2f62956ede",
+    "migrations/0008_prose_retention.sql": "63b0fb44bf332b9fb21358e9ad1fc392a77da039979bb5500a8abe47c9f37963"
+  },
+  "migration": "0009_agent_access.sql; local-only explicit purpose; feature ledger/checksum/advisory lock; history prerequisites; untracked table refused",
+  "checks": {
+    "regression": {
+      "tests": 509,
+      "suites": 48
+    },
+    "mcp": 16,
+    "guide": {
+      "sections": 24,
+      "tools": 19,
+      "routes": 8
+    },
+    "typescript": "pass",
+    "build": "pass; existing bundle-size advisory",
+    "postgres": "concurrency, rollback, history, formatting/links, idempotency, scope, revocation and ledger guards pass",
+    "pairedRestore": {
+      "tables": 20,
+      "nonemptySyntheticAgentGrant": true,
+      "productionAgentDenied": true
+    },
+    "combinedBrowser": {
+      "chromium": 8,
+      "webkit": 8
+    },
+    "settingsBrowser": "pass",
+    "guidedBibleBrowser": "pass",
+    "codex": "installed engine RPC only; no model call",
+    "claudeCode": "handshake only; no data tool call"
+  },
+  "pending": [
+    "Claude Desktop installation and actual conversation",
+    "ChatGPT Desktop local Work actual conversation"
+  ],
+  "hostedMcp": "unsupported; production endpoints deny; no live migration",
+  "publicationScope": "feature branch and PR only; no merge, tag, deployment or release"
+}

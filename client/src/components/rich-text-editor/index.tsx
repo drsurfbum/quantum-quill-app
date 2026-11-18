@@ -1,4 +1,6 @@
-import { TextSelection } from "@tiptap/pm/state";
+import { currentAccount } from "@/lib/queryClient";
+import ProseHistory from "../prose-history";
+import { EditorState, TextSelection } from "@tiptap/pm/state";
 import type { Editor } from "@tiptap/core";
 import { BibleReference } from "./bible-reference";
 import InlineLinker from "./inline-linker";
@@ -7,7 +9,7 @@ import { SaveStatus } from "@/components/save-status";
 import { Button } from "@/components/ui/button";
 import { Maximize, Minimize } from "lucide-react";
 import { editorContent } from "@/lib/editor-content";
-import { useAutosave, withPendingEdits } from "@/hooks/use-autosave";
+import { useAutosave, withPendingEdits, checkpointProseSession } from "@/hooks/use-autosave";
 import { useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Heading from '@tiptap/extension-heading';
@@ -37,7 +39,10 @@ interface RichTextEditorProps {
   onEditorReady?: (editor:Editor|null) => void;
 }
 
-export default function RichTextEditor({
+export default function RichTextEditor(props: RichTextEditorProps) {
+  return <RichTextDocument key={`${props.resource || "chapters"}:${props.chapterId}`} {...props}/>;
+}
+function RichTextDocument({
   resource = "chapters",
   content = "",
   chapterId,
@@ -47,6 +52,15 @@ export default function RichTextEditor({
   onOpenEntry, onEditorReady, onChange
 }: RichTextEditorProps) {
   const labelId = useId();
+  const edited=useRef(false);
+  const account=useRef(currentAccount());
+  useEffect(()=>()=>{
+    if(edited.current&&account.current) void checkpointProseSession(`/api/${resource}/${chapterId}`,account.current).catch(()=>{
+      // Current prose and every acknowledged version remain saved. No expiry is active.
+    });
+  },[resource,chapterId]);
+  const [historyOpen,setHistoryOpen] = useState(false);
+  const [historyMessage,setHistoryMessage] = useState("");
   const [linkRequest,setLinkRequest] = useState(0);
   const openEntry = useRef(onOpenEntry); openEntry.current = onOpenEntry;
   const [wordCount, setWordCount] = useState(0);
@@ -121,13 +135,16 @@ export default function RichTextEditor({
     setWordCount(text ? words.length : 0);
   };
 
-  const handleContentChange = (html: string) => { autosave.save({ content: html }); };
+  const handleContentChange = (html: string) => { edited.current=true; autosave.save({ content: html }); };
   useEffect(() => {
-    if (!editor) return;
+    if (!editor || editor.isDestroyed) return;
     const initial = withPendingEdits(`/api/${resource}/${chapterId}`, { content, projectId, revision, title }).content || "";
     editor.commands.setContent(editorContent(initial), false, { preserveWhitespace: "full" });
+    editor.view.updateState(EditorState.create({schema:editor.schema,doc:editor.state.doc,plugins:editor.state.plugins}));
     calculateWordCount(editor.getText());
   }, [editor, chapterId, resource]);
+  useEffect(()=>{if(editor) editor.setEditable(!historyOpen,false);},[editor,historyOpen]);
+  const closeHistory = () => { setHistoryOpen(false); if(editor&&!editor.isDestroyed) {editor.setEditable(true,false);editor.commands.focus();} };
 
   // Handle fullscreen toggle
   const toggleFullscreen = () => {
@@ -163,7 +180,13 @@ export default function RichTextEditor({
         isFullscreen ? "fixed inset-0 z-50 bg-white dark:bg-neutral-900" : ""
       )}
     >
-      <EditorMenuBar editor={editor} onLinkEntry={()=>setLinkRequest(n=>n+1)} />
+      <EditorMenuBar editor={editor} documentKey={`${projectId}:${resource}:${chapterId}`} onLinkEntry={()=>setLinkRequest(n=>n+1)} onHistory={()=>{setHistoryMessage("");setHistoryOpen(true);}} />
+      {historyOpen && <ProseHistory resource={resource} documentId={Number(chapterId)} projectId={projectId} onClose={closeHistory} onReturnFocus={()=>{if(!editor.isDestroyed)editor.commands.focus();}} onRestored={record=>{
+        editor.commands.setContent(editorContent(record.content || ""),false,{preserveWhitespace:"full"});
+        editor.view.updateState(EditorState.create({schema:editor.schema,doc:editor.state.doc,plugins:editor.state.plugins}));
+        calculateWordCount(editor.getText()); setHistoryMessage("Version restored and saved. Earlier versions remain in History.");
+      }}/>}
+      <span className="sr-only" role="status">{historyMessage}</span>
       <InlineLinker editor={editor} projectId={projectId} request={linkRequest} onOpenEntry={id=>{setIsFullscreen(false);onOpenEntry?.(id);}} />
       <div data-writing-scroll className="flex-1 min-h-0 min-w-0 overflow-y-auto [scrollbar-gutter:stable] p-3 md:p-4">
         <WritingSurface editor={editor} label={resource === "scenes" ? "Scene text" : "Chapter text"} labelId={labelId} />

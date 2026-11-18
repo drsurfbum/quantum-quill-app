@@ -1,7 +1,7 @@
 # Quantum Quill field guide
 
-Guide version: 1.1.0
-Verified baseline: release `65483de` plus local MCP 0.1.0 (permissions, setup and guide); November 14, 2026.
+Guide version: 1.2.0
+Verified baseline: release `ce88058` plus local MCP 0.1.0 (permissions, setup and guide); November 18, 2026.
 Audience: writers and their explicitly authorized assistants. Examples are fictional.
 
 This is the canonical Markdown source. The local MCP executable and desktop bundle embed the same bytes at build time. It describes this feature build, not every historical branch or the live hosted alpha. Start with the index; retrieve only sections needed for the current task.
@@ -35,6 +35,8 @@ Use `qq_get_guide` with a section ID below, or read `qq-guide://index` and the l
 | outline | Use scene plans, story beats and separate hierarchical outline notes. |
 | writing | Draft continuous chapters or scene-based chapters without mixing modes. |
 | formatting | Format prose, use Quill Styles, search/replace and work in focus mode. |
+| history | Preview, compare, keep, download and explicitly restore saved prose versions. |
+| word-finder | Look up an English word and deliberately replace a safe selection. |
 | organize | Reorder chapters/scenes and move scenes within the project. |
 | bible | Create/develop all seven Story Bible types; handle archive/legacy/source data. |
 | relationships | Connect Bible entries with typed links and backlinks. |
@@ -210,6 +212,43 @@ Example: format a captain's log paragraph with a Quill preset while leaving the 
 
 **MCP:** text updates accept the stored content string and protect it with a revision, but there are no formatting-preset, selection, search/replace, table, style-library or image-upload tools. Do not replace a rich HTML document with plain text unless explicitly requested; that can erase formatting even if the revision is current. Read the existing content, preserve unrelated markup and update only the authorized record. Use the UI for visual styling and inspect export fidelity there. Tracked changes, footnotes/endnotes and a print-layout publishing engine are not provided.
 
+<!-- section: history -->
+## Review and restore saved prose versions
+<a id="history"></a>
+
+**Prerequisites:** open the intended continuous chapter or scene in Write. Resolve pending saves, conflicts and recovered drafts first. History is specific to that document; named alternate drafts and the browser recovery journal are separate.
+
+1. Choose **Version history** in the Write toolbar. The editor becomes read-only while the dialog is open.
+2. Select a timestamped version for a formatted preview. Use **Compare** to inspect it beside current saved prose; narrow layouts let you switch panes. This is visual comparison, not a word-level diff.
+3. Choose **Keep this version** to protect the checkpoint without changing current text, or **Download version** for its original prose/HTML and metadata as JSON. Image files are not included.
+4. To replace current prose, review both panes and choose **Restore as current version**. This creates a new revision and preserves the source, outgoing text and previous versions. Titles, plans, scene roles, order and Bible facts are not restored.
+5. If another save occurs after review, stop and compare again. A lost restore response can be retried through the same restore request; do not start a second blind replacement. Closing the dialog returns focus to Write.
+
+Example: preserve a fictional paragraph with **Keep this version**, compare yesterday's wording with today's, then restore only after deciding which wording should be current. **Undo** and **Redo** are visible toolbar actions for the current editor session; reload/navigation and explicit saved-version restoration start a new session. Undoing an edit autosaves normally.
+
+The first successful content-changing save captures the outgoing baseline and new prose; later changed saves append snapshots transactionally. Older history is not reconstructed. Metadata-only edits normally do not add prose snapshots. Formatting and inline reference IDs remain in the original stored content. History preview does not load external resources. Missing or foreign reference targets block restoration rather than silently stripping links.
+
+**Retention review** is a dry-run report. It deletes nothing and reclaims no space. Keep protects a version; there is no Unkeep action in this build. Saved versions do not replace independent database/upload backups.
+
+**MCP:** chapter/scene edits use the same revision-checked transactional history capture as normal saves. If history capture fails, the database rolls back the prose update. MCP has no history list/preview/keep/download/restore or retention tool. Use this UI for those operations. Write permission does not authorize automatic restoration or cleanup.
+
+<!-- section: word-finder -->
+## Find a word while writing
+<a id="word-finder"></a>
+
+**Prerequisites:** open Write. Optionally select one word or expression, then choose **Word Finder** (book icon beside the Story Bible link tool). Or open it and type in **English word or expression**.
+
+1. Submit a query and choose the meaning that fits your sentence. Results group definitions, synonyms and antonyms by sense; examples and related concepts expand on demand.
+2. Choose a suggested word to preview it. Reading results or selecting a suggestion does not change prose.
+3. Choose **Replace selection** only after reviewing the intended replacement. For example, look up “quiet” in a fictional paragraph and choose an appropriate sense before replacing it.
+4. Confirm the result and saved state. **Undo** reverses the replacement as one editor change; **Redo** reapplies it. Dismissal returns focus when the original selection is still valid.
+
+Editing the document, changing the selection or switching chapter/scene invalidates the replacement target. Linked Story Bible text, hyperlinks, mixed formatting and inline atoms stay lookup-only. QQ never guesses how to redistribute those marks. A failed/delayed lookup leaves the manuscript intact.
+
+The English-only Open English WordNet 2025 data ships with QQ. Lookup fetches same-origin static data shards, not a third-party dictionary or model service; it does not send the selected word or manuscript as a query. This does not make the whole app offline-capable. Browser decompression support is required; unavailable lookup reports an error without blocking writing.
+
+**MCP:** no Word Finder tool is exposed. Use the UI for lookup and selection replacement. A general manuscript update is not equivalent to an editor selection operation and still requires explicit permission, fresh revisions and reviewed content.
+
 <!-- section: organize -->
 ## Organize the manuscript without rewriting it
 <a id="organize"></a>
@@ -231,7 +270,7 @@ Example: move *The locked logbook* after *First observation*, then move it into 
 ## Build the Story Bible, one useful fact at a time
 <a id="bible"></a>
 
-Open **Story Bible**, choose its new-entry action, then **New Story Bible entry**. Only Name and an existing type are required. Choose the type whose purpose fits the item; optional guidance/examples explain overlaps. Create an unfinished entry now and develop it as you write.
+Open **Story Bible**, choose its new-entry action, then **New Story Bible entry**. Only Name and an existing type are required. In Develop, start with the story-relevant notes, then expand optional detail groups as needed. **Hide guidance** reduces prompts without discarding fields. Examples are read-only hints and never become saved values. **Saved & legacy values** remains available for inspecting unknown/imported fields. Connection suggestions only open a picker; select the target and save explicitly. Choose the type whose purpose fits the item; optional guidance/examples explain overlaps. Create an unfinished entry now and develop it as you write.
 
 | Type | Use for | Fictional example / first useful detail |
 | --- | --- | --- |
@@ -311,7 +350,7 @@ QQ's text editors use queued autosave with expected server revisions and account
 
 Wizard plans have their own **Restore draft / Discard draft** choices scoped to the task. Retry an interrupted creation through its existing request instead of starting a duplicate. Pending edits must be resolved before guarded navigation, export or organization completes.
 
-Drafts belong to the browser origin/profile and account. Signing into another account hides them; clearing site data removes them. Another origin (including a different host name or port) has different browser storage. This is not a database backup, full version-history service, encrypted vault or offline app-shell guarantee. A full network outage can prevent reloading the app even when draft data survived.
+Drafts belong to the browser origin/profile and account. Signing into another account hides them; clearing site data removes them. Another origin (including a different host name or port) has different browser storage. The browser journal is not the separate saved-version history, a database backup, an encrypted vault or an offline app-shell guarantee. A full network outage can prevent reloading the app even when draft data survived.
 
 **MCP:** updates require the record revision just read; a stale update fails. Read/review before retrying. Creation uses an idempotent UUID request ID and identical arguments on retry. A timeout leaves a write outcome potentially unknown; reread or reuse the exact creation request, rather than issuing a new UUID. MCP does not operate the browser's recovery journal or restore UI.
 
@@ -432,11 +471,11 @@ IDs above are illustrative, never defaults. Successful project responses contain
 ## What is available here, optional elsewhere, or unsupported
 <a id="boundaries"></a>
 
-Available in this baseline: project setup/navigation; Storyboard templates/sections; Blueprint scene planning; scene outline and separate outline notes; continuous/scene-mode writing; formatting/styles/search; manuscript organization; seven-type guided Story Bible; typed relationships/backlinks; scene references and current-scene connection scanning; durable draft/conflict review; real export/print preview; private feedback; local MCP permissions and bounded writes; this client setup/guide.
+Available in this baseline: project setup/navigation; Storyboard templates/sections; Blueprint scene planning; scene outline and separate outline notes; continuous/scene-mode writing; formatting/styles/search; saved prose version history and dry-run retention review; Word Finder; manuscript organization; seven-type guided Story Bible; typed relationships/backlinks; scene references and current-scene connection scanning; durable draft/conflict review; real export/print preview; private feedback; local MCP permissions and bounded writes; this client setup/guide.
 
 **Not bundled here:** the separately committed plot-review branch (`39edbdd`) adds five `qq_review_*` tools and a manually invoked review prompt. If installed later, it uses the connected assistant as reasoning layer, verifies evidence references and does not auto-edit. This build exposes none of those tools. Plot-structure video guides are included in the reviewed release baseline and are UI-only; they do not add MCP tools. Plot review is not a prerequisite for connection. The release baseline’s Help and interface tour are included. The separate iPad/Android installation guide is not included here. Do not advertise optional controls/tools merely because this guide mentions their status.
 
-**Unsupported/unverified:** generic manuscript/file import or restore UI; automatic chapter-to-scenes conversion; full version history/tracked changes; shared realtime coauthoring; general project-wide semantic search or scanner; independent graph visualization/timeline/calendar inference; automatic world-rule/plot-hole judgments; model/provider/chat/token-usage UI in QQ; hosted/public MCP, remote OAuth, tunnels or cloud-to-Mac bridges; filesystem/shell tools; one-click Codex import; live client-presence indicators; automatic extension updates. Historical/unused components or backend fields do not prove a writer-facing feature is routed.
+**Unsupported/unverified:** generic manuscript/file import or restore UI; automatic chapter-to-scenes conversion; word-level tracked changes; shared realtime coauthoring; general project-wide semantic search or scanner; independent graph visualization/timeline/calendar inference; automatic world-rule/plot-hole judgments; model/provider/chat/token-usage UI in QQ; hosted/public MCP, remote OAuth, tunnels or cloud-to-Mac bridges; filesystem/shell tools; one-click Codex import; live client-presence indicators; automatic extension updates. Historical/unused components or backend fields do not prove a writer-facing feature is routed.
 
 Client compatibility is specific: the local package and real MCP protocol round trip are tested on this Mac with fictional data. Official Claude extension and Codex local configuration mechanisms were checked. No real user credentials were installed into an external assistant during implementation, and no actual Claude/Codex account conversation was run. A client-specific install dialog/policy/runtime can still require user action.
 

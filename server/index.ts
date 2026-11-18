@@ -10,6 +10,8 @@ export async function startServer() {
     import("./database-storage"), import("./init-plot-templates"),
   ]);
   const storage = new DatabaseStorage();
+  // Refuse to serve writes before the separately reviewed history migration.
+  await storage.listProseVersions(0,"chapters",0);
   const app = createApp({ storage, uploadDir: process.env.UPLOAD_DIR, secret: process.env.SESSION_SECRET, production: process.env.NODE_ENV === "production" });
   await initPlotTemplates();
   const server = createServer(app);

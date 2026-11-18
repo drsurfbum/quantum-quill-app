@@ -314,3 +314,30 @@ export const agentAccess = pgTable("agent_access", {
   permissions: jsonb("permissions").$type<AgentPermissions>().notNull(),
   tokenHash: text("token_hash"),
 });
+// Immutable prose checkpoints. Structural/planning fields are deliberately excluded.
+export const proseVersions = pgTable("prose_versions", {
+  keptAt: timestamp("kept_at", { withTimezone: true }),
+  restoreProtected: boolean("restore_protected").notNull().default(false),
+  sessionCheckpoint: boolean("session_checkpoint").notNull().default(false),
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+  resource: text("resource").$type<"chapters" | "scenes">().notNull(),
+  documentId: integer("document_id").notNull(),
+  revision: integer("revision").notNull(),
+  title: text("title").notNull(),
+  content: text("content"),
+  savedAt: timestamp("saved_at", { withTimezone: true }).notNull(),
+  capturedAt: timestamp("captured_at", { withTimezone: true }).notNull().defaultNow(),
+  kind: text("kind").$type<"baseline" | "save" | "restore">().notNull(),
+  restoredFromId: integer("restored_from_id"),
+  requestId: text("request_id"),
+}, table => [
+  uniqueIndex("prose_versions_revision").on(table.projectId, table.resource, table.documentId, table.revision),
+  uniqueIndex("prose_versions_request").on(table.projectId, table.resource, table.documentId, table.requestId),
+  index("prose_versions_page").on(table.projectId, table.resource, table.documentId, table.id),
+  check("prose_versions_resource", sql`${table.resource} IN ('chapters', 'scenes')`),
+  check("prose_versions_kind", sql`${table.kind} IN ('baseline', 'save', 'restore')`),
+  check("prose_versions_revision_check", sql`${table.revision} >= 0`),
+  check("prose_versions_restore_check", sql`(${table.kind} = 'restore') = (${table.restoredFromId} IS NOT NULL AND ${table.requestId} IS NOT NULL)`),
+]);
+export type ProseVersion = typeof proseVersions.$inferSelect;

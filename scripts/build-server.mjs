@@ -10,3 +10,5 @@ await build({
 });
 
 await import("./build-mcp.mjs");
+// Ship the metadata-only operator report without development dependencies.
+await build({entryPoints:["scripts/prose-retention-report.ts"],platform:"node",packages:"external",bundle:true,format:"esm",outfile:"dist/prose-retention-report.js"});

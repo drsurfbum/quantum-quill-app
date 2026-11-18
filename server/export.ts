@@ -18,12 +18,12 @@ export type ExportOptions = z.infer<typeof exportOptions>;
 const escape = (text: unknown) => String(text ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!));
 const plainHTML = (text: string) => text.split(/\r\n|\r|\n/).map(line => `<p>${escape(line)}</p>`).join("");
 const allowedTags = ["p", "div", "span", "h1", "h2", "h3", "h4", "h5", "h6", "strong", "b", "em", "i", "u", "s", "strike", "sup", "sub", "mark", "blockquote", "ul", "ol", "li", "br", "hr", "pre", "code", "a", "table", "thead", "tbody", "tr", "th", "td", "img"];
-export function cleanProse(text: string | null | undefined, images = new Map<string,string>()) {
+export function cleanProse(text: string | null | undefined, images = new Map<string,string>(), preview = false) {
   const value = text || "";
   // Match the editor's legacy plain-text reader. Never normalize stored originals.
   const html = /<(p|h[1-6]|div|blockquote|ul|ol|li|table|pre|strong|em|span|b|i|u|s|a)\b[^>]*>[\s\S]*?<\/\1\s*>|<(?:br|hr|img)\b[^>]*\/?>/i.test(value) ? value : plainHTML(value);
   return sanitize(html, {
-    allowedTags, allowedAttributes: { "*": ["style"], a: ["href", "title"], img: ["src", "alt", "width", "height"], ol: ["start"], td: ["colspan", "rowspan"], th: ["colspan", "rowspan"] },
+    allowedTags, allowedAttributes: { "*": ["style"], ...(preview ? { span: ["data-qq-entry"] } : {}), a: ["href", "title"], img: ["src", "alt", "width", "height"], ol: ["start"], td: ["colspan", "rowspan"], th: ["colspan", "rowspan"] },
     allowedSchemes: ["https", "http", "mailto"], allowedSchemesByTag: { img: ["data"] }, allowProtocolRelative: false,
     allowedStyles: { "*": {
       "font-family": [/^[\w\s,"'-]+$/], "font-size": [/^\d{1,3}(\.\d+)?(pt|px)$/],
@@ -31,7 +31,7 @@ export function cleanProse(text: string | null | undefined, images = new Map<str
       "text-align": [/^(left|right|center|justify)$/], "line-height": [/^\d(\.\d+)?$/],
       "text-indent": [/^\d{1,3}(\.\d+)?(em|pt|px)$/], "margin-top": [/^\d{1,3}(\.\d+)?(pt|px)$/], "margin-bottom": [/^\d{1,3}(\.\d+)?(pt|px)$/],
     } },
-    transformTags: { img: (_tag, attrs) => { if (images.has(attrs.src)) attrs = {...attrs,src:images.get(attrs.src)!}; return /^data:image\/(png|jpeg|gif|webp);base64,[a-z0-9+/=\s]+$/i.test(attrs.src || "")
+    transformTags: { ...(preview ? { a: (_tag: string, attrs: Record<string,string>) => ({ tagName: "a", attribs: { style: attrs.style || "", title: attrs.href || attrs.title || "" } }) } : {}), img: (_tag, attrs) => { if (images.has(attrs.src)) attrs = {...attrs,src:images.get(attrs.src)!}; return /^data:image\/(png|jpeg|gif|webp);base64,[a-z0-9+/=\s]+$/i.test(attrs.src || "")
       ? { tagName: "img", attribs: attrs } : { tagName: "span", attribs: {}, text: `[Image: ${attrs.alt || "image stored separately"}]` }; } },
   });
 }

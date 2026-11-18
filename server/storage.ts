@@ -1,4 +1,7 @@
 import { defaultAgentAccess, type AgentAccess } from "@shared/agent-access";
+import { RETENTION_SCAN_LIMIT, type RetentionInput } from "@shared/prose-retention";
+import type { ProseVersion } from "@shared/schema";
+import { HISTORY_PAGE_SIZE, historySummary, versionValue, type ProseResource, type ProseRecord, type RestoreSource, type VersionSummary } from "@shared/prose-history";
 import type { FeedbackInput, FeedbackInboxQuery, FeedbackStatus, FeedbackSummary } from "@shared/feedback";
 import type { FeedbackReport } from "@shared/schema";
 import type { SceneContextRow } from "@shared/schema";
@@ -28,6 +31,12 @@ export interface IStorage {
   getAgentAccess(userId: number): Promise<AgentAccess>;
   putAgentAccess(access: AgentAccess): Promise<void>;
   withAgentLock<T>(userId: number, work: (storage: IStorage) => Promise<T>): Promise<T>;
+  getProseRetentionRows(projectId:number, resource:ProseResource, documentId:number): Promise<RetentionInput[]>;
+  keepProseVersion(projectId:number, resource:ProseResource, documentId:number, versionId:number): Promise<ProseVersion | undefined>;
+  checkpointProseSession(projectId:number, resource:ProseResource, documentId:number, revision:number): Promise<ProseVersion | undefined>;
+  listProseVersions(projectId: number, resource: ProseResource, documentId: number, before?: number): Promise<VersionSummary[]>;
+  getProseVersion(projectId: number, resource: ProseResource, documentId: number, id: number): Promise<ProseVersion | undefined>;
+  getProseRestore(projectId: number, resource: ProseResource, documentId: number, requestId: string): Promise<ProseVersion | undefined>;
   listFeedback(query: FeedbackInboxQuery): Promise<FeedbackSummary[]>;
   getFeedback(id: number): Promise<FeedbackReport | undefined>;
   updateFeedbackStatus(id: number, status: FeedbackStatus, expectedStatus: FeedbackStatus): Promise<FeedbackReport | undefined>;
@@ -46,7 +55,7 @@ export interface IStorage {
   getScene(id: number): Promise<Scene | undefined>;
   getProjectScenes(projectId: number): Promise<Scene[]>;
   createScene(scene: InsertScene): Promise<Scene>;
-  updateScene(id: number, patch: Partial<Scene>, base?: Record<string, unknown>): Promise<Scene | undefined>;
+  updateScene(id: number, patch: Partial<Scene>, base?: Record<string, unknown>, source?: RestoreSource): Promise<Scene | undefined>;
 
   withProjectLock<T>(projectId: number, work: (storage: IStorage) => Promise<T>): Promise<T>;
   // Session store
@@ -74,7 +83,7 @@ export interface IStorage {
   getChapter(id: number): Promise<Chapter | undefined>;
   getProjectChapters(projectId: number): Promise<Chapter[]>;
   createChapter(chapter: InsertChapter): Promise<Chapter>;
-  updateChapter(id: number, chapter: Partial<Chapter>, base?: Record<string, unknown>): Promise<Chapter | undefined>;
+  updateChapter(id: number, chapter: Partial<Chapter>, base?: Record<string, unknown>, source?: RestoreSource): Promise<Chapter | undefined>;
   deleteChapter(id: number): Promise<boolean>;
 
   // Whiteboard methods
@@ -135,6 +144,53 @@ export class MemStorage implements IStorage {
     this.agentLocks.set(userId, next); await previous;
     try { return await work(this); } finally { release(); if (this.agentLocks.get(userId) === next) this.agentLocks.delete(userId); }
   }
+  private proseHistory: ProseVersion[] = [];
+  async getProseRetentionRows(projectId:number, resource:ProseResource, documentId:number) {
+    return this.proseHistory.filter(r=>r.projectId===projectId&&r.resource===resource&&r.documentId===documentId).slice(0,RETENTION_SCAN_LIMIT+1)
+      .map(row=>{const {id,revision,savedAt,kind,restoredFromId,keptAt,restoreProtected,sessionCheckpoint,bytes}=historySummary(row);return {id,revision,savedAt,kind,restoredFromId,keptAt,restoreProtected,sessionCheckpoint,bytes};});
+  }
+  async keepProseVersion(projectId:number, resource:ProseResource, documentId:number, versionId:number) {
+    const row=this.proseHistory.find(r=>r.projectId===projectId&&r.resource===resource&&r.documentId===documentId&&r.id===versionId);
+    if(row&&!row.keptAt) row.keptAt=new Date();
+    return row;
+  }
+  async checkpointProseSession(projectId:number, resource:ProseResource, documentId:number, revision:number) {
+    const record=resource==="chapters" ? this.chaptersMap.get(documentId) : this.scenesMap.get(documentId);
+    if(!record||record.projectId!==projectId||record.revision!==revision||("writingMode" in record&&record.writingMode!=="chapter")) return undefined;
+    let row=this.proseHistory.find(r=>r.projectId===projectId&&r.resource===resource&&r.documentId===documentId&&r.revision===revision);
+    if(!row) {
+      const any=this.proseHistory.some(r=>r.projectId===projectId&&r.resource===resource&&r.documentId===documentId);
+      row={...versionValue(resource,record,any?"save":"baseline"),id:this.proseHistory.length+1,capturedAt:new Date()};this.proseHistory.push(row);
+    }
+    row.sessionCheckpoint=true;return row;
+  }
+  async listProseVersions(projectId: number, resource: ProseResource, documentId: number, before?: number) {
+    return this.proseHistory.filter(r => r.projectId === projectId && r.resource === resource && r.documentId === documentId && (!before || r.id < before))
+      .sort((a,b) => b.id - a.id).slice(0,HISTORY_PAGE_SIZE + 1).map(historySummary);
+  }
+  async getProseVersion(projectId: number, resource: ProseResource, documentId: number, id: number) {
+    return this.proseHistory.find(r => r.projectId === projectId && r.resource === resource && r.documentId === documentId && r.id === id);
+  }
+  async getProseRestore(projectId: number, resource: ProseResource, documentId: number, requestId: string) {
+    return this.proseHistory.find(r => r.projectId === projectId && r.resource === resource && r.documentId === documentId && r.requestId === requestId);
+  }
+  private captureProse(resource: ProseResource, before: ProseRecord, after: ProseRecord, source?: RestoreSource) {
+    if (before.content === after.content && !source) return;
+    if (resource === "chapters" && (before as Chapter).writingMode !== "chapter") return;
+    const sourceRow=source && this.proseHistory.find(r=>r.projectId===before.projectId&&r.resource===resource&&r.documentId===before.id&&r.id===source.restoredFromId);
+    if(source&&!sourceRow) throw new Error("Restore source is unavailable");
+    const append = (record: ProseRecord, kind: ProseVersion["kind"], restore?: RestoreSource) => {
+      this.proseHistory.push({ ...versionValue(resource,record,kind,restore), id:this.proseHistory.length + 1, capturedAt:new Date() });
+    };
+    if (!this.proseHistory.some(r => r.resource === resource && r.documentId === before.id && r.projectId === before.projectId)) append(before,"baseline");
+    if(source&&sourceRow) {
+      sourceRow.restoreProtected=true;
+      let outgoing=this.proseHistory.find(r=>r.projectId===before.projectId&&r.resource===resource&&r.documentId===before.id&&r.revision===before.revision);
+      if(!outgoing) {append(before,"save");outgoing=this.proseHistory.at(-1)!;}
+      outgoing.restoreProtected=true;
+    }
+    append(after,source ? "restore" : "save",source);
+  }
   private feedback = new Map<number, FeedbackReport>();
   async listFeedback(query: FeedbackInboxQuery) {
     return [...this.feedback.values()].filter(row => (!query.status || row.status === query.status) && (!query.category || row.category === query.category) && (!query.before || row.id < query.before) && (!query.q || `${row.summary}\n${row.details}`.toLowerCase().includes(query.q.toLowerCase())))
@@ -176,10 +232,11 @@ export class MemStorage implements IStorage {
       storyBeats: scene.storyBeats ?? [], summary: scene.summary ?? "", content: scene.content ?? "", revision: 0, createdAt: new Date(), updatedAt: new Date() };
     this.scenesMap.set(result.id, result); return result;
   }
-  async updateScene(id: number, patch: Partial<Scene>, base?: Record<string, unknown>) {
+  async updateScene(id: number, patch: Partial<Scene>, base?: Record<string, unknown>, source?: RestoreSource) {
     const scene = this.scenesMap.get(id);
     if (!scene || !matchesBase(scene, base)) return undefined;
     const result = { ...scene, ...patch, revision: scene.revision + 1, updatedAt: new Date() };
+    this.captureProse("scenes",scene,result,source);
     this.scenesMap.set(id, result); return result;
   }
   // Creation callbacks only insert rows. Roll back their inserts, not unrelated projects.
@@ -391,7 +448,7 @@ export class MemStorage implements IStorage {
     return chapter;
   }
 
-  async updateChapter(id: number, chapterUpdate: Partial<Chapter>, base?: Record<string, unknown>): Promise<Chapter | undefined> {
+  async updateChapter(id: number, chapterUpdate: Partial<Chapter>, base?: Record<string, unknown>, source?: RestoreSource): Promise<Chapter | undefined> {
     const chapter = this.chaptersMap.get(id);
     if (!chapter || !matchesBase(chapter, base)) return undefined;
 
@@ -401,6 +458,7 @@ export class MemStorage implements IStorage {
       revision: chapter.revision + 1,
       updatedAt: new Date()
     };
+    this.captureProse("chapters",chapter,updatedChapter,source);
     this.chaptersMap.set(id, updatedChapter);
     return updatedChapter;
   }

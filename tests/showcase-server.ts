@@ -27,6 +27,14 @@ if (process.env.QQ_DEMO_FEEDBACK === "1") {
 }
 const project = await storage.createProject({ userId: user.id, title: "The Lantern Coast", description: "When the coast's last true chart disappears, a reluctant navigator must choose between the people who raised her and the islands they erased.", settings: { author: "Demo Writer", genre: "Fantasy", targetWordCount: 80000 } });
 async function entry(title: string, entryType: string, content: string, metadata: Record<string, unknown> = {}, tags: string[] = []) {
+  if (process.env.QQ_DEMO_GUIDANCE === "1") {
+    // Opt-in, entirely synthetic compatibility payloads for QQ-14 browser QA.
+    metadata = { ...metadata, qq14Unknown: { retained: ["older value", { exact: true }] } };
+    if (["events", "world_elements", "details", "research"].includes(entryType)) {
+      content = JSON.stringify({ ...JSON.parse(content), qq14Unknown: { nested: ["retain me", 0, false] } });
+    }
+    if (title === "Mara Vale") metadata._notionImport = { version: 1, sourceId: "a".repeat(32), originalMarkdown: "# Synthetic original\n\nA **formatted** navigation note. Preserve this exact original.", notes: [], supportingPages: [] };
+  }
   return storage.createStoryBibleEntry({ projectId: project.id, title, entryType, content, metadata, tags, priority: 1 } as InsertStoryBibleEntry);
 }
 const mara = await entry("Mara Vale", "characters", "A coastal navigator with an extraordinary memory for maps and a stubborn distrust of people. Mara can read a current by the way it bends a lantern's reflection. She has spent her life charting safe passages for others; now the route she needs most is the one her teachers insist never existed.", { age: "29", gender: "Female", species: "Human", primaryRole: "Protagonist", origin: "Old Harbor", motivations: "Find her brother and return the missing islands to the map.", conflicts: "Loyalty to the Tidekeepers versus the truth they have hidden.", personalityTraits: "Observant, dryly funny, reluctant to ask for help.", eyeColor: "Gray-green", hairColor: "Black", abilities: ["Navigation", "Reading currents", "Cartographic memory"] }, ["navigator", "found family", "truth"]);
@@ -86,4 +94,6 @@ await storage.putSceneContext({sceneId:sceneRows[1].id,projectId:project.id,revi
 const app = createApp({storage,secret:randomBytes(32).toString("hex"),uploadDir:mkdtempSync(path.join(tmpdir(),"qq-showcase-uploads-"))});
 app.use(express.static(path.resolve("dist/public")));
 app.get("*",(_req,res)=>res.sendFile(path.resolve("dist/public/index.html")));
-app.listen(5063,"127.0.0.1",()=>console.log(`Quantum Quill showcase: http://127.0.0.1:5063/project/${project.id}/write?chapter=${chapters[0].id}&scene=${sceneRows[1].id} (PID ${process.pid}). Synthetic data only.`));
+const port = Number(process.env.QQ_SHOWCASE_PORT || 5063);
+if (!Number.isInteger(port) || port < 1024 || port > 65535) throw new Error("Invalid QQ_SHOWCASE_PORT");
+app.listen(port,"127.0.0.1",()=>console.log(`Quantum Quill showcase: http://127.0.0.1:${port}/project/${project.id}/write?chapter=${chapters[0].id}&scene=${sceneRows[1].id} (PID ${process.pid}). Synthetic data only.`));

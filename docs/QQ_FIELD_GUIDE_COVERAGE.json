@@ -1,5 +1,5 @@
 {
-  "guideVersion": "1.1.0",
+  "guideVersion": "1.2.0",
   "routes": {
     "/admin/feedback": "feedback",
     "/": "projects",
@@ -62,7 +62,9 @@
     "bible": [
       "client/src/pages/story-bible.tsx",
       "client/src/components/story-bible/workspace-entry.tsx",
-      "shared/bible-field-schemas.ts"
+      "shared/bible-field-schemas.ts",
+      "client/src/components/story-bible/guidance.tsx",
+      "shared/bible-guidance.ts"
     ],
     "relationships": [
       "client/src/components/story-bible/relationships.tsx",
@@ -109,6 +111,17 @@
     "maintenance": [
       "scripts/check-field-guide.mjs",
       "scripts/build-mcp.mjs"
+    ],
+    "history": [
+      "client/src/components/prose-history.tsx",
+      "client/src/components/prose-retention-review.tsx",
+      "server/prose-history.ts",
+      "shared/prose-history.ts"
+    ],
+    "word-finder": [
+      "client/src/components/rich-text-editor/word-finder.tsx",
+      "client/src/components/rich-text-editor/word-selection.ts",
+      "client/src/lib/wordnet.ts"
     ]
   },
   "optionalNotIncluded": [

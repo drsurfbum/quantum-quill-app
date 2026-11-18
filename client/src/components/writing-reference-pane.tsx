@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { Editor } from "@tiptap/core";
 import type { Scene, StoryBibleEntry } from "@shared/schema";
 import type { SceneContext } from "@shared/scene-context";
-import { BIBLE_TYPES, BIBLE_TAXONOMY } from "@shared/bible-catalog";
+import { BIBLE_TAXONOMY } from "@shared/bible-catalog";
 import { relationshipDefinition } from "@shared/relationships";
 import { useStoryBibleEntries } from "@/hooks/use-story-bible";
 import { useRecoverableDrafts, withPendingEdits } from "@/hooks/use-autosave";
@@ -12,7 +12,8 @@ import { prepareManuscriptAction } from "@/lib/manuscript-actions";
 import { useLocation } from "wouter";
 import { Button } from "./ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "./ui/dialog";
-import { EntryPicker, RelationshipNavigation, useRelationships } from "./story-bible/relationships";
+import { RelationshipNavigation, useRelationships } from "./story-bible/relationships";
+import { BibleFindDialog } from "./story-bible/find-dialog";
 import { EntryEditor } from "./story-bible/entry-editor";
 import SceneBibleContext, { bibleCardSummary } from "./scene-bible-context";
 import ScenePlanEditor from "./scene-plan-editor";
@@ -20,6 +21,7 @@ import { linkWritingRange, mentionRanges } from "./rich-text-editor/bible-refere
 import { ArrowLeft, Search, X } from "lucide-react";
 
 export default function WritingReferencePane({projectId,scene,editor,activeId,onOpen,onClose}: {projectId:number;scene?:Scene;editor:Editor|null;activeId:number|null;onOpen:(id:number|null)=>void;onClose:()=>void}) {
+  const findButton = useRef<HTMLButtonElement>(null);
   const entries = useStoryBibleEntries(projectId,{staleTime:0});
   const relationships = useRelationships(projectId);
   const context = useQuery<SceneContext>({queryKey:[`/api/scenes/${scene?.id}/context`],enabled:!!scene,staleTime:0});
@@ -56,7 +58,7 @@ export default function WritingReferencePane({projectId,scene,editor,activeId,on
     <div className="flex-1 min-h-0 overflow-y-auto [scrollbar-gutter:stable]">
       {scene && <details className="border-b group" open={!activeId || undefined}><summary className="px-4 py-3 cursor-pointer text-sm font-medium">Scene plan & beats</summary><div className="px-4 pb-4 space-y-3"><p className="text-sm leading-relaxed whitespace-pre-wrap break-words">{scene.summary || "What changes in this scene? Add a plan when you need one."}</p>{!!scene.storyBeats?.length && <ol className="list-decimal pl-4 text-sm space-y-2">{scene.storyBeats.slice(0,4).map(beat=><li key={beat.id} className="whitespace-pre-wrap break-words">{beat.text || "Untitled beat"}</li>)}</ol>}<Button size="sm" variant="ghost" className="px-0" onClick={()=>setPlanning(true)}>Edit scene plan{(scene.storyBeats?.length || 0)>4 ? ` · ${scene.storyBeats.length} beats` : ""}</Button></div></details>}
       <section className="p-4 space-y-3" aria-label="Story Bible cards">
-        <div className="flex items-center justify-between gap-2"><h3 className="font-semibold text-sm">Story Bible</h3><Button size="sm" variant="ghost" onClick={()=>setFinding(true)}><Search className="h-4 w-4 mr-1" />Find</Button></div>
+        <div className="flex items-center justify-between gap-2"><h3 className="font-semibold text-sm">Story Bible</h3><Button ref={findButton} size="sm" variant="ghost" onClick={()=>setFinding(true)}><Search className="h-4 w-4 mr-1" />Find</Button></div>
         {scene && editor && <Button variant="outline" size="sm" className="w-full" onClick={()=>setScanning(true)}>Find missing connections</Button>}
         {entries.isLoading ? <p className="text-sm">Loading entries…</p> : entries.error ? <p role="alert" className="text-sm">Could not load entries. <button className="underline" onClick={()=>void entries.refetch()}>Retry</button></p> : activeId ? entry ? <>
           <Button size="sm" variant="ghost" className="px-0" onClick={()=>onOpen(null)}><ArrowLeft className="h-4 w-4 mr-1" />Scene references</Button>
@@ -86,7 +88,7 @@ export default function WritingReferencePane({projectId,scene,editor,activeId,on
     {/* Only one context editor is mounted at a time, so the scan and manual notes share the same queued draft. */}
     <Dialog open={scanning} onOpenChange={setScanning}><DialogContent className="max-w-2xl max-h-[85dvh] overflow-y-auto" onCloseAutoFocus={e=>e.preventDefault()}><DialogHeader><DialogTitle>Find missing connections</DialogTitle><DialogDescription>Scan this scene’s current prose. Add reviewed matches to its Story Bible cards without changing any words or formatting.</DialogDescription></DialogHeader>{scanning && scene && editor && <SceneBibleContext key={`scan:${scene.id}`} scene={scene} scanEditor={editor} />}</DialogContent></Dialog>
     <Dialog open={planning} onOpenChange={setPlanning}><DialogContent className="max-w-2xl max-h-[85dvh] overflow-y-auto" onCloseAutoFocus={e=>e.preventDefault()}><DialogHeader><DialogTitle>Scene plan & beats</DialogTitle><DialogDescription>Planning notes stay separate from your prose. Changes save automatically.</DialogDescription></DialogHeader>{scene && <ScenePlanEditor key={scene.id} scene={scene}/>}</DialogContent></Dialog>
-    <Dialog open={finding} onOpenChange={setFinding}><DialogContent><DialogHeader><DialogTitle>Find a Story Bible element</DialogTitle><DialogDescription>Open its card without leaving your writing.</DialogDescription></DialogHeader><EntryPicker entries={entries.data || []} types={BIBLE_TYPES} value={0} onChange={id=>{onOpen(id);setFinding(false);}} /></DialogContent></Dialog>
+    <BibleFindDialog projectId={projectId} entries={entries.data || []} open={finding} onOpenChange={setFinding} onChoose={onOpen} returnFocus={findButton} />
     <Dialog open={editing && !!entry} onOpenChange={setEditing}><DialogContent className="max-w-4xl max-h-[88dvh] overflow-y-auto" onCloseAutoFocus={e=>e.preventDefault()}><DialogHeader><DialogTitle>Edit {entry?.title}</DialogTitle><DialogDescription>Changes save automatically to the shared Story Bible entry. Your prose remains open behind this editor.</DialogDescription></DialogHeader>{entry && (recovery ? <p role="alert">This entry has a saved draft to review. <button className="underline" onClick={()=>{setEditing(false);window.dispatchEvent(new Event("qq:review-drafts"));}}>Review saved draft</button></p> : <RelationshipNavigation.Provider value={other=>onOpen(other.id)}><EntryEditor key={entry.id} entry={entry} projectId={projectId} onClose={()=>setEditing(false)} /></RelationshipNavigation.Provider>)}</DialogContent></Dialog>
   </aside>;
 }

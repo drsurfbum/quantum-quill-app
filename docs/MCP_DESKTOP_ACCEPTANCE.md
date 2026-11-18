@@ -1,6 +1,6 @@
 # Claude and ChatGPT desktop acceptance
 
-Status: protocol preflight passes; actual desktop conversations are still required.
+Status (November 18, 2026): refreshed protocol/client-engine preflights and release integration checks pass; actual desktop conversations are still required. The test build includes release ce88058, writing history, guided Bible and Word Finder.
 This is a manual release gate, not a claim that SDK tests verify either desktop UI.
 
 ## Disposable environment
@@ -72,7 +72,7 @@ record that separately from a server-enforced denial.
 | Creation/retry | Editing on | Create one outline item and one Bible entry using separate UUID request IDs. Retry the identical creation arguments: same IDs, no duplicate rows. |
 | Conflict | Read outline revision, then `CLIENT conflict` | Attempt update with the saved stale revision. Must reject; `Writer changed this title` survives. No automatic retry with a new revision without review. |
 | Manuscript read only | `CLIENT manuscript` | Read chapter and scene text. A prose write must fail, despite manuscript access being enabled. |
-| Manuscript editing | `CLIENT both` | Read fresh revisions, change chapter prose to `<p>Mira raised the silver lantern.</p>` and scene prose to `<p>Three amber lights answered Mira.</p>`. Confirm persisted text and revisions in QQ; preserve titles/summary. |
+| Manuscript editing | `CLIENT both` | Read fresh revisions, change chapter prose to `<p>Mira raised the silver lantern.</p>` and scene prose to `<p>Three amber lights answered Mira.</p>`. Confirm persisted text and revisions in QQ and inspect Version history for both outgoing and new prose; preserve titles/summary. |
 | Manuscript creation | Both on | Create one chapter-mode chapter and one scene in the existing scene-mode chapter. Retry identical request IDs. Change the new scene's initially blank prose using its current revision. No duplicates. |
 | All projects | `CLIENT all`, then `CLIENT newproject` | List shows selected, sibling, and new Paper Moon project. Explicitly read sibling. Foreign account remains denied. |
 | Narrow again | `CLIENT selected` | Sibling and future project reads fail immediately on the same connection. |
@@ -85,6 +85,8 @@ saves fictional state and a metadata-only call log; `quit` saves final evidence
 and stops the server. The controls call the actual settings API. Also exercise
 the visible QQ Settings switches and Save controls to validate the user workflow.
 `conflict` simulates an independent writer save through the storage revision contract.
+
+After a client makes an edit, also open **Version history** in QQ and confirm the original and new prose remain available. Keep a comparison open, perform one additional explicitly requested client edit, then attempt the older restore: it must fail until reviewed again.
 
 Initial prompt:
 
