@@ -1,3 +1,4 @@
+import WorkspaceAssistant from "./assistant/workspace-assistant";
 import HelpMenu from "./tour/help-menu";
 import { FeedbackButton } from "./feedback-dialog";
 import { Link, useLocation } from "wouter";
@@ -7,7 +8,7 @@ import ThemeToggle from "./ui/theme-toggle";
 import ExportModal from "./export-modal";
 import { Button } from "./ui/button";
 import RoadmapLink from "./roadmap-link";
-export default function WorkspaceHeader({project}: {project:Project}) {
+export default function WorkspaceHeader({project,writingDesk=false}: {project:Project;writingDesk?:boolean}) {
   const [location] = useLocation();
   const base = `/project/${project.id}`;
   return <>
@@ -21,6 +22,7 @@ export default function WorkspaceHeader({project}: {project:Project}) {
     <nav aria-label="Project workspace" className="flex min-w-0 flex-1 items-center gap-1 px-3 py-2 overflow-x-auto">
       {([{label:"Overview",path:"",icon:Home},{label:"Storyboard",path:"/storyboard",icon:Grid},{label:"Outline",path:"/outline",icon:ListTree},{label:"Write",path:"/write",icon:Edit3},{label:"Story Bible",path:"/story-bible",icon:BookOpen}]).map(({label,path,icon:Icon})=><Link key={label} data-tour={`nav${path.replace("/", "-") || "-overview"}`} href={base+path} aria-current={location===base+path ? "page" : undefined} className={`flex shrink-0 items-center gap-2 rounded-md px-3 py-2 text-sm ${location===base+path ? "bg-accent text-accent-foreground font-medium" : "text-muted-foreground hover:bg-muted"}`}><Icon className="h-4 w-4"/>{label}</Link>)}
     </nav>
+    {!writingDesk && <WorkspaceAssistant project={project.id} workspace={location.endsWith("/storyboard")?"Storyboard":location.endsWith("/outline")?"Outline":location.endsWith("/story-bible")?"Story Bible":location.endsWith("/write")?"Write":"Overview"}/>}
     <FeedbackButton /><RoadmapLink className="ml-2" />
     </div>
   </>;

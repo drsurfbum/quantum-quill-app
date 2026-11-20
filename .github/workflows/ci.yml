@@ -29,6 +29,9 @@ jobs:
       - run: node --import tsx tests/postgres-prose-history.ts
         env:
           QQ_TEST_PG_ADMIN_URL: postgresql://qq_test:synthetic-ci-password@127.0.0.1:5432/postgres
+      - run: node --import tsx tests/postgres-assistant.ts
+        env:
+          QQ_TEST_PG_ADMIN_URL: postgresql://qq_test:synthetic-ci-password@127.0.0.1:5432/postgres
       - run: node --import tsx tests/postgres-chapter-copy.ts
         env:
           QQ_TEST_PG_ADMIN_URL: postgresql://qq_test:synthetic-ci-password@127.0.0.1:5432/postgres

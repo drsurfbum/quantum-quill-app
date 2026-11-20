@@ -1,3 +1,4 @@
+import type { AssistantRuntime } from "../server/assistant/provider";
 import request from "supertest";
 import { createServer, type Server } from "node:http";
 import session from "express-session";
@@ -12,19 +13,19 @@ afterEach(async()=>{
   })));
   servers.clear();
 });
-export function fixture(production = false) {
+export function fixture(production = false, assistant?:AssistantRuntime) {
   const storage = new MemStorage();
   (storage.sessionStore as session.Store & { stopInterval?: () => void }).stopInterval?.();
   storage.sessionStore = new session.MemoryStore();
-  const app = createApp({ storage, secret, production, uploadDir: "/tmp/qq-test-uploads-unused" });
+  const app = createApp({ storage, secret, production, assistant, uploadDir: "/tmp/qq-test-uploads-unused" });
   // Keep one ephemeral server for the whole test. Supertest's per-request
   // close can otherwise race a parallel request or a reused socket. This is
   // the same ephemeral binding Supertest uses, with explicit test teardown.
   const server = createServer(app).listen(0); servers.add(server);
   return { storage, app, server, agent: request.agent(server) };
 }
-export async function twoWriters() {
-  const context = fixture();
+export async function twoWriters(assistant?:AssistantRuntime) {
+  const context = fixture(false,assistant);
   const other = request.agent(context.server);
   const a = await context.agent.post("/api/register").send(credentials).expect(201);
   const b = await other.post("/api/register").send({ ...credentials, username: "other-writer" }).expect(201);

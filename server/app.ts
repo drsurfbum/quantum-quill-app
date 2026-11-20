@@ -1,3 +1,4 @@
+import type { AssistantRuntime } from "./assistant/provider";
 import express, { type ErrorRequestHandler } from "express";
 import { z } from "zod";
 import { MulterError } from "multer";
@@ -9,6 +10,7 @@ import { boundRequestStructure } from "./request-limits";
 export interface AppOptions extends AuthOptions {
   storage: IStorage;
   uploadDir?: string;
+  assistant?: AssistantRuntime;
 }
 
 // Importing/creating an app never opens a database or a listening socket.
@@ -54,7 +56,7 @@ export function createApp(options: AppOptions) {
     catch { res.status(503).json({status:"unavailable"}); }
   });
   setupAuth(app, options.storage, options);
-  registerRoutes(app, options.storage, options.uploadDir);
+  registerRoutes(app, options.storage, options.uploadDir, options.assistant);
   app.use("/api", (_req, res) => res.status(404).json({ message: "Not found" }));
   app.use(errorHandler);
   return app;

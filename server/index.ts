@@ -1,3 +1,4 @@
+import { configuredAssistant } from "./assistant/provider";
 import { createServer } from "http";
 import { pathToFileURL } from "url";
 import { createApp, errorHandler } from "./app";
@@ -12,7 +13,7 @@ export async function startServer() {
   const storage = new DatabaseStorage();
   // Refuse to serve writes before the separately reviewed history migration.
   await storage.listProseVersions(0,"chapters",0);
-  const app = createApp({ storage, uploadDir: process.env.UPLOAD_DIR, secret: process.env.SESSION_SECRET, production: process.env.NODE_ENV === "production" });
+  const app = createApp({ storage, assistant:configuredAssistant(process.env), uploadDir: process.env.UPLOAD_DIR, secret: process.env.SESSION_SECRET, production: process.env.NODE_ENV === "production" });
   await initPlotTemplates();
   const server = createServer(app);
   if (process.env.NODE_ENV === "production") serveStatic(app);
