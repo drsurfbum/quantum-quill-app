@@ -38,8 +38,16 @@ it.each(['chapter','scenes'] as const)('copies %s writing with fresh identities 
   expect((await f.storage.getSceneContext(f.scenes[0].id))?.links).toHaveLength(1);
  }
  const target=copies.length ? `/api/scenes/${copies[0].id}` : `/api/chapters/${copy!.id}`;
+ const sourceTarget=copies.length ? `/api/scenes/${f.scenes[0].id}` : `/api/chapters/${f.chapter.id}`;
+ const sourceHistory=(await f.agent.get(`${sourceTarget}/history`).expect(200)).body;
+ expect((await f.agent.get(`${target}/history`).expect(200)).body.versions).toHaveLength(0);
  await f.agent.put(target).send({_revision:0,content:'<p>An <em>independent</em> ending.</p>'}).expect(200);
  expect((await f.agent.get(target).expect(200)).body.content).toContain('<em>independent</em>');
+ const history=(await f.agent.get(`${target}/history`).expect(200)).body.versions;
+ expect(history).toHaveLength(2);
+ const baseline=history.find((v:any)=>v.kind==='baseline');
+ expect((await f.agent.get(`${target}/history/${baseline.id}/download`).expect(200)).body.content).toBe(copies.length ? copies[0].content : copy!.content);
+ expect((await f.agent.get(`${sourceTarget}/history`).expect(200)).body).toEqual(sourceHistory);
  expect(await f.storage.getChapter(f.chapter.id)).toEqual(original);
  expect((await f.storage.getProjectScenes(f.project.id)).filter(s=>s.chapterId===f.chapter.id)).toEqual(originalScenes);
  expect(await f.storage.getProjectStoryBible(f.project.id)).toEqual([f.entry]);

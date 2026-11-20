@@ -2,12 +2,27 @@
 import assert from "node:assert/strict";
 import {randomUUID} from "node:crypto";
 import session from "express-session";
-if (process.env.QQ_DUPLICATE_TEST !== "disposable-only" || !process.env.DATABASE_URL?.includes("/qq_chapter_copy_test?")) throw new Error("A dedicated empty chapter-copy test database is required.");
-const {db,pool} = await import("../server/db");
+import pg from "pg";
+import {initializeAlphaDatabase} from "../scripts/init-alpha-db.mjs";
+import {migrateProseHistory} from "../scripts/migrate-prose-history.mjs";
+import {migrateProseRetention} from "../scripts/migrate-prose-retention.mjs";
+const adminURL=process.env.QQ_TEST_PG_ADMIN_URL;
+if (!adminURL) throw new Error("Provide a disposable PostgreSQL admin URL; no working database is used.");
+const name=`qq_chapter_copy_test_${randomUUID().replaceAll('-','')}`;
+const url=new URL(adminURL); url.pathname=`/${name}`;
+const admin=new pg.Client({connectionString:adminURL}); await admin.connect();
+let pool:pg.Pool|undefined;
+try {
+await admin.query(`CREATE DATABASE "${name}"`);
+await initializeAlphaDatabase(url.href,"fresh-alpha");
+await migrateProseHistory(url.href,"apply-prose-history-v1");
+await migrateProseRetention(url.href,"apply-prose-retention-v1");
+process.env.DATABASE_URL=url.href;
+const database = await import("../server/db");
+const db=database.db; pool=database.pool;
 const {DatabaseStorage} = await import("../server/database-storage");
 const {chapterCopySource,duplicateChapter} = await import("../server/chapter-copy");
 const storage = new DatabaseStorage(db,new session.MemoryStore());
-try {
   assert.equal((await pool.query('SELECT count(*)::int n FROM projects')).rows[0].n,0,"Refuse a nonempty database");
   const user=await storage.createUser({username:'fictional-copy-test',password:'fixture-only-not-a-login',email:'fixture@example.test'});
   const project=await storage.createProject({userId:user.id,title:'Fictional copy transaction'});
@@ -32,7 +47,14 @@ try {
   const copied=(await storage.getProjectScenes(project.id)).find(s=>s.chapterId===a.chapterId)!;
   assert.equal(copied.content,scene.content);assert.notEqual(copied.storyBeats[0].id,scene.storyBeats[0].id);
   assert.equal((await storage.getSceneContext(copied.id))?.revision,0);
+  assert.equal((await storage.listProseVersions(project.id,'scenes',copied.id)).length,0);
+  const originalHistory=await storage.listProseVersions(project.id,'scenes',scene.id);
   await storage.updateScene(copied.id,{content:'<p>Independent</p>'},{revision:0});
+  const copyHistory=await storage.listProseVersions(project.id,'scenes',copied.id);
+  assert.equal(copyHistory.length,2);
+  const baseline=copyHistory.find(v=>v.kind==='baseline')!;
+  assert.equal((await storage.getProseVersion(project.id,'scenes',copied.id,baseline.id))!.content,scene.content);
+  assert.deepEqual(await storage.listProseVersions(project.id,'scenes',scene.id),originalHistory);
   assert.deepEqual(await storage.getScene(scene.id),scene);
   assert.deepEqual(await storage.getChapter(source.id),source);
   const next=await chapterCopySource(storage,project.id,source.id);
@@ -40,4 +62,8 @@ try {
   assert.equal(competing.filter(r=>r.status==='fulfilled').length,1);
   assert.equal(competing.filter(r=>r.status==='rejected').length,1);
   console.log(JSON.stringify({atomicReceiptFailureRollback:'PASS',concurrentIdempotency:'PASS',competingSnapshot:'PASS',independentProse:'PASS',freshSceneAndContext:'PASS',neighborOrder:'PASS',sourceUnchanged:'PASS'}));
-} finally { await pool.end(); }
+} finally {
+  await pool?.end();
+  await admin.query(`DROP DATABASE IF EXISTS "${name}" WITH (FORCE)`);
+  await admin.end();
+}

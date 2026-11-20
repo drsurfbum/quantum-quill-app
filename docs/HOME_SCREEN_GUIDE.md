@@ -1,6 +1,6 @@
 # iPad and Android Home Screen guide
 
-Status: implemented locally, not published or deployed. Branch `codex/ipad-install-guide` starts at release documentation revision `301d05c77e64f3045e9918f891e938ceca0f83a7` (app release `6ecad66`). It does not include the independent MCP, plot-review or plot-video branches. The later request to include Android is handled on this same branch/page.
+Original November 14 implementation: local review candidate. The guide is now included in the November 20 release integration; see [release verification](RELEASE_DUPLICATE_GUIDE_NOV20.md). Branch `codex/ipad-install-guide` starts at release documentation revision `301d05c77e64f3045e9918f891e938ceca0f83a7` (app release `6ecad66`). It does not include the independent MCP, plot-review or plot-video branches. The later request to include Android is handled on this same branch/page.
 
 ## Entry points and behavior
 
@@ -37,7 +37,7 @@ The browser check covers direct route/reload, anonymous Login navigation, Help o
 
 Only when intentionally refreshing the tracked fictional screenshot, add `QQ_CAPTURE_GUIDE_FIXTURE=1` to that command. Review the resulting asset, rebuild so it reaches `dist/public`, then repeat the normal verification. Keep assets under `/help-assets/`, not a directory matching `/help/install`: an Express static-directory redirect must not shadow the route.
 
-The release baseline's 403 tests / 40 suites, TypeScript and production build pass. The existing bundle-size advisory remains. The final browser receipt records the exact observed installation metadata. Public repository/roadmap publication remains on hold; no push, PR, merge or deployment is part of this delivery.
+The release baseline's 403 tests / 40 suites, TypeScript and production build pass. The existing bundle-size advisory remains. The final browser receipt records the exact observed installation metadata. The original November 14 delivery was local-only. On November 20 the owner authorized integration, PR review and deployment with Duplicate Chapter; that release preserves this original branch and its verification history.
 
 ## Sources checked November 14, 2026
 

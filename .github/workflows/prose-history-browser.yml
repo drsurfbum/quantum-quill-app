@@ -11,6 +11,10 @@ permissions:
 jobs:
   browser:
     runs-on: ubuntu-24.04
+    # Keep the image and npm package at the same Playwright version. The official
+    # image supplies browsers and OS dependencies without a per-run apt download.
+    container:
+      image: mcr.microsoft.com/playwright:v1.65.1-noble@sha256:1507cbfc550a63a6b7396791ca4f00df17beb56342d2447b3f106c306f525579
     timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
@@ -21,9 +25,12 @@ jobs:
       - run: npm ci --ignore-scripts
       - run: npm run build
       - name: Install disposable browser-test tooling
-        run: |
-          npm install --no-save --package-lock=false --ignore-scripts playwright@1.65.1
-          npx playwright install --with-deps chromium webkit
+        run: npm install --no-save --package-lock=false --ignore-scripts playwright@1.65.1
+      - run: node --import tsx tests/browser-install-guide.mts
+      - run: node --import tsx tests/browser-chapter-copy.mts
+      - run: node --import tsx tests/browser-chapter-copy.mts
+        env:
+          QQ_BROWSER_ENGINE: webkit
       - run: node tests/browser-prose-history.mjs
       - run: node tests/browser-history-word-finder.mjs
       - run: node tests/browser-history-word-finder.mjs
@@ -33,5 +40,7 @@ jobs:
         if: always()
         with:
           name: writing-history-synthetic-browser
-          path: artifacts/history/
+          path: |
+            artifacts/history/
+            .local/ipad-guide-review/
           retention-days: 14

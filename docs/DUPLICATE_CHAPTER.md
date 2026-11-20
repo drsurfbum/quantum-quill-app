@@ -1,6 +1,6 @@
 # Duplicate Chapter and alternate drafts
 
-This feature is a local review candidate, not a deployed release.
+Duplicate Chapter creates an independent chapter in the manuscript. See [November 20 release verification](RELEASE_DUPLICATE_GUIDE_NOV20.md) for integration and release evidence.
 
 ## Writer workflow
 
@@ -22,7 +22,7 @@ The memory fixture rolls back copied references and order along with inserted re
 
 ## What alternate drafts offer today
 
-The current schema stores one canonical prose body per chapter or scene. Revision counters protect concurrent saves; they do not retain old prose bodies. Editor Undo/Redo is transient editing history. The local draft journal supports save recovery and conflicts. None provides named parallel drafts, switching or comparison. The chapter's Draft status is a completion flag, not an alternate-version selector.
+Each chapter or scene has one current prose body. Revision counters protect concurrent saves. Saved version history preserves earlier bodies and supports preview, comparison and deliberate restoration; editor Undo/Redo handles the current editing session. The local draft journal supports unsaved-work recovery and conflicts. These controls do not provide named parallel drafts or manuscript-draft selection. The chapter’s Draft status is a completion flag, not an alternate-version selector. A copy starts its own saved history on its first changed save, with the copied text retained as its baseline; it does not inherit the original’s history.
 
 Until intentional drafts exist, use clearly labeled duplicate chapters for experiments and resolve which copy belongs in the manuscript before exporting. If experiments must stay outside the export, keep them in a separate project or document for now.
 
@@ -42,4 +42,4 @@ Verified against release baseline `65483de7ad8a78ec5d81a46cb68f01f8ae318fa4` wit
 
 The separately developed MCP implementation was not imported or tested here. Copies use ordinary canonical chapter/scene records and fresh revisions; an integration test with that separate branch remains necessary. No iPad sidebar search changes, publishing, merge or deployment are included.
 
-The standalone PostgreSQL check is `tests/postgres-chapter-copy.ts`. It refuses a nonempty database and requires an explicitly disposable database named `qq_chapter_copy_test`, a matching `DATABASE_URL` and `QQ_DUPLICATE_TEST=disposable-only`. Initialize the schema using the project's normal schema tool before running it with Node 24 and `--import tsx`.
+The PostgreSQL check is `tests/postgres-chapter-copy.ts`. Set `QQ_TEST_PG_ADMIN_URL` to a disposable PostgreSQL instance and run with Node 24 and `--import tsx`. The test creates and removes its own randomly named database, applies the existing alpha/history schema there, and tests copying plus independent history. It never uses a working database or a restored manuscript.

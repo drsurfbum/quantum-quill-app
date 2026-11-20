@@ -32,7 +32,8 @@ Connect entries to a scene as its viewpoint character, cast, location, or refere
 
 - Rich formatting: fonts, sizes, headings, lists, colors, alignment, images, tables, find/replace, and more.
 - Quill styles inspired by literary moods, plus reusable custom styles saved to your account.
-- Chapter and scene organization, a focus view, and light/dark themes.
+- Chapter and scene organization, a focus view, and light/dark themes. Use a chapter’s options menu → **Duplicate Chapter** to make an independent copy, including its scenes and Story Bible references. Both copies appear in exports.
+- Visible Undo/Redo, saved version history with deliberate restoration, and Word Finder for English definitions and synonyms.
 - Autosave with server revisions, explicit conflict review, and account/project-scoped local draft recovery. Failed saves stay recoverable; recovery offers restore/discard choices.
 - Export **Word, EPUB, HTML, plain text, or JSON**. Preview supports browser printing and Save as PDF.
 
@@ -56,7 +57,7 @@ Use **Feedback** inside QQ to send a private bug report, confusing experience, o
 
 ## Run a fresh local instance
 
-Requires **Node 24** and **PostgreSQL 16**. This source repository is private; cloning requires access.
+Requires **Node 24** and **PostgreSQL 16**. The source repository is public; keep your writing, uploads and environment files private.
 
 ```sh
 npm ci --ignore-scripts
