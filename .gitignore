@@ -95,3 +95,10 @@ recovery/
 artifacts/history/
 
 !migrations/0008_prose_retention.sql
+
+# Disposable assistant browser screenshots and usage counters.
+artifacts/assistant/
+*.sqlite
+*.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm

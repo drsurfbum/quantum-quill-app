@@ -1,3 +1,4 @@
+import { assistantFixture } from "./fixtures/assistant-provider";
 // Public-safe demonstration fixture. Real app/UI, synthetic story, memory only.
 // Never import database modules or .env, and never bind beyond loopback.
 import express from "express";
@@ -91,7 +92,7 @@ for (const [index,title,summary,beats,content] of [
   sceneRows.push(row);
 }
 await storage.putSceneContext({sceneId:sceneRows[1].id,projectId:project.id,revision:1,links:[{entryId:mara.id,role:"viewpoint",note:"She recognizes the missing coastline from memory."},{entryId:harbor.id,role:"location",note:"A familiar place, made strange by one missing map."},{entryId:chartRoom.id,role:"location",note:"The empty frame is the first clue."}]});
-const app = createApp({storage,secret:randomBytes(32).toString("hex"),uploadDir:mkdtempSync(path.join(tmpdir(),"qq-showcase-uploads-"))});
+const app = createApp({storage,assistant:process.env.QQ_DEMO_ASSISTANT==="1" ? assistantFixture() : undefined,secret:randomBytes(32).toString("hex"),uploadDir:mkdtempSync(path.join(tmpdir(),"qq-showcase-uploads-"))});
 app.use(express.static(path.resolve("dist/public")));
 app.get("*",(_req,res)=>res.sendFile(path.resolve("dist/public/index.html")));
 const port = Number(process.env.QQ_SHOWCASE_PORT || 5063);

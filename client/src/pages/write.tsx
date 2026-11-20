@@ -86,7 +86,7 @@ export default function Write() {
 
   const controls = <Button variant="ghost" size="sm" className="shrink-0 px-2" data-tour="manuscript-toggle" aria-label={isChapterSidebarVisible ? "Hide manuscript" : "Show manuscript"} aria-expanded={isChapterSidebarVisible} onClick={()=>setIsChapterSidebarVisible(open=>!open)}><PanelLeft className="h-4 w-4"/><span className="hidden lg:inline ml-2">Manuscript</span></Button>;
   return <div className="h-dvh flex flex-col overflow-hidden bg-background [color-scheme:light] dark:[color-scheme:dark]">
-    {project ? <WorkspaceHeader project={project} /> : <div className="h-16 border-b p-4">{projectError ? "Could not load this project. Return to Projects or reload to retry." : "Loading project…"}</div>}
+    {project ? <WorkspaceHeader project={project} writingDesk={!!selectedChapter} /> : <div className="h-16 border-b p-4">{projectError ? "Could not load this project. Return to Projects or reload to retry." : "Loading project…"}</div>}
     <main className="relative flex flex-1 min-h-0 min-w-0 overflow-hidden">
       <ChapterSidebar projectId={id || ''} selectedChapterId={selectedChapter?.id} isVisible={isChapterSidebarVisible} onChapterSelect={handleChapterSelect} onClose={()=>setIsChapterSidebarVisible(false)} />
       <div className="flex flex-col flex-1 min-w-0 min-h-0">

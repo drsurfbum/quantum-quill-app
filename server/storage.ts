@@ -1,3 +1,4 @@
+import type { PickerKind } from "@shared/workspace-assistant";
 import { RETENTION_SCAN_LIMIT, type RetentionInput } from "@shared/prose-retention";
 import type { ProseVersion } from "@shared/schema";
 import { HISTORY_PAGE_SIZE, historySummary, versionValue, type ProseResource, type ProseRecord, type RestoreSource, type VersionSummary } from "@shared/prose-history";
@@ -27,6 +28,7 @@ import session from "express-session";
 import createMemoryStore from "memorystore";
 
 export interface IStorage {
+  assistantTitles(projectId:number, kind:PickerKind, search:string): Promise<{id:number;title:string}[]>;
   getProseRetentionRows(projectId:number, resource:ProseResource, documentId:number): Promise<RetentionInput[]>;
   keepProseVersion(projectId:number, resource:ProseResource, documentId:number, versionId:number): Promise<ProseVersion | undefined>;
   checkpointProseSession(projectId:number, resource:ProseResource, documentId:number, revision:number): Promise<ProseVersion | undefined>;
@@ -129,6 +131,12 @@ export interface IStorage {
 }
 
 export class MemStorage implements IStorage {
+  async assistantTitles(projectId:number, kind:PickerKind, search:string) {
+    const rows = kind === "plan" ? await this.getProjectScenes(projectId) : kind === "outline" ? await this.getProjectOutline(projectId) :
+      kind === "bible" ? await this.getProjectStoryBible(projectId) :
+      (await Promise.all((await this.getProjectPlotStructures(projectId)).map(p => this.getPlotStructureSections(p.id)))).flat();
+    return rows.filter(r => r.title.toLowerCase().includes(search.toLowerCase())).sort((a,b)=>a.id-b.id).slice(0,40).map(({id,title})=>({id,title:title.slice(0,160)}));
+  }
   private proseHistory: ProseVersion[] = [];
   async getProseRetentionRows(projectId:number, resource:ProseResource, documentId:number) {
     return this.proseHistory.filter(r=>r.projectId===projectId&&r.resource===resource&&r.documentId===documentId).slice(0,RETENTION_SCAN_LIMIT+1)

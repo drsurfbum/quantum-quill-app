@@ -1,3 +1,5 @@
+import { registerAssistant } from "./assistant/routes";
+import type { AssistantRuntime } from "./assistant/provider";
 import { registerProseHistoryRoutes } from "./prose-history";
 import { chapterCopySource, duplicateChapter } from "./chapter-copy";
 import { registerFeedbackRoutes } from "./feedback";
@@ -68,8 +70,9 @@ type Resource<T extends Child, C> = {
   lockWrites?: boolean;
 };
 
-export function registerRoutes(app: Express, storage: IStorage, directory = path.join(process.cwd(), "uploads")) {
+export function registerRoutes(app: Express, storage: IStorage, directory = path.join(process.cwd(), "uploads"), assistant?:AssistantRuntime) {
   app.use("/api", requireUser);
+  registerAssistant(app,storage,assistant);
   registerFeedbackRoutes(app, storage);
   registerProseHistoryRoutes(app, storage);
   const projectFor = async (req: Request, id: number) => {
