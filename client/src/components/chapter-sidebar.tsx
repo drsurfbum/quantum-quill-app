@@ -1,3 +1,4 @@
+import DuplicateChapter from "./duplicate-chapter";
 import { useQuery } from "@tanstack/react-query";
 import { useSearch } from "wouter";
 import type { Scene } from "@shared/schema";
@@ -67,6 +68,8 @@ export default function ChapterSidebar({ projectId, selectedChapterId, isVisible
   const { mutate: createChapter, isPending: isCreating } = useCreateChapter();
   const { mutate: updateChapter, isPending: isUpdating } = useUpdateChapter();
   const { mutate: deleteChapter, isPending: isDeleting } = useDeleteChapter();
+
+  const [chapterToDuplicate, setChapterToDuplicate] = useState<Chapter | null>(null);
 
   // State for rename dialog
   const [renameDialogOpen, setRenameDialogOpen] = useState(false);
@@ -227,7 +230,7 @@ export default function ChapterSidebar({ projectId, selectedChapterId, isVisible
             <div className={`flex items-center gap-1 rounded-md group ${selected && chapter.writingMode!=="scenes" ? "bg-accent text-accent-foreground" : ""}`}>
               {chapter.writingMode === "scenes" ? <button className="p-1 shrink-0" aria-label={`${collapsed.has(chapter.id) ? "Expand" : "Collapse"} ${chapter.title}`} aria-expanded={!collapsed.has(chapter.id)} onClick={()=>toggle(chapter.id)}>{collapsed.has(chapter.id) ? <ChevronRight className="h-3 w-3"/> : <ChevronDown className="h-3 w-3"/>}</button> : <span className="w-5 shrink-0"/>}
               <button title={`${chapter.title} · ${chapter.isDraft ? "Draft" : "Completed"}`} className="flex-1 min-w-0 text-left py-2 text-xs font-semibold leading-5" onClick={()=>onChapterSelect?.(String(chapter.id))}><span className="text-muted-foreground mr-1 tabular-nums">{String(index+1).padStart(2,"0")}</span>{chapter.title}</button>
-              <DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-7 w-6 shrink-0" aria-label={`Options for ${chapter.title}`}><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger><DropdownMenuContent align="end"><DropdownMenuItem onSelect={()=>handleRenameChapter(chapter)}>Rename</DropdownMenuItem><DropdownMenuItem onSelect={()=>handleToggleChapterStatus(chapter)}>Mark as {chapter.isDraft ? "Complete" : "Draft"}</DropdownMenuItem><DropdownMenuItem onSelect={()=>handleDeleteChapter(chapter.id)}>Delete</DropdownMenuItem></DropdownMenuContent></DropdownMenu>
+              <DropdownMenu modal={false}><DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-7 w-6 shrink-0" aria-label={`Options for ${chapter.title}`}><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger><DropdownMenuContent align="end"><DropdownMenuItem onSelect={()=>handleRenameChapter(chapter)}>Rename</DropdownMenuItem><DropdownMenuItem onSelect={()=>setChapterToDuplicate(chapter)}>Duplicate Chapter</DropdownMenuItem><DropdownMenuItem onSelect={()=>handleToggleChapterStatus(chapter)}>Mark as {chapter.isDraft ? "Complete" : "Draft"}</DropdownMenuItem><DropdownMenuItem onSelect={()=>handleDeleteChapter(chapter.id)}>Delete</DropdownMenuItem></DropdownMenuContent></DropdownMenu>
             </div>
             {chapter.writingMode === "scenes" && !collapsed.has(chapter.id) && <ul className="ml-3 border-l pl-2 space-y-1">{children.map((scene,i)=>{const active=selected && (selectedSceneId===scene.id || (!selectedSceneId && i===0));const hasProse=!!scene.content?.replace(/<[^>]*>/g,"").trim();return <li key={scene.id}><Link aria-current={active ? "page" : undefined} title={`${scene.title} · ${hasProse ? "Draft" : "Planned"}`} href={`/project/${projectId}/write?chapter=${chapter.id}&scene=${scene.id}`} className={`flex items-start gap-2 rounded-md px-2 py-2 text-sm leading-5 ${active ? "bg-accent text-accent-foreground" : "hover:bg-muted"}`} onClick={()=>{if(window.innerWidth<850)onClose?.();}}><span className={`mt-1.5 w-1.5 h-1.5 rounded-full border shrink-0 ${hasProse ? "bg-current" : ""}`} aria-label={hasProse ? "Draft" : "Planned"}/><span className="line-clamp-2 break-words">{scene.title}</span></Link></li>;})}{!children.length && <li className="px-2 py-1 text-xs text-muted-foreground">No scenes yet</li>}</ul>}
           </section>;})}
@@ -235,6 +238,12 @@ export default function ChapterSidebar({ projectId, selectedChapterId, isVisible
         <div className="p-2 border-t shrink-0"><Button variant="ghost" size="sm" className="w-full justify-start gap-2" onClick={()=>setAdding(true)}><Plus className="h-4 w-4 shrink-0"/>Add scene</Button></div>
       </aside>
       <Dialog open={adding} onOpenChange={setAdding}><DialogContent><DialogHeader><DialogTitle>Add a scene</DialogTitle><DialogDescription>Choose a scene chapter or create a new one. Chapter prose stays intact.</DialogDescription></DialogHeader><AddScene projectId={Number(projectId)} onClose={()=>setAdding(false)} onCreated={scene=>{setAdding(false);setLocation(`/project/${projectId}/write?chapter=${scene.chapterId}&scene=${scene.id}`);if(window.innerWidth<850)onClose?.();}}/></DialogContent></Dialog>
+
+      {chapterToDuplicate && <DuplicateChapter key={chapterToDuplicate.id} chapter={chapterToDuplicate} onClose={()=>setChapterToDuplicate(null)} onCreated={copy=>{
+        setChapterToDuplicate(null);
+        onChapterSelect?.(String(copy.chapterId));
+        toast({title:"Chapter duplicated",description:`“${copy.title}” is ready to edit. The original is unchanged.`});
+      }} />}
 
       {/* Rename Chapter Dialog */}
       <Dialog open={renameDialogOpen} onOpenChange={setRenameDialogOpen}>
