@@ -92,3 +92,5 @@ npm run build
 See [testing](README-Testing.md), [hosted alpha operations](docs/HOSTED_ALPHA.md), [draft protection](docs/DRAFT_RECOVERY_AND_DATA_INTEGRITY.md), [scene connections](docs/SCENE_STORY_BIBLE.md), and the [data contract](docs/DATA_CONTRACT.md).
 
 Completed features are checked, committed, and pushed to their feature branches. **Merging and deployment are separate decisions.** See [development workflow](docs/DEVELOPMENT_WORKFLOW.md). The original recovered records and backups remain the rollback point; history is preserved in the [restart audit](docs/RESTART_AUDIT.md) and [Antigravity comparison](docs/ANTIGRAVITY_COMPARISON.md).
+
+Local feature branch: the [Home Screen guide](docs/HOME_SCREEN_GUIDE.md) adds `/help/install` with iPad Safari and Android Chrome steps, linked from Login and Help. Original tablet illustrations use fictional QQ writing. Browser installation and shortcut choices are distinguished; this page is not deployed yet.
