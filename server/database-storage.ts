@@ -1,3 +1,4 @@
+import type { PickerKind } from "@shared/workspace-assistant";
 import { RETENTION_SCAN_LIMIT } from "@shared/prose-retention";
 import { proseVersions } from "@shared/schema";
 import { HISTORY_PAGE_SIZE, versionValue, type ProseResource, type ProseRecord, type RestoreSource } from "@shared/prose-history";
@@ -41,6 +42,17 @@ function baseCondition(table: any, base?: Record<string, unknown>) {
 }
 
 export class DatabaseStorage implements IStorage {
+  async assistantTitles(projectId:number, kind:PickerKind, search:string) {
+    if (kind === "plot") {
+      const t = plotStructureSections;
+      return this.database.select({id:t.id,title:sql<string>`left(${t.title},160)`}).from(t)
+        .innerJoin(plotStructures,eq(t.plotStructureId,plotStructures.id))
+        .where(and(eq(plotStructures.projectId,projectId),sql`strpos(lower(${t.title}), lower(${search})) > 0`)).orderBy(t.id).limit(40);
+    }
+    const t = kind === "plan" ? scenes : kind === "bible" ? storyBibleEntries : outlineItems;
+    return this.database.select({id:t.id,title:sql<string>`left(${t.title},160)`}).from(t)
+      .where(and(eq(t.projectId,projectId),sql`strpos(lower(${t.title}), lower(${search})) > 0`)).orderBy(t.id).limit(40);
+  }
   async getProseRetentionRows(projectId:number, resource:ProseResource, documentId:number) {
     const {id,revision,savedAt,kind,restoredFromId,keptAt,restoreProtected,sessionCheckpoint}=getTableColumns(proseVersions);
     return this.database.select({id,revision,savedAt,kind,restoredFromId,keptAt,restoreProtected,sessionCheckpoint,bytes:sql<number>`octet_length(coalesce(${proseVersions.content}, ''))`}).from(proseVersions)

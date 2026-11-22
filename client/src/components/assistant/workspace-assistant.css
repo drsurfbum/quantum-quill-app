@@ -1,0 +1,271 @@
+.qq-assistant {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+  min-width: 0;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  text-align: left;
+  font-size: 0.875rem;
+}
+.qq-assistant header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem;
+  border-bottom: 1px solid hsl(var(--border));
+}
+.qq-assistant header small,
+.qq-assistant small,
+.qq-assistant .qq-send-row span {
+  font-size: 0.73rem;
+  color: hsl(var(--muted-foreground));
+}
+.qq-assistant header small {
+  letter-spacing: 0.08em;
+}
+.qq-assistant h2,
+.qq-assistant h3 {
+  font-weight: 600;
+}
+.qq-assistant h2 {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  font:
+    600 1.25rem ui-serif,
+    Georgia,
+    serif;
+}
+.qq-assistant button {
+  border-radius: 0.4rem;
+  padding: 0.35rem 0.5rem;
+}
+.qq-assistant button:hover:enabled {
+  background: hsl(var(--accent));
+}
+.qq-assistant button:disabled {
+  opacity: 0.5;
+}
+.qq-assistant :focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 1px;
+}
+.qq-assistant-tabs,
+.qq-picker,
+.qq-send-row,
+.qq-source-actions,
+.qq-card-row {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.qq-assistant-tabs {
+  border-bottom: 1px solid hsl(var(--border));
+  padding: 0.45rem;
+}
+.qq-assistant-tabs button,
+.qq-send {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+.qq-assistant-tabs [aria-pressed="true"] {
+  background: hsl(var(--secondary));
+  font-weight: 600;
+}
+.qq-new-chat {
+  margin-left: auto;
+  font-size: 0.75rem;
+}
+.qq-assistant-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  padding: 1rem;
+  overflow-wrap: anywhere;
+}
+.qq-welcome h3 {
+  font:
+    500 1.22rem ui-serif,
+    Georgia,
+    serif;
+}
+.qq-welcome p,
+.qq-source small {
+  color: hsl(var(--muted-foreground));
+}
+.qq-welcome button,
+.qq-source,
+.qq-assistant .qq-picker button,
+.qq-source-actions button,
+.qq-manuscript button {
+  border: 1px solid hsl(var(--border));
+}
+.qq-welcome button {
+  display: block;
+  text-align: left;
+  width: 100%;
+  margin-top: 0.65rem;
+}
+.qq-welcome p,
+.qq-assistant article p {
+  margin: 0.45rem 0 1rem;
+}
+.qq-assistant article {
+  margin-bottom: 1rem;
+  border-bottom: 1px solid hsl(var(--border));
+  padding-bottom: 0.75rem;
+}
+.qq-assistant article h3 {
+  font-size: 0.75rem;
+  color: hsl(var(--muted-foreground));
+}
+.qq-assistant article p,
+.qq-source p {
+  white-space: pre-wrap;
+}
+.qq-source {
+  min-width: 0;
+  margin: 0.35rem 0;
+  border-radius: 0.45rem;
+  padding: 0.45rem 0.55rem;
+}
+.qq-source summary {
+  cursor: pointer;
+}
+.qq-source small,
+.qq-manuscript small {
+  display: block;
+}
+.qq-card-row .qq-source,
+.qq-picker select {
+  flex: 1;
+  min-width: 0;
+}
+.qq-sources {
+  display: grid;
+  gap: 0.5rem;
+  min-width: 0;
+}
+.qq-sources legend {
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+.qq-sources legend span {
+  font-size: 0.75rem;
+  font-weight: 400;
+}
+.qq-source-actions {
+  flex-wrap: wrap;
+}
+.qq-sources select,
+.qq-sources input:not([type="checkbox"]),
+.qq-composer textarea {
+  width: 100%;
+  min-width: 0;
+  padding: 0.4rem;
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.4rem;
+  background: hsl(var(--background));
+  color: inherit;
+}
+.qq-manuscript {
+  display: grid;
+  gap: 0.4rem;
+  border-top: 1px solid hsl(var(--border));
+  padding-top: 0.75rem;
+}
+.qq-composer {
+  flex-shrink: 0;
+  padding: 0.75rem 0.8rem max(0.75rem, env(safe-area-inset-bottom));
+  border-top: 1px solid hsl(var(--border));
+  display: grid;
+  gap: 0.4rem;
+}
+.qq-composer textarea {
+  resize: none;
+  font-size: 1rem;
+}
+.qq-send-row {
+  justify-content: space-between;
+}
+.qq-assistant .qq-send {
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+}
+.qq-assistant .qq-send:hover:enabled {
+  background: hsl(var(--primary) / 0.9);
+}
+.qq-summary {
+  font-size: 0.75rem;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  text-align: left;
+}
+.qq-assistant-drawer {
+  position: fixed;
+  margin: 0 0 0 auto;
+  inset: 0 0 auto auto;
+  max-height: 100dvh;
+  height: 100dvh;
+  width: min(26rem, 100%);
+  max-width: 100%;
+  padding: 0;
+  border: 0;
+  color: inherit;
+}
+.qq-assistant-drawer::backdrop {
+  background: rgb(0 0 0/0.38);
+  overflow: hidden;
+  overscroll-behavior: contain;
+}
+.qq-assistant-drawer:modal {
+  overscroll-behavior: contain;
+}
+.qq-writing-slot {
+  position: absolute;
+  inset: 0 0 0 auto;
+  width: clamp(300px, 24vw, 360px);
+  z-index: 2;
+  border-left: 1px solid hsl(var(--border));
+}
+.qq-writing-slot:empty {
+  display: none;
+}
+.writing-reference-pane:has(+ .qq-writing-slot:not(:empty)) {
+  visibility: hidden;
+}
+.qq-assistant-dock {
+  position: fixed;
+  inset: 0 0 0 auto;
+  width: 21rem;
+  z-index: 20;
+  border-left: 1px solid hsl(var(--border));
+}
+main:has(.qq-assistant-dock) {
+  padding-right: 21rem;
+}
+
+.qq-assistant .qq-citation {
+  padding: 0 0.15rem;
+  color: hsl(var(--primary));
+  text-decoration: underline;
+}
+.qq-followup {
+  font-size: 0.75rem;
+  text-decoration: underline;
+}
+@media (max-height: 420px) {
+  .qq-assistant-drawer header,
+  .qq-assistant-drawer .qq-composer {
+    padding: 0.3rem 0.6rem;
+  }
+  .qq-assistant-drawer .qq-assistant-tabs {
+    padding: 0.1rem 0.4rem;
+  }
+}

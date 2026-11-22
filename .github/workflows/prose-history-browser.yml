@@ -26,6 +26,10 @@ jobs:
       - run: npm run build
       - name: Install disposable browser-test tooling
         run: npm install --no-save --package-lock=false --ignore-scripts playwright@1.65.1
+      - run: node tests/browser-workspace-assistant.mjs
+      - run: node tests/browser-workspace-assistant.mjs
+        env:
+          QQ_BROWSER_ENGINE: webkit
       - run: node --import tsx tests/browser-install-guide.mts
       - run: node --import tsx tests/browser-chapter-copy.mts
       - run: node --import tsx tests/browser-chapter-copy.mts
@@ -42,5 +46,6 @@ jobs:
           name: writing-history-synthetic-browser
           path: |
             artifacts/history/
+            artifacts/assistant/
             .local/ipad-guide-review/
           retention-days: 14
