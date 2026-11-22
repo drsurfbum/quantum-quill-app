@@ -47,7 +47,7 @@ NODE_ENV=test QQ_SHOWCASE_PORT=57993 QQ_DEMO_ASSISTANT=1 node --import tsx tests
 Use the showcase credentials in `docs/DEVELOPMENT_WORKFLOW.md`. The screenshots show the actual application. [Write](images/assistant/write-desktop.png) · [Outline](images/assistant/outline-desktop.png) · [Storyboard](images/assistant/storyboard-desktop.png) · [Story Bible](images/assistant/story-bible-desktop.png) · [Overview](images/assistant/overview-desktop.png) · [Phone](images/assistant/write-phone.png) · [Tablet](images/assistant/write-tablet.png)
 
 - `tests/workspace-assistant.test.ts` exercises authorization, explicit manuscript consent, unsupported fields, stale revisions, untrusted source data, provider framing, interrupted streams, durable allowances and byte-for-byte story equality.
-- `tests/postgres-assistant.ts` exercises the real storage reader on a fresh synthetic database and compares all 18 PostgreSQL tables before and after.
+- `tests/postgres-assistant.ts` exercises the real storage reader on a fresh synthetic database, verifies PostgreSQL rejects an attempted write inside its read-only snapshot, and compares all 18 PostgreSQL tables before and after.
 - `tests/browser-workspace-assistant.mjs` runs against Chromium and WebKit. It covers all workspaces, citation cards, retries, cancellation, account and project changes, rapid typing, the 820/390/320-pixel layouts, editor identity, focus, selection and geometry. History, Word Finder, duplication, guided Bible and existing recovery tests continue in CI.
 - Physical iPad typing, software-keyboard positioning on hardware, live model quality and the QQ provider account remain unverified. Use a fictional question for the first provider smoke test after configuration.
 

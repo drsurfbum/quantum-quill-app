@@ -221,6 +221,11 @@
 }
 .qq-assistant-drawer::backdrop {
   background: rgb(0 0 0/0.38);
+  overflow: hidden;
+  overscroll-behavior: contain;
+}
+.qq-assistant-drawer:modal {
+  overscroll-behavior: contain;
 }
 .qq-writing-slot {
   position: absolute;

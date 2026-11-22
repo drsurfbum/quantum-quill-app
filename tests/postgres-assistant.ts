@@ -104,6 +104,15 @@ try {
       "Private fictional prose.",
     );
   });
+  // A future accidental write through the reader must be rejected by PostgreSQL,
+  // not merely avoided by the current route implementation.
+  await assert.rejects(
+    () => storage.withReadSnapshot((db) => db.createOutlineItem({
+      projectId, title: "Forbidden assistant write", order: 1,
+    })),
+    (error: unknown) => (error as { cause?: { code?: string }; code?: string }).code === "25006" ||
+      (error as { cause?: { code?: string } }).cause?.code === "25006",
+  );
   assert.deepEqual(await state(), before);
   console.log(
     `PostgreSQL scoped title lookup, versioned source reading and before/after equality across ${before.length} tables passed.`,
