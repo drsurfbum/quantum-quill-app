@@ -119,6 +119,17 @@ try {
   );
 } finally {
   await pool?.end();
-  await admin.query(`DROP DATABASE IF EXISTS "${name}" WITH (FORCE)`);
-  await admin.end();
+  try {
+    // Pool shutdown can resolve before its sockets finish closing. Do not
+    // FORCE-terminate those clients or conceal a connection leak in this test.
+    for (let attempt = 0; ; attempt++) {
+      const connections = await admin.query(
+        "SELECT count(*)::int n FROM pg_stat_activity WHERE datname=$1", [name],
+      );
+      if (connections.rows[0].n === 0) break;
+      if (attempt === 100) throw new Error("Test database connections did not close before cleanup");
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+    await admin.query(`DROP DATABASE IF EXISTS "${name}"`);
+  } finally { await admin.end(); }
 }

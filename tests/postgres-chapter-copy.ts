@@ -64,6 +64,17 @@ const storage = new DatabaseStorage(db,new session.MemoryStore());
   console.log(JSON.stringify({atomicReceiptFailureRollback:'PASS',concurrentIdempotency:'PASS',competingSnapshot:'PASS',independentProse:'PASS',freshSceneAndContext:'PASS',neighborOrder:'PASS',sourceUnchanged:'PASS'}));
 } finally {
   await pool?.end();
-  await admin.query(`DROP DATABASE IF EXISTS "${name}" WITH (FORCE)`);
-  await admin.end();
+  try {
+    // pg-pool resolves end() after removing clients, before every socket has
+    // finished closing. FORCE can kill those sockets and emit an unhandled
+    // pool error after all assertions passed. Wait for a clean disconnect;
+    // a leaked connection must fail cleanup instead of being hidden by FORCE.
+    for (let attempt=0; ; attempt++) {
+      const connections=await admin.query('SELECT count(*)::int n FROM pg_stat_activity WHERE datname=$1',[name]);
+      if (connections.rows[0].n===0) break;
+      if (attempt===100) throw new Error('Test database connections did not close before cleanup');
+      await new Promise(resolve=>setTimeout(resolve,50));
+    }
+    await admin.query(`DROP DATABASE IF EXISTS "${name}"`);
+  } finally { await admin.end(); }
 }
